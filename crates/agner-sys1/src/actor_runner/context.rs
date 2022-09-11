@@ -100,7 +100,7 @@ impl<'a, A> agner_actor::TaskManager<A::Message> for Context<'a, A>
 where
 	A: Actor<SystemOne>,
 {
-	fn task_start<F>(&mut self, future: F) -> TaskID
+	fn start<F>(&mut self, future: F) -> TaskID
 	where
 		F: Future + Send + Sync + 'static,
 		A::Message: From<Done<F::Output>>,
@@ -122,7 +122,7 @@ where
 		task_id
 	}
 
-	fn task_stop(&mut self, task_id: TaskID) {
+	fn stop(&mut self, task_id: TaskID) {
 		self.tasks_to_stop.push(task_id);
 	}
 }

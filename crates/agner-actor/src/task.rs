@@ -11,12 +11,12 @@ pub struct Done<T> {
 }
 
 pub trait TaskManager<M> {
-	fn task_start<F>(&mut self, future: F) -> TaskID
+	fn start<F>(&mut self, future: F) -> TaskID
 	where
 		F: Future + Send + Sync + 'static,
 		M: From<Done<F::Output>>;
 
-	fn task_stop(&mut self, task_id: TaskID);
+	fn stop(&mut self, task_id: TaskID);
 }
 
 impl From<usize> for TaskID {

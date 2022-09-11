@@ -52,7 +52,7 @@ impl<Sys: System> Actor<Sys> for ActorWithTasks {
 		context: &mut Ctx,
 	) -> Result<Self, ExitReason> {
 		log::info!("init");
-		let task_id = context.tasks().task_start(async {
+		let task_id = context.tasks().start(async {
 			tokio::time::sleep(Duration::from_secs(1)).await;
 			Init
 		});
@@ -68,12 +68,12 @@ impl<Sys: System> Actor<Sys> for ActorWithTasks {
 			Message::Init(id) => {
 				assert_eq!(id, self.timer_id);
 				for i in 1..10 {
-					context.tasks().task_start(async move {
+					context.tasks().start(async move {
 						tokio::time::sleep(Duration::from_millis(i * 100)).await;
 						Job
 					});
 				}
-				self.timer_id = context.tasks().task_start(async {
+				self.timer_id = context.tasks().start(async {
 					tokio::time::sleep(Duration::from_secs(2)).await;
 					Exit
 				});
