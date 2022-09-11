@@ -14,7 +14,7 @@ mod message;
 pub use message::Message;
 
 mod seed;
-pub use seed::{Arg, ClonableSeed, NonEmptySeed, Seed, SeedMut, SharedSeed, UniqueSeed};
+pub use seed::{ClonableSeed, NonEmptySeed, Seed, SeedMut, SharedSeed, UniqueSeed};
 
 mod actor_id;
 pub use actor_id::ActorID;

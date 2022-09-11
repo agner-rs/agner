@@ -1,8 +1,5 @@
 use std::sync::Arc;
 
-pub trait Arg: Sized + Send + Sync + 'static {}
-impl<T> Arg for T where T: Sized + Send + Sync + 'static {}
-
 pub trait Seed: Send + Sync + 'static {
 	type Value;
 	fn value_opt(&self) -> Option<&Self::Value>;
