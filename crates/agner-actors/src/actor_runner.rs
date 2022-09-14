@@ -128,6 +128,7 @@ where
 		self.messages_rx.close();
 
 		self.notify_linked_actors(exit_reason.to_owned()).await;
+		self.notify_waiting_chans(exit_reason.to_owned());
 
 		while let Some(sys_msg) = self.sys_msg_rx.recv().await {
 			self.handle_sys_msg_on_shutdown(sys_msg, exit_reason.to_owned()).await
@@ -144,6 +145,7 @@ where
 				self.handle_sys_msg_exit(terminated, exit_reason).await,
 			Some(SysMsg::Link(link_to)) => self.handle_sys_msg_link(link_to).await,
 			Some(SysMsg::Unlink(unlink_from)) => self.handle_sys_msg_unlink(unlink_from).await,
+			Some(SysMsg::Wait(report_to)) => self.handle_sys_msg_wait(report_to),
 		}
 	}
 
@@ -153,6 +155,9 @@ where
 				if !matches!(*exit_reason, ExitReason::Normal) {
 					self.send_sys_msg(linked, SysMsg::Exited(self.actor_id, exit_reason)).await;
 				},
+			SysMsg::Wait(report_to) => {
+				let _ = report_to.send(exit_reason);
+			},
 			SysMsg::Unlink { .. } => (),
 			SysMsg::Exited { .. } => (),
 			SysMsg::Exit { .. } => (),

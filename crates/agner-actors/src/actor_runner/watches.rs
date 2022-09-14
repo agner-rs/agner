@@ -1,5 +1,7 @@
 use std::collections::HashSet;
 
+use tokio::sync::oneshot;
+
 use crate::actor_id::ActorID;
 
 use super::*;
@@ -8,13 +10,19 @@ use super::*;
 pub(crate) struct Watches {
 	pub trap_exit: bool,
 	pub links: HashSet<ActorID>,
+	pub waits: Vec<oneshot::Sender<Arc<ExitReason>>>,
 }
 
 impl<M> Backend<M> {
 	pub(super) async fn notify_linked_actors(&mut self, exit_reason: Arc<ExitReason>) {
-		for linked in std::mem::replace(&mut self.watches, Default::default()).links.drain() {
+		for linked in std::mem::replace(&mut self.watches.links, Default::default()).drain() {
 			self.send_sys_msg(linked, SysMsg::Exited(self.actor_id, exit_reason.to_owned()))
 				.await;
+		}
+	}
+	pub(super) fn notify_waiting_chans(&mut self, exit_reason: Arc<ExitReason>) {
+		for report_to in std::mem::replace(&mut self.watches.waits, Default::default()).drain(..) {
+			let _ = report_to.send(exit_reason.to_owned());
 		}
 	}
 
@@ -92,6 +100,18 @@ impl<M> Backend<M> {
 		unlink_from: ActorID,
 	) -> Result<(), ExitReason> {
 		self.watches.links.remove(&unlink_from);
+		Ok(())
+	}
+
+	pub(super) fn handle_sys_msg_wait(
+		&mut self,
+		report_to: oneshot::Sender<Arc<ExitReason>>,
+	) -> Result<(), ExitReason> {
+		if let Some(to_replace) = self.watches.waits.iter_mut().find(|tx| tx.is_closed()) {
+			*to_replace = report_to;
+		} else {
+			self.watches.waits.push(report_to);
+		}
 		Ok(())
 	}
 }

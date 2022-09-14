@@ -1,7 +1,8 @@
+use std::future::Future;
 use std::sync::atomic::AtomicUsize;
 use std::sync::{Arc, Weak};
 
-use tokio::sync::{mpsc, RwLock};
+use tokio::sync::{mpsc, oneshot, RwLock};
 
 use crate::actor::Actor;
 use crate::actor_id::ActorID;
@@ -119,6 +120,20 @@ impl System {
 
 	pub async fn exit(&self, actor_id: ActorID, exit_reason: ExitReason) {
 		self.send_sys_msg(actor_id, SysMsg::Exit(exit_reason)).await;
+	}
+
+	pub fn wait(&self, actor_id: ActorID) -> impl Future<Output = Arc<ExitReason>> {
+		let system = self.to_owned();
+		async move {
+			let (tx, rx) = oneshot::channel();
+			if system.send_sys_msg(actor_id, SysMsg::Wait(tx)).await {
+				rx.await
+					.map_err(|_| Arc::new(ExitReason::NoProcess))
+					.unwrap_or_else(std::convert::identity)
+			} else {
+				Arc::new(ExitReason::NoProcess)
+			}
+		}
 	}
 
 	pub(crate) async fn send_sys_msg(&self, to: ActorID, sys_msg: SysMsg) -> bool {

@@ -74,6 +74,8 @@ fn links_test() {
 
 		// 5: 5 link 0, 0 unlink 5
 		call(a[5], Request::Link(a[0])).await.unwrap();
+		call(a[0], Request::Ping).await.unwrap();
+		call(a[5], Request::Ping).await.unwrap();
 		call(a[0], Request::Unlink(a[5])).await.unwrap();
 
 		// 6: 6 link 0
@@ -111,7 +113,11 @@ fn links_test() {
 		tokio::time::sleep(Duration::from_millis(100)).await;
 
 		for actor in a.iter().copied() {
-			let _ = call(actor, Request::Exit(ExitReason::Shutdown(None))).await;
+			let exit_requested = call(actor, Request::Exit(ExitReason::Shutdown(None)));
+			let actor_waited = system.wait(actor);
+
+			let _ = exit_requested.await;
+			log::info!("{} exited {}", actor, actor_waited.await);
 		}
 
 		log::info!("---");
