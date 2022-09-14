@@ -5,10 +5,12 @@ use tokio::sync::{mpsc, RwLock};
 
 use crate::actor::Actor;
 use crate::actor_id::ActorID;
+use crate::actor_runner::sys_msg::SysMsg;
 use crate::actor_runner::ActorRunner;
 use crate::imports::BoxError;
 use crate::spawn_opts::SpawnOpts;
 use crate::system_config::SystemConfig;
+use crate::ExitReason;
 
 mod actor_entry;
 use actor_entry::ActorEntry;
@@ -113,6 +115,17 @@ impl System {
 		self.actor_entry_put(entry).await;
 
 		Ok(actor_id)
+	}
+
+	pub async fn exit(&self, actor_id: ActorID, exit_reason: ExitReason) {
+		self.send_sys_msg(actor_id, SysMsg::Exit(exit_reason)).await;
+	}
+
+	pub(crate) async fn send_sys_msg(&self, to: ActorID, sys_msg: SysMsg) -> bool {
+		self.actor_entry_read(to, |entry| entry.sys_msg_tx.send(sys_msg).ok())
+			.await
+			.flatten()
+			.is_some()
 	}
 
 	pub async fn channel<M>(&self, actor_id: ActorID) -> Result<mpsc::UnboundedSender<M>, BoxError>

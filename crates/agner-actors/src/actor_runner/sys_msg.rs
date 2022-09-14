@@ -9,20 +9,14 @@ use super::Backend;
 pub enum SysMsg {
 	Link(ActorID),
 	Unlink(ActorID),
-	Exit(ActorID, Arc<ExitReason>),
+	Exit(ExitReason),
+	Exited(ActorID, Arc<ExitReason>),
 }
 
 impl<M> Backend<M> {
 	pub(super) async fn send_sys_msg(&self, to: ActorID, sys_msg: SysMsg) -> bool {
-		// if the system is still alive,
 		if let Some(system) = self.system_opt.rc_upgrade() {
-			// if there is no existing link,
-			let sent = system
-				.actor_entry_read(to, |entry| entry.sys_msg_tx.send(sys_msg).ok())
-				.await
-				.flatten()
-				.is_some();
-			sent
+			system.send_sys_msg(to, sys_msg).await
 		} else {
 			false
 		}

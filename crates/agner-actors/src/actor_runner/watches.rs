@@ -13,7 +13,7 @@ pub(crate) struct Watches {
 impl<M> Backend<M> {
 	pub(super) async fn notify_linked_actors(&mut self, exit_reason: Arc<ExitReason>) {
 		for linked in std::mem::replace(&mut self.watches, Default::default()).links.drain() {
-			self.send_sys_msg(linked, SysMsg::Exit(self.actor_id, exit_reason.to_owned()))
+			self.send_sys_msg(linked, SysMsg::Exited(self.actor_id, exit_reason.to_owned()))
 				.await;
 		}
 	}
@@ -24,7 +24,7 @@ impl<M> Backend<M> {
 
 			if !self.send_sys_msg(link_to, SysMsg::Link(self.actor_id)).await {
 				let _ =
-					self.sys_msg_tx.send(SysMsg::Exit(link_to, Arc::new(ExitReason::NoProcess)));
+					self.sys_msg_tx.send(SysMsg::Exited(link_to, Arc::new(ExitReason::NoProcess)));
 			}
 		}
 	}

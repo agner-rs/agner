@@ -139,7 +139,8 @@ where
 	async fn handle_sys_msg(&mut self, sys_msg_recv: Option<SysMsg>) -> Result<(), ExitReason> {
 		match sys_msg_recv {
 			None => Err(ExitReason::RxClosed("sys-msg")),
-			Some(SysMsg::Exit(terminated, exit_reason)) =>
+			Some(SysMsg::Exit(exit_reason)) => Err(exit_reason),
+			Some(SysMsg::Exited(terminated, exit_reason)) =>
 				self.handle_sys_msg_exit(terminated, exit_reason).await,
 			Some(SysMsg::Link(link_to)) => self.handle_sys_msg_link(link_to).await,
 			Some(SysMsg::Unlink(unlink_from)) => self.handle_sys_msg_unlink(unlink_from).await,
@@ -150,9 +151,10 @@ where
 		match sys_msg {
 			SysMsg::Link(linked) =>
 				if !matches!(*exit_reason, ExitReason::Normal) {
-					self.send_sys_msg(linked, SysMsg::Exit(self.actor_id, exit_reason)).await;
+					self.send_sys_msg(linked, SysMsg::Exited(self.actor_id, exit_reason)).await;
 				},
 			SysMsg::Unlink { .. } => (),
+			SysMsg::Exited { .. } => (),
 			SysMsg::Exit { .. } => (),
 		}
 	}
