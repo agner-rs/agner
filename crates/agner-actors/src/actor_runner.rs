@@ -152,7 +152,9 @@ where
 	async fn handle_sys_msg_on_shutdown(&mut self, sys_msg: SysMsg, exit_reason: Arc<ExitReason>) {
 		match sys_msg {
 			SysMsg::Link(linked) =>
-				if !matches!(*exit_reason, ExitReason::Normal) {
+				if matches!(*exit_reason, ExitReason::Normal) {
+					self.send_sys_msg(linked, SysMsg::Unlink(self.actor_id)).await;
+				} else {
 					self.send_sys_msg(linked, SysMsg::Exited(self.actor_id, exit_reason)).await;
 				},
 			SysMsg::Wait(report_to) => {

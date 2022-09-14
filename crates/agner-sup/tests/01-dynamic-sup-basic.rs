@@ -6,12 +6,13 @@ use agner_sup::dynamic;
 
 #[test]
 fn dynamic_sup_basic_test() {
+	#[allow(unused)]
 	struct WorkerArgs {
 		group_name: &'static str,
 		worker_id: usize,
 	}
 	enum WorkerMessage {}
-	async fn worker_behaviour(context: &mut Context<WorkerMessage>, arg: WorkerArgs) {
+	async fn worker_behaviour(_context: &mut Context<WorkerMessage>, _arg: WorkerArgs) {
 		std::future::pending().await
 	}
 
