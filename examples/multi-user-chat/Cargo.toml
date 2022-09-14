@@ -1,13 +1,18 @@
 [package]
-name = "multi-user-chat"
+name = "agner-examples-multi-user-chat"
 version = "0.1.0"
 edition = "2021"
+
+authors = ["Raman Hafiyatulin <r.gafiyatullin@me.com>"]
+license = "MIT"
+license-file = "LICENSE"
+repository = "https://github.com/RGafiyatullin/agner"
+description = "A demo: naive multi-user-chat"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-agner-actors = {path = "../../crates/agner-actors", version = "^0.2"}
-agner-sup = {path = "../../crates/agner-sup", version = "^0.2"}
+agner = {path = "../../crates/agner", version = "^0.2"}
 dotenv = "^0.15"
 log = "^0.4"
 pretty_env_logger = "^0.4"

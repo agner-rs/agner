@@ -1,7 +1,7 @@
-use agner_actors::{ArcError, System};
+use agner::actors::{ArcError, System};
 
 mod room {
-    use agner_actors::{ActorID, BoxError, Context, Event, ExitReason};
+    use agner::actors::{ActorID, BoxError, Context, Event, ExitReason};
     use std::collections::HashMap;
     use std::net::SocketAddr;
     use std::sync::Arc;
@@ -15,7 +15,7 @@ mod room {
         ConnDown(ActorID, Arc<ExitReason>),
     }
 
-    pub async fn run(context: &mut Context<Message>, arg: ()) -> Result<(), BoxError> {
+    pub async fn run(context: &mut Context<Message>, _arg: ()) -> Result<(), BoxError> {
         let mut participants = HashMap::new();
 
         loop {
@@ -74,7 +74,7 @@ mod room {
 }
 
 mod conn {
-    use agner_actors::{ActorID, BoxError, Context, Event, ExitReason};
+    use agner::actors::{ActorID, BoxError, Context, Event, ExitReason};
     use std::net::SocketAddr;
     use std::sync::Arc;
     use tokio::io::{AsyncBufReadExt, AsyncWriteExt, BufReader};
@@ -139,8 +139,8 @@ mod conn {
 mod acceptor {
     use std::net::SocketAddr;
 
-    use agner_actors::{ActorID, BoxError, Context};
-    use agner_sup::dynamic;
+    use agner::actors::{ActorID, BoxError, Context};
+    use agner::sup::dynamic;
     use tokio::net::TcpListener;
 
     pub struct Args {
@@ -175,8 +175,8 @@ async fn run() -> Result<(), ArcError> {
     let conn_sup =
         system
             .spawn(
-                agner_sup::dynamic::dynamic_sup,
-                agner_sup::dynamic::child_spec(conn::run, move |(tcp_stream, peer_addr)| {
+                agner::sup::dynamic::dynamic_sup,
+                agner::sup::dynamic::child_spec(conn::run, move |(tcp_stream, peer_addr)| {
                     conn::Args { tcp_stream, peer_addr, room }
                 }),
                 Default::default(),

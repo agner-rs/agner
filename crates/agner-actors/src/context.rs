@@ -98,7 +98,7 @@ impl<M> Context<M> {
 
 impl<M> Context<M> {
     async fn backend_call(&mut self, call: CallMsg<M>) {
-        if let Err(reason) = self.calls.send(call).await {
+        if let Err(_rejected) = self.calls.send(call).await {
             panic!("Failed to perform backend-call");
         }
     }

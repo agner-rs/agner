@@ -3,6 +3,11 @@ name = "agner-actors"
 version = "0.2.0"
 edition = "2021"
 
+authors = ["Raman Hafiyatulin <r.gafiyatullin@me.com>"]
+license = "MIT"
+repository = "https://github.com/RGafiyatullin/agner"
+description = "An actor toolkit inspired by Erlang/OTP (actors)"
+
 [dependencies]
 futures = { version = "^0.3", features = ["bilock", "unstable"]}
 log = "0.4"
