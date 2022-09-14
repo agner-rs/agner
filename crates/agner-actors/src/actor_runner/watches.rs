@@ -16,12 +16,17 @@ pub(crate) struct Watches {
 impl<M> Backend<M> {
 	pub(super) async fn notify_linked_actors(&mut self, exit_reason: Arc<ExitReason>) {
 		for linked in std::mem::replace(&mut self.watches.links, Default::default()).drain() {
+			log::trace!("[{}] notifying linked actor: {}", self.actor_id, linked);
 			self.send_sys_msg(linked, SysMsg::Exited(self.actor_id, exit_reason.to_owned()))
 				.await;
 		}
 	}
 	pub(super) fn notify_waiting_chans(&mut self, exit_reason: Arc<ExitReason>) {
-		for report_to in std::mem::replace(&mut self.watches.waits, Default::default()).drain(..) {
+		for report_to in std::mem::replace(&mut self.watches.waits, Default::default())
+			.drain(..)
+			.filter(|c| !c.is_closed())
+		{
+			log::trace!("[{}] notifying waiting chan", self.actor_id);
 			let _ = report_to.send(exit_reason.to_owned());
 		}
 	}
@@ -108,8 +113,10 @@ impl<M> Backend<M> {
 		report_to: oneshot::Sender<Arc<ExitReason>>,
 	) -> Result<(), ExitReason> {
 		if let Some(to_replace) = self.watches.waits.iter_mut().find(|tx| tx.is_closed()) {
+			log::trace!("adding 'wait' [replace]");
 			*to_replace = report_to;
 		} else {
+			log::trace!("adding 'wait' [append]");
 			self.watches.waits.push(report_to);
 		}
 		Ok(())

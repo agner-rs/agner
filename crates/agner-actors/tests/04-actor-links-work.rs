@@ -1,6 +1,6 @@
 use std::time::Duration;
 
-use agner_actors::{ActorID, Context, Event, ExitReason, Signal, System};
+use agner_actors::{ActorID, Context, Event, ExitReason, Signal, SpawnOpts, System};
 use futures::{stream, StreamExt, TryStreamExt};
 use tokio::sync::oneshot;
 
@@ -55,7 +55,7 @@ fn links_test() {
 			}
 		};
 
-		let a = stream::iter(0..=8)
+		let mut a = stream::iter(0..=8)
 			.then(|_| system.spawn(actor_behaviour, (), Default::default()))
 			.try_collect::<Vec<_>>()
 			.await
@@ -86,6 +86,14 @@ fn links_test() {
 		call(a[8], Request::TrapExit(true)).await.unwrap();
 		call(a[8], Request::Link(a[7])).await.unwrap();
 
+		// 9: spawned being linked to 0
+		a.push(
+			system
+				.spawn(actor_behaviour, (), SpawnOpts::new().with_link(a[0]))
+				.await
+				.unwrap(),
+		);
+
 		for actor in a.iter().copied() {
 			assert!(call(actor, Request::Ping).await.is_ok());
 		}
@@ -105,6 +113,7 @@ fn links_test() {
 			(6, false),
 			(7, false),
 			(8, true),
+			(9, false),
 		] {
 			assert_eq!(call(a[idx], Request::Ping).await.is_ok(), expected_ok, "[{}]", idx);
 		}

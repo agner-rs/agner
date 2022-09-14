@@ -1,4 +1,3 @@
-use std::future::Future;
 use std::sync::atomic::AtomicUsize;
 use std::sync::{Arc, Weak};
 
@@ -122,17 +121,12 @@ impl System {
 		self.send_sys_msg(actor_id, SysMsg::Exit(exit_reason)).await;
 	}
 
-	pub fn wait(&self, actor_id: ActorID) -> impl Future<Output = Arc<ExitReason>> {
-		let system = self.to_owned();
-		async move {
-			let (tx, rx) = oneshot::channel();
-			if system.send_sys_msg(actor_id, SysMsg::Wait(tx)).await {
-				rx.await
-					.map_err(|_| Arc::new(ExitReason::NoProcess))
-					.unwrap_or_else(std::convert::identity)
-			} else {
-				Arc::new(ExitReason::NoProcess)
-			}
+	pub async fn wait(&self, actor_id: ActorID) -> Arc<ExitReason> {
+		let (tx, rx) = oneshot::channel();
+		if self.send_sys_msg(actor_id, SysMsg::Wait(tx)).await {
+			rx.await.unwrap_or_else(|_| Arc::new(ExitReason::NoProcess))
+		} else {
+			Arc::new(ExitReason::NoProcess)
 		}
 	}
 
