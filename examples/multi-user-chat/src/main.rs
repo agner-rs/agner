@@ -1,7 +1,7 @@
 use agner_actors::{ArcError, System};
 
 mod room {
-	use agner_actors::{ActorID, BoxError, Context, Event};
+	use agner_actors::{ActorID, BoxError, Context, Event, ExitReason};
 	use std::collections::HashMap;
 	use std::net::SocketAddr;
 	use std::sync::Arc;
@@ -11,6 +11,8 @@ mod room {
 	pub enum Message {
 		Join(ActorID, SocketAddr),
 		Post(ActorID, Arc<str>),
+
+		ConnDown(ActorID, Arc<ExitReason>),
 	}
 
 	pub async fn run(context: &mut Context<Message>, arg: ()) -> Result<(), BoxError> {
@@ -19,6 +21,20 @@ mod room {
 		loop {
 			match context.next_event().await {
 				Event::Signal { .. } => unreachable!(),
+
+				Event::Message(Message::ConnDown(actor_id, exit_reason)) => {
+					if let Some(addr) = participants.remove(&actor_id) {
+						for participant_actor_id in participants.keys().copied() {
+							context
+								.system()
+								.send(
+									participant_actor_id,
+									conn::Message::Left(addr, Arc::clone(&exit_reason)),
+								)
+								.await;
+						}
+					}
+				},
 				Event::Message(Message::Join(actor_id, peer_addr)) => {
 					for participant_actor_id in participants.keys().copied() {
 						context
@@ -28,6 +44,14 @@ mod room {
 					}
 
 					participants.insert(actor_id, peer_addr);
+
+					let system = context.system();
+					let notification = async move {
+						let conn_down = system.wait(actor_id);
+						let exit_reason = conn_down.await;
+						Message::ConnDown(actor_id, exit_reason)
+					};
+					context.pipe_to_inbox(notification).await;
 				},
 				Event::Message(Message::Post(actor_id, message)) => {
 					if let Some(from_addr) = participants.get(&actor_id).copied() {
@@ -50,7 +74,7 @@ mod room {
 }
 
 mod conn {
-	use agner_actors::{ActorID, BoxError, Context, Event};
+	use agner_actors::{ActorID, BoxError, Context, Event, ExitReason};
 	use std::net::SocketAddr;
 	use std::sync::Arc;
 	use tokio::io::{AsyncBufReadExt, AsyncWriteExt, BufReader};
@@ -66,7 +90,7 @@ mod conn {
 
 	pub enum Message {
 		Joined(SocketAddr),
-		Left(SocketAddr),
+		Left(SocketAddr, Arc<ExitReason>),
 		Posted(SocketAddr, Arc<str>),
 	}
 
@@ -94,8 +118,8 @@ mod conn {
 							write_half.write_all(message.as_bytes()).await?;
 							write_half.flush().await?;
 						}
-						Event::Message(Message::Left(addr)) => {
-							let message = format!("LEFT [{}]\n", addr);
+						Event::Message(Message::Left(addr, reason)) => {
+							let message = format!("LEFT [{}]: {}\n", addr, reason.pp());
 							write_half.write_all(message.as_bytes()).await?;
 							write_half.flush().await?;
 						}

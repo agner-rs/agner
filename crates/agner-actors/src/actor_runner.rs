@@ -1,5 +1,9 @@
+use std::future::Future;
+use std::pin::Pin;
 use std::sync::Arc;
 
+use futures::stream::FuturesUnordered;
+use futures::StreamExt;
 use tokio::sync::mpsc;
 
 use crate::actor::{Actor, IntoExitReason};
@@ -49,7 +53,7 @@ where
 
 		let (inbox_w, inbox_r) = pipe::new::<Message>(spawn_opts.msg_inbox_size());
 		let (signals_w, signals_r) = pipe::new::<Signal>(spawn_opts.sig_inbox_size());
-		let (calls_w, calls_r) = pipe::new::<CallMsg>(1);
+		let (calls_w, calls_r) = pipe::new::<CallMsg<Message>>(1);
 		let mut context =
 			Context::new(actor_id, system_opt.to_owned(), inbox_r, signals_r, calls_w);
 
@@ -59,17 +63,21 @@ where
 			unreachable!()
 		};
 
-		let mut actor_backend = Backend {
-			actor_id,
-			system_opt: system_opt.to_owned(),
-			sys_msg_rx,
-			sys_msg_tx,
-			messages_rx,
-			inbox_w,
-			signals_w,
-			calls_r,
-			watches: Default::default(),
-		};
+		let mut actor_backend =
+			Backend {
+				actor_id,
+				system_opt: system_opt.to_owned(),
+				sys_msg_rx,
+				sys_msg_tx,
+				messages_rx,
+				inbox_w,
+				signals_w,
+				calls_r,
+				watches: Default::default(),
+				tasks: FuturesUnordered::<
+					Pin<Box<dyn Future<Output = Message> + Send + Sync + 'static>>,
+				>::new(),
+			};
 
 		for link_to in spawn_opts.links() {
 			actor_backend.do_link(link_to).await;
@@ -98,8 +106,9 @@ struct Backend<Message> {
 	messages_rx: mpsc::UnboundedReceiver<Message>,
 	inbox_w: PipeTx<Message>,
 	signals_w: PipeTx<Signal>,
-	calls_r: PipeRx<CallMsg>,
+	calls_r: PipeRx<CallMsg<Message>>,
 	watches: Watches,
+	tasks: FuturesUnordered<Pin<Box<dyn Future<Output = Message> + Send + Sync + 'static>>>,
 }
 
 impl<Message> Backend<Message>
@@ -108,7 +117,16 @@ where
 {
 	async fn run_actor_backend(mut self) {
 		log::trace!("[{}] running actor-backend", self.actor_id);
+
 		let exit_reason = loop {
+			let task_next = async {
+				if self.tasks.is_empty() {
+					std::future::pending().await
+				} else {
+					self.tasks.next().await
+				}
+			};
+
 			if let Err(exit_reason) = tokio::select! {
 				sys_msg_recv = self.sys_msg_rx.recv() =>
 					self.handle_sys_msg(sys_msg_recv).await,
@@ -116,11 +134,13 @@ where
 					self.handle_call_msg(call_msg).await,
 				message_recv = self.messages_rx.recv() =>
 					self.handle_message_recv(message_recv).await,
+				task_ready = task_next =>
+					self.handle_message_recv(task_ready).await,
 			} {
 				break exit_reason
 			}
 		};
-		log::trace!("[{}] exiting: {}", self.actor_id, exit_reason);
+		log::trace!("[{}] exiting: {}", self.actor_id, exit_reason.pp());
 
 		let exit_reason = Arc::new(exit_reason);
 
@@ -166,13 +186,22 @@ where
 		}
 	}
 
-	async fn handle_call_msg(&mut self, call_msg: CallMsg) -> Result<(), ExitReason> {
+	async fn handle_call_msg(&mut self, call_msg: CallMsg<Message>) -> Result<(), ExitReason> {
 		match call_msg {
 			CallMsg::Exit(exit_reason) => Err(exit_reason),
 			CallMsg::Link(link_to) => self.handle_call_link(link_to).await,
 			CallMsg::Unlink(unlink_from) => self.handle_call_unlink(unlink_from).await,
 			CallMsg::TrapExit(trap_exit) => self.handle_set_trap_exit(trap_exit),
+			CallMsg::PipeToInbox(fut) => self.handle_pipe_to_inbox(fut),
 		}
+	}
+
+	fn handle_pipe_to_inbox(
+		&mut self,
+		fut: Pin<Box<dyn Future<Output = Message> + Send + Sync + 'static>>,
+	) -> Result<(), ExitReason> {
+		self.tasks.push(fut);
+		Ok(())
 	}
 
 	async fn handle_message_recv(

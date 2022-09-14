@@ -1,5 +1,7 @@
 use std::sync::Arc;
 
+use futures::Future;
+
 use crate::actor_id::ActorID;
 use crate::actor_runner::call_msg::CallMsg;
 use crate::actor_runner::pipe::{PipeRx, PipeTx};
@@ -14,7 +16,7 @@ pub struct Context<M> {
 	system: SystemOpt,
 	messages: PipeRx<M>,
 	signals: PipeRx<Signal>,
-	calls: PipeTx<CallMsg>,
+	calls: PipeTx<CallMsg<M>>,
 }
 
 #[derive(Debug)]
@@ -68,6 +70,17 @@ impl<M> Context<M> {
 	pub async fn trap_exit(&mut self, trap_exit: bool) {
 		self.backend_call(CallMsg::TrapExit(trap_exit)).await;
 	}
+	pub async fn pipe_to_inbox<F>(&mut self, fut: F)
+	where
+		F: Future + Send + Sync + 'static,
+		F::Output: Into<M>,
+	{
+		self.backend_call(CallMsg::PipeToInbox(Box::pin(async move {
+			let out = fut.await;
+			out.into()
+		})))
+		.await;
+	}
 }
 
 impl<M> Context<M> {
@@ -77,14 +90,16 @@ impl<M> Context<M> {
 		system: SystemOpt,
 		inbox: PipeRx<M>,
 		signals: PipeRx<Signal>,
-		calls: PipeTx<CallMsg>,
+		calls: PipeTx<CallMsg<M>>,
 	) -> Self {
 		Self { actor_id, system, messages: inbox, signals, calls }
 	}
 }
 
 impl<M> Context<M> {
-	async fn backend_call(&mut self, call: CallMsg) {
-		self.calls.send(call).await.expect("Failed to send CallMsg");
+	async fn backend_call(&mut self, call: CallMsg<M>) {
+		if let Err(reason) = self.calls.send(call).await {
+			panic!("Failed to perform backend-call");
+		}
 	}
 }
