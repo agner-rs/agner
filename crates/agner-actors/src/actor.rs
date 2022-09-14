@@ -6,58 +6,58 @@ use crate::exit_reason::ExitReason;
 use crate::ArcError;
 
 pub trait Actor<'a, A, M> {
-	type Out: IntoExitReason;
-	type Fut: Future<Output = Self::Out> + Send + Sync + 'a;
+    type Out: IntoExitReason;
+    type Fut: Future<Output = Self::Out> + Send + Sync + 'a;
 
-	fn run(self, context: &'a mut Context<M>, arg: A) -> Self::Fut;
+    fn run(self, context: &'a mut Context<M>, arg: A) -> Self::Fut;
 }
 
 pub trait IntoExitReason {
-	fn into_exit_reason(self) -> ExitReason;
+    fn into_exit_reason(self) -> ExitReason;
 }
 
 impl IntoExitReason for ExitReason {
-	fn into_exit_reason(self) -> ExitReason {
-		self
-	}
+    fn into_exit_reason(self) -> ExitReason {
+        self
+    }
 }
 impl IntoExitReason for () {
-	fn into_exit_reason(self) -> ExitReason {
-		Default::default()
-	}
+    fn into_exit_reason(self) -> ExitReason {
+        Default::default()
+    }
 }
 impl IntoExitReason for Infallible {
-	fn into_exit_reason(self) -> ExitReason {
-		unreachable!("Whoa! An instance of {}: {:?}", std::any::type_name::<Self>(), self)
-	}
+    fn into_exit_reason(self) -> ExitReason {
+        unreachable!("Whoa! An instance of {}: {:?}", std::any::type_name::<Self>(), self)
+    }
 }
 impl<E> IntoExitReason for Result<(), E>
 where
-	E: Into<ArcError>,
+    E: Into<ArcError>,
 {
-	fn into_exit_reason(self) -> ExitReason {
-		if let Err(reason) = self {
-			ExitReason::Generic(reason.into())
-		} else {
-			ExitReason::Normal
-		}
-	}
+    fn into_exit_reason(self) -> ExitReason {
+        if let Err(reason) = self {
+            ExitReason::Generic(reason.into())
+        } else {
+            ExitReason::Normal
+        }
+    }
 }
 
 impl<'a, A, M, F, Fut, Out> Actor<'a, A, M> for F
 where
-	M: 'a,
-	F: FnOnce(&'a mut Context<M>, A) -> Fut,
-	Fut: Future<Output = Out> + 'a,
-	Fut: Send + Sync,
-	Out: IntoExitReason,
+    M: 'a,
+    F: FnOnce(&'a mut Context<M>, A) -> Fut,
+    Fut: Future<Output = Out> + 'a,
+    Fut: Send + Sync,
+    Out: IntoExitReason,
 {
-	type Out = Out;
-	type Fut = Fut;
+    type Out = Out;
+    type Fut = Fut;
 
-	fn run(self, context: &'a mut Context<M>, arg: A) -> Self::Fut {
-		self(context, arg)
-	}
+    fn run(self, context: &'a mut Context<M>, arg: A) -> Self::Fut {
+        self(context, arg)
+    }
 }
 
 // impl<'a, A, M, F, Fut, Out> Actor<'a, A, M> for F
