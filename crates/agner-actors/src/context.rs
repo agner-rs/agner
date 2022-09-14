@@ -3,8 +3,9 @@ use std::sync::Arc;
 use crate::actor_id::ActorID;
 use crate::actor_runner::call_msg::CallMsg;
 use crate::actor_runner::pipe::{PipeRx, PipeTx};
+use crate::exit_reason::ExitReason;
+use crate::imports::Never;
 use crate::system::{System, SystemOpt};
-use crate::{ExitReason, Never};
 
 /// Actor's API to itself
 #[derive(Debug)]

@@ -5,8 +5,9 @@ use tokio::sync::mpsc;
 use crate::actor::{Actor, IntoExitReason};
 use crate::actor_id::ActorID;
 use crate::context::{Context, Signal};
+use crate::exit_reason::ExitReason;
+use crate::spawn_opts::SpawnOpts;
 use crate::system::SystemOpt;
-use crate::ExitReason;
 
 pub(crate) mod call_msg;
 pub(crate) mod pipe;
@@ -27,6 +28,7 @@ pub(crate) struct ActorRunner<Message> {
 	pub messages_rx: mpsc::UnboundedReceiver<Message>,
 	pub sys_msg_rx: mpsc::UnboundedReceiver<SysMsg>,
 	pub sys_msg_tx: mpsc::UnboundedSender<SysMsg>,
+	pub spawn_opts: SpawnOpts,
 }
 
 impl<Message> ActorRunner<Message>
@@ -45,6 +47,7 @@ where
 			messages_rx,
 			sys_msg_rx,
 			sys_msg_tx,
+			spawn_opts: _,
 		} = self;
 
 		let (inbox_w, inbox_r) = pipe::new::<Message>(message_inbox_size);

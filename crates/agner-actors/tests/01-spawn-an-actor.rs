@@ -14,7 +14,10 @@ fn actor_returning_unit() {
 	common::run(async {
 		let system = System::new(Default::default());
 		let (tx, rx) = oneshot::channel();
-		let _actor = system.spawn(actor_behaviour, tx).await.expect("Failed to start an actor");
+		let _actor = system
+			.spawn(actor_behaviour, tx, Default::default())
+			.await
+			.expect("Failed to start an actor");
 		rx.await.expect("oneshot recv closed");
 	});
 }
@@ -32,7 +35,10 @@ fn actor_returning_exit_reason() {
 	common::run(async {
 		let system = System::new(Default::default());
 		let (tx, rx) = oneshot::channel();
-		let _actor = system.spawn(actor_behaviour, tx).await.expect("Failed to start an actor");
+		let _actor = system
+			.spawn(actor_behaviour, tx, Default::default())
+			.await
+			.expect("Failed to start an actor");
 		rx.await.expect("oneshot recv closed");
 	});
 }
@@ -50,7 +56,10 @@ fn actor_returning_never() {
 	common::run(async {
 		let system = System::new(Default::default());
 		let (tx, rx) = oneshot::channel();
-		let _actor = system.spawn(actor_behaviour, tx).await.expect("Failed to start an actor");
+		let _actor = system
+			.spawn(actor_behaviour, tx, Default::default())
+			.await
+			.expect("Failed to start an actor");
 		rx.await.expect("oneshot recv closed");
 	});
 }

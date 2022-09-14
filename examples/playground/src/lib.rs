@@ -19,7 +19,7 @@ async fn test() {
 	}
 
 	let actor_id = system
-		.spawn(actor_behaviour, "this is an argument")
+		.spawn(actor_behaviour, "this is an argument", Default::default())
 		.await
 		.expect("Failed to start actor");
 	eprintln!("actor-id: {}", actor_id);

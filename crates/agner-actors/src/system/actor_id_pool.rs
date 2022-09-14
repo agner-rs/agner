@@ -2,7 +2,7 @@ use std::ops::Deref;
 use std::sync::atomic::{AtomicUsize, Ordering as AtomicOrdering};
 use std::sync::Arc;
 
-use crate::ActorID;
+use crate::actor_id::ActorID;
 
 const MARKER_ACQUIRED: usize = usize::MAX;
 

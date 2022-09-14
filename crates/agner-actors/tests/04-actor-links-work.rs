@@ -51,8 +51,8 @@ fn links_test() {
 			}
 		};
 
-		let a = stream::iter(0..10)
-			.then(|_| system.spawn(actor_behaviour, ()))
+		let a = stream::iter(0..=5)
+			.then(|_| system.spawn(actor_behaviour, (), Default::default()))
 			.try_collect::<Vec<_>>()
 			.await
 			.unwrap();

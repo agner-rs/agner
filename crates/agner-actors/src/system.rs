@@ -4,9 +4,11 @@ use std::sync::{Arc, Weak};
 use tokio::sync::{mpsc, RwLock};
 
 use crate::actor::Actor;
+use crate::actor_id::ActorID;
 use crate::actor_runner::ActorRunner;
+use crate::imports::BoxError;
+use crate::spawn_opts::SpawnOpts;
 use crate::system_config::SystemConfig;
-use crate::{ActorID, BoxError};
 
 mod actor_entry;
 use actor_entry::ActorEntry;
@@ -75,6 +77,7 @@ impl System {
 		&self,
 		behaviour: Behaviour,
 		arg: Arg,
+		spawn_opts: SpawnOpts,
 	) -> Result<ActorID, BoxError>
 	where
 		Arg: Send + Sync + 'static,
@@ -102,6 +105,7 @@ impl System {
 			messages_rx,
 			sys_msg_rx,
 			sys_msg_tx: sys_msg_tx.to_owned(),
+			spawn_opts,
 		};
 		tokio::spawn(actor.run(behaviour, arg));
 

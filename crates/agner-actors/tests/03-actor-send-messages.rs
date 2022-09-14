@@ -24,15 +24,15 @@ fn send_single_compatible_message() {
 		let system = System::new(Default::default());
 
 		let one = system
-			.spawn(actor_behaviour, ("one", output.to_owned()))
+			.spawn(actor_behaviour, ("one", output.to_owned()), Default::default())
 			.await
 			.expect("Failed to start an actor");
 		let two = system
-			.spawn(actor_behaviour, ("two", output.to_owned()))
+			.spawn(actor_behaviour, ("two", output.to_owned()), Default::default())
 			.await
 			.expect("Failed to start an actor");
 		let three = system
-			.spawn(actor_behaviour, ("three", output.to_owned()))
+			.spawn(actor_behaviour, ("three", output.to_owned()), Default::default())
 			.await
 			.expect("Failed to start an actor");
 
@@ -65,7 +65,10 @@ fn echo_actor_via_send() {
 
 	common::run(async {
 		let system = System::new(Default::default());
-		let echo_actor = system.spawn(actor_behaviour, ()).await.expect("Failed to start an actor");
+		let echo_actor = system
+			.spawn(actor_behaviour, (), Default::default())
+			.await
+			.expect("Failed to start an actor");
 
 		for i in 0usize..1_000_000 {
 			let (tx, rx) = oneshot::channel::<usize>();
@@ -87,7 +90,10 @@ fn echo_actor_via_chan() {
 
 	common::run(async {
 		let system = System::new(Default::default());
-		let echo_actor = system.spawn(actor_behaviour, ()).await.expect("Failed to start an actor");
+		let echo_actor = system
+			.spawn(actor_behaviour, (), Default::default())
+			.await
+			.expect("Failed to start an actor");
 		let echo_actor_tx = system
 			.channel::<(usize, oneshot::Sender<usize>)>(echo_actor)
 			.await
@@ -132,7 +138,7 @@ async fn actor_ring(ring_size: usize) {
 	let mut prev = None;
 	for _i in 0..ring_size {
 		let actor = system
-			.spawn(actor_behaviour, prev)
+			.spawn(actor_behaviour, prev, Default::default())
 			.await
 			.expect("Failed to start another actor");
 		prev = Some(actor);

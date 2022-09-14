@@ -26,10 +26,10 @@ async fn hit_system_limit(max_actors: usize) {
 	let system = System::new(SystemConfig { max_actors, ..Default::default() });
 
 	for i in 0..max_actors {
-		assert!(system.spawn(actor_behaviour, i).await.is_ok());
+		assert!(system.spawn(actor_behaviour, i, Default::default()).await.is_ok());
 	}
 
-	assert!(system.spawn(actor_behaviour, max_actors).await.is_err());
+	assert!(system.spawn(actor_behaviour, max_actors, Default::default()).await.is_err());
 
 	tokio::time::sleep(Duration::from_secs(1)).await;
 }
