@@ -1,9 +1,9 @@
 use std::convert::Infallible;
 use std::future::Future;
-use std::sync::Arc;
 
 use crate::context::Context;
 use crate::exit_reason::ExitReason;
+use crate::ArcError;
 
 pub trait Actor<'a, A, M> {
 	type Out: IntoExitReason;
@@ -33,11 +33,11 @@ impl IntoExitReason for Infallible {
 }
 impl<E> IntoExitReason for Result<(), E>
 where
-	E: std::error::Error + Send + Sync + 'static,
+	E: Into<ArcError>,
 {
 	fn into_exit_reason(self) -> ExitReason {
 		if let Err(reason) = self {
-			ExitReason::Generic(Arc::new(reason))
+			ExitReason::Generic(reason.into())
 		} else {
 			ExitReason::Normal
 		}
