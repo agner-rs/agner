@@ -55,20 +55,18 @@ impl<M> Context<M> {
 }
 
 impl<M> Context<M> {
-	async fn backend_call(&mut self, call: CallMsg) {
-		self.calls.send(call).await.expect("Failed to send CallMsg");
-	}
-
 	pub async fn exit(&mut self, exit_reason: ExitReason) -> Never {
 		self.backend_call(CallMsg::Exit(exit_reason)).await;
 		std::future::pending().await
 	}
-
 	pub async fn link(&mut self, to: ActorID) {
 		self.backend_call(CallMsg::Link(to)).await;
 	}
 	pub async fn unlink(&mut self, from: ActorID) {
 		self.backend_call(CallMsg::Unlink(from)).await;
+	}
+	pub async fn trap_exit(&mut self, trap_exit: bool) {
+		self.backend_call(CallMsg::TrapExit(trap_exit)).await;
 	}
 }
 
@@ -82,5 +80,11 @@ impl<M> Context<M> {
 		calls: PipeTx<CallMsg>,
 	) -> Self {
 		Self { actor_id, system, messages: inbox, signals, calls }
+	}
+}
+
+impl<M> Context<M> {
+	async fn backend_call(&mut self, call: CallMsg) {
+		self.calls.send(call).await.expect("Failed to send CallMsg");
 	}
 }

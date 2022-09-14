@@ -6,4 +6,5 @@ pub enum CallMsg {
 	Exit(ExitReason),
 	Link(ActorID),
 	Unlink(ActorID),
+	TrapExit(bool),
 }

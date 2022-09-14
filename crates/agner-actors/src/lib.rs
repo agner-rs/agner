@@ -12,7 +12,7 @@ pub mod spsc;
 mod exports {
 	pub use crate::actor::Actor;
 	pub use crate::actor_id::ActorID;
-	pub use crate::context::{Context, Event};
+	pub use crate::context::{Context, Event, Signal};
 	pub use crate::exit_reason::ExitReason;
 	pub use crate::spawn_opts::SpawnOpts;
 	pub use crate::system::System;

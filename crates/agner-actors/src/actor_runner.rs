@@ -23,8 +23,6 @@ use self::pipe::{PipeRx, PipeTx};
 pub(crate) struct ActorRunner<Message> {
 	pub actor_id: ActorID,
 	pub system_opt: SystemOpt,
-	pub message_inbox_size: usize,
-	pub signals_inbox_size: usize,
 	pub messages_rx: mpsc::UnboundedReceiver<Message>,
 	pub sys_msg_rx: mpsc::UnboundedReceiver<SysMsg>,
 	pub sys_msg_tx: mpsc::UnboundedSender<SysMsg>,
@@ -39,19 +37,18 @@ where
 	where
 		for<'a> Behaviour: Actor<'a, Arg, Message>,
 	{
-		let Self {
-			actor_id,
-			system_opt,
-			message_inbox_size,
-			signals_inbox_size,
-			messages_rx,
-			sys_msg_rx,
-			sys_msg_tx,
-			spawn_opts: _,
-		} = self;
+		let Self { actor_id, system_opt, messages_rx, sys_msg_rx, sys_msg_tx, spawn_opts } = self;
 
-		let (inbox_w, inbox_r) = pipe::new::<Message>(message_inbox_size);
-		let (signals_w, signals_r) = pipe::new::<Signal>(signals_inbox_size);
+		log::trace!(
+			"[{}] init [m-inbox: {:?}, s-inbox: {:?}, msg-type: {}]",
+			actor_id,
+			spawn_opts.msg_inbox_size(),
+			spawn_opts.sig_inbox_size(),
+			std::any::type_name::<Message>()
+		);
+
+		let (inbox_w, inbox_r) = pipe::new::<Message>(spawn_opts.msg_inbox_size());
+		let (signals_w, signals_r) = pipe::new::<Signal>(spawn_opts.sig_inbox_size());
 		let (calls_w, calls_r) = pipe::new::<CallMsg>(1);
 		let mut context =
 			Context::new(actor_id, system_opt.to_owned(), inbox_r, signals_r, calls_w);
@@ -62,7 +59,7 @@ where
 			unreachable!()
 		};
 
-		let actor_backend_running = Backend {
+		let mut actor_backend = Backend {
 			actor_id,
 			system_opt: system_opt.to_owned(),
 			sys_msg_rx,
@@ -72,15 +69,22 @@ where
 			signals_w,
 			calls_r,
 			watches: Default::default(),
-		}
-		.run_actor_backend();
+		};
 
+		for link_to in spawn_opts.links() {
+			actor_backend.do_link(link_to).await;
+		}
+
+		let actor_backend_running = actor_backend.run_actor_backend();
+
+		log::trace!("[{}] running", self.actor_id);
 		tokio::select! {
 			_ = behaviour_running => unreachable!("Future<Output = Infallible> as returned"),
 			() = actor_backend_running => (),
 		}
 
 		if let Some(system) = system_opt.rc_upgrade() {
+			log::trace!("[{}] cleaning up actor-entry...", self.actor_id);
 			system.actor_entry_remove(actor_id).await;
 		}
 	}
@@ -103,6 +107,7 @@ where
 	Message: Unpin,
 {
 	async fn run_actor_backend(mut self) {
+		log::trace!("[{}] running actor-backend", self.actor_id);
 		let exit_reason = loop {
 			if let Err(exit_reason) = tokio::select! {
 				sys_msg_recv = self.sys_msg_rx.recv() =>
@@ -115,6 +120,7 @@ where
 				break exit_reason
 			}
 		};
+		log::trace!("[{}] exiting: {}", self.actor_id, exit_reason);
 
 		let exit_reason = Arc::new(exit_reason);
 
@@ -127,7 +133,7 @@ where
 			self.handle_sys_msg_on_shutdown(sys_msg, exit_reason.to_owned()).await
 		}
 
-		log::trace!("[{}] exiting: {}", self.actor_id, exit_reason)
+		log::trace!("[{}] exited", self.actor_id)
 	}
 
 	async fn handle_sys_msg(&mut self, sys_msg_recv: Option<SysMsg>) -> Result<(), ExitReason> {
@@ -156,6 +162,7 @@ where
 			CallMsg::Exit(exit_reason) => Err(exit_reason),
 			CallMsg::Link(link_to) => self.handle_call_link(link_to).await,
 			CallMsg::Unlink(unlink_from) => self.handle_call_unlink(unlink_from).await,
+			CallMsg::TrapExit(trap_exit) => self.handle_set_trap_exit(trap_exit),
 		}
 	}
 

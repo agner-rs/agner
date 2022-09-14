@@ -16,9 +16,6 @@ use actor_entry::ActorEntry;
 mod actor_id_pool;
 use actor_id_pool::ActorIDPool;
 
-const DEFAULT_MSG_INBOX_SIZE: usize = 1024;
-const DEFAULT_SIG_INBOX_SIZE: usize = 16;
-
 #[derive(Debug, Clone)]
 pub struct System(Arc<Inner>);
 
@@ -100,8 +97,6 @@ impl System {
 		let actor = ActorRunner {
 			actor_id,
 			system_opt: system.rc_downgrade(),
-			message_inbox_size: DEFAULT_MSG_INBOX_SIZE,
-			signals_inbox_size: DEFAULT_SIG_INBOX_SIZE,
 			messages_rx,
 			sys_msg_rx,
 			sys_msg_tx: sys_msg_tx.to_owned(),
