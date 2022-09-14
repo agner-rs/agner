@@ -7,7 +7,7 @@ mod common;
 
 #[test]
 fn waits_work() {
-	async fn actor_behaviour(context: &mut Context<std::convert::Infallible>, _: ()) {
+	async fn actor_behaviour(_context: &mut Context<std::convert::Infallible>, _: ()) {
 		std::future::pending().await
 	}
 
