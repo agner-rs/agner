@@ -59,3 +59,19 @@ where
 		self(context, arg)
 	}
 }
+
+// impl<'a, A, M, F, Fut, Out> Actor<'a, A, M> for F
+// where
+// 	M: 'a,
+// 	F: Fn(&'a mut Context<M>, A) -> Fut,
+// 	Fut: Future<Output = Out> + 'a,
+// 	Fut: Send + Sync,
+// 	Out: IntoExitReason,
+// {
+// 	type Out = Out;
+// 	type Fut = Fut;
+
+// 	fn run(self, context: &'a mut Context<M>, arg: A) -> Self::Fut {
+// 		self(context, arg)
+// 	}
+// }

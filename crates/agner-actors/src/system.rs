@@ -45,7 +45,7 @@ impl System {
 		let actor_id_pool = ActorIDPool::new(system_id, config.max_actors);
 		let actor_entries = (0..config.max_actors).map(|_| RwLock::new(None)).collect();
 
-		let inner = Inner { config, actor_id_pool, actor_entries };
+		let inner = Inner { config, system_id, actor_id_pool, actor_entries };
 		Self(Arc::new(inner))
 	}
 
@@ -169,6 +169,7 @@ impl System {
 #[derive(Debug)]
 struct Inner {
 	config: SystemConfig,
+	system_id: usize,
 	actor_id_pool: ActorIDPool,
 	actor_entries: Box<[RwLock<Option<ActorEntry>>]>,
 }
