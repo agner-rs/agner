@@ -5,7 +5,6 @@ edition = "2021"
 
 authors = ["Raman Hafiyatulin <r.gafiyatullin@me.com>"]
 license = "MIT"
-license-file = "LICENSE"
 repository = "https://github.com/RGafiyatullin/agner"
 description = "A demo: naive multi-user-chat"
 
