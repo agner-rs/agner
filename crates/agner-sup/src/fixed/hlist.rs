@@ -9,7 +9,7 @@ pub trait HList {
     type Tail;
 }
 
-pub use push::PushFront;
+pub use push::{PushBack, PushFront};
 
 #[derive(Debug, Clone, Copy)]
 pub struct Nil;
