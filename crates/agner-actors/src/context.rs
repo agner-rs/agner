@@ -70,12 +70,12 @@ impl<M> Context<M> {
     pub async fn trap_exit(&mut self, trap_exit: bool) {
         self.backend_call(CallMsg::TrapExit(trap_exit)).await;
     }
-    pub async fn pipe_to_inbox<F>(&mut self, fut: F)
+    pub async fn future_to_inbox<F>(&mut self, fut: F)
     where
         F: Future + Send + Sync + 'static,
         F::Output: Into<M>,
     {
-        self.backend_call(CallMsg::PipeToInbox(Box::pin(async move {
+        self.backend_call(CallMsg::FutureToInbox(Box::pin(async move {
             let out = fut.await;
             out.into()
         })))

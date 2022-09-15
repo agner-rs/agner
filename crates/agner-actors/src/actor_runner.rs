@@ -192,11 +192,11 @@ where
             CallMsg::Link(link_to) => self.handle_call_link(link_to).await,
             CallMsg::Unlink(unlink_from) => self.handle_call_unlink(unlink_from).await,
             CallMsg::TrapExit(trap_exit) => self.handle_set_trap_exit(trap_exit),
-            CallMsg::PipeToInbox(fut) => self.handle_pipe_to_inbox(fut),
+            CallMsg::FutureToInbox(fut) => self.handle_future_to_inbox(fut),
         }
     }
 
-    fn handle_pipe_to_inbox(
+    fn handle_future_to_inbox(
         &mut self,
         fut: Pin<Box<dyn Future<Output = Message> + Send + Sync + 'static>>,
     ) -> Result<(), ExitReason> {

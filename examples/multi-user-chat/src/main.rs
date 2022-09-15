@@ -51,7 +51,7 @@ mod room {
                         let exit_reason = conn_down.await;
                         Message::ConnDown(actor_id, exit_reason)
                     };
-                    context.pipe_to_inbox(notification).await;
+                    context.future_to_inbox(notification).await;
                 },
                 Event::Message(Message::Post(actor_id, message)) => {
                     if let Some(from_addr) = participants.get(&actor_id).copied() {
