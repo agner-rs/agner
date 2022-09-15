@@ -45,40 +45,33 @@ async fn run() -> Result<(), ArcError> {
 
     let system = System::new(Default::default());
 
-    let bind_addr = "127.0.0.1:8090".parse().unwrap();
+    let bind_addr = "127.0.0.1:8090".parse::<SocketAddr>().unwrap();
     let worker_sup = Registered::new();
 
     let restart_strategy = ();
-    let top_sup = system
-        .spawn(
-            fixed::fixed_sup,
-            fixed::SupSpec::new(restart_strategy)
-                .with_child(
-                    fixed::child_spec(
-                        tcp_acceptor,
-                        fixed::arg_clone(TcpAcceptorArgs {
-                            bind_addr,
-                            worker_sup: worker_sup.to_owned(),
-                        }),
-                    )
-                    .with_name("tcp-acceptor"),
-                )
-                .with_child(
-                    fixed::child_spec(
-                        dynamic::dynamic_sup,
-                        fixed::arg_call(|| {
-                            dynamic::child_spec(worker, |(tcp_stream, peer_addr)| WorkerArgs {
-                                tcp_stream,
-                                peer_addr,
-                            })
-                        }),
-                    )
-                    .with_name("worker-sup")
-                    .register(worker_sup.to_owned()),
-                ),
-            Default::default(),
-        )
-        .await?;
+    let top_sup_spec = fixed::SupSpec::new(restart_strategy);
+    // let top_sup_spec = top_sup_spec.with_child(
+    //     fixed::child_spec(
+    //         tcp_acceptor,
+    //         fixed::arg_clone(TcpAcceptorArgs { bind_addr, worker_sup: worker_sup.to_owned() }),
+    //     )
+    //     .with_name("tcp-acceptor"),
+    // );
+    // let top_sup_spec = top_sup_spec.with_child(
+    //     fixed::child_spec(
+    //         dynamic::dynamic_sup,
+    //         fixed::arg_call(|| {
+    //             dynamic::child_spec(worker, |(tcp_stream, peer_addr)| WorkerArgs {
+    //                 tcp_stream,
+    //                 peer_addr,
+    //             })
+    //         }),
+    //     )
+    //     .with_name("worker-sup")
+    //     .register(worker_sup.to_owned()),
+    // );
+
+    let top_sup = system.spawn(fixed::fixed_sup, top_sup_spec, Default::default()).await?;
 
     Err(system.wait(top_sup).await)
 }

@@ -1,6 +1,6 @@
-mod index;
-mod operation;
-mod push;
+// pub mod index_;
+pub mod index;
+pub mod push;
 
 pub type Nothing = std::convert::Infallible;
 
@@ -10,8 +10,6 @@ pub trait HList {
     type Head;
     type Tail;
 }
-
-pub use push::{PushBack, PushFront};
 
 #[derive(Debug, Clone, Copy)]
 pub struct Nil;

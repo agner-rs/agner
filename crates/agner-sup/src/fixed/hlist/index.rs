@@ -1,59 +1,30 @@
-use crate::fixed::hlist::Cons;
+use crate::fixed::hlist::{Cons, HList, Nil};
 
-pub trait Index<I> {
-    type Item;
-    fn get(&self) -> &Self::Item;
+pub trait ApplyMut<O, Out> {
+    fn apply_mut(&mut self, index: usize, len: usize, operation: &mut O) -> Out;
 }
 
-pub trait IndexMut<I>: Index<I> {
-    fn get_mut(&mut self) -> &mut Self::Item;
+pub trait OpMut<In> {
+    type Out;
+    fn apply_mut(&mut self, input: &mut In) -> Self::Out;
 }
 
-pub trait Idx {
-    const IDX: usize;
-}
-
-#[derive(Debug, Clone, Copy)]
-pub struct Here;
-
-#[derive(Debug, Clone, Copy)]
-pub struct There<I>(I);
-
-impl Idx for Here {
-    const IDX: usize = 0;
-}
-impl<I> Idx for There<I>
-where
-    I: Idx,
-{
-    const IDX: usize = 1 + I::IDX;
-}
-
-impl<H, T> Index<Here> for Cons<H, T> {
-    type Item = H;
-    fn get(&self) -> &Self::Item {
-        &self.0
+impl<O, Out> ApplyMut<O, Out> for Nil {
+    fn apply_mut(&mut self, index: usize, len: usize, operation: &mut O) -> Out {
+        panic!("index out of range");
     }
 }
-impl<H, T, I> Index<There<I>> for Cons<H, T>
+impl<H, T, O, Out> ApplyMut<O, Out> for Cons<H, T>
 where
-    T: Index<I>,
+    Self: HList,
+    O: OpMut<H, Out = Out>,
+    T: ApplyMut<O, Out>,
 {
-    type Item = <T as Index<I>>::Item;
-    fn get(&self) -> &Self::Item {
-        self.1.get()
-    }
-}
-impl<H, T> IndexMut<Here> for Cons<H, T> {
-    fn get_mut(&mut self) -> &mut Self::Item {
-        &mut self.0
-    }
-}
-impl<H, T, I> IndexMut<There<I>> for Cons<H, T>
-where
-    T: IndexMut<I>,
-{
-    fn get_mut(&mut self) -> &mut Self::Item {
-        self.1.get_mut()
+    fn apply_mut(&mut self, index: usize, len: usize, operation: &mut O) -> Out {
+        if len - index == Self::LEN {
+            operation.apply_mut(&mut self.0)
+        } else {
+            self.1.apply_mut(index, len, operation)
+        }
     }
 }
