@@ -1,9 +1,7 @@
 use std::convert::Infallible;
 use std::net::SocketAddr;
-use std::sync::Arc;
 
-use agner_actors::{ActorID, ArcError, BoxError, Context, System};
-use arc_swap::ArcSwap;
+use agner_actors::{ArcError, BoxError, Context, System};
 use tokio::net::{TcpListener, TcpStream};
 
 use agner_sup::fixed::{self, ChildSpec};

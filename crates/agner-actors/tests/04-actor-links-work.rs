@@ -37,8 +37,9 @@ fn links_test() {
                     let _ = reply_to.send(());
                 },
 
-                Event::Signal(Signal::Exited(terminated, reason)) =>
-                    log::info!("[{}] {} has exited: {}", context.actor_id(), terminated, reason),
+                Event::Signal(Signal::Exited(terminated, reason)) => {
+                    log::info!("[{}] {} has exited: {}", context.actor_id(), terminated, reason)
+                },
             }
         }
     }
