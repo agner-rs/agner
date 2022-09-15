@@ -6,7 +6,7 @@ use agner::actors::{ArcError, BoxError, Context, System};
 use tokio::io::{AsyncBufReadExt, AsyncWriteExt};
 use tokio::net::{TcpListener, TcpStream};
 
-use agner::sup::fixed::{self, ChildSpec};
+use agner::sup::fixed::{self, ChildSpec, OneForOne};
 use agner::sup::{dynamic, Registered};
 
 struct WorkerArgs {
@@ -85,7 +85,7 @@ async fn run() -> Result<(), ArcError> {
             .register(worker_sup.to_owned())
     };
 
-    let restart_strategy = ();
+    let restart_strategy = OneForOne::default();
     let top_sup_spec = fixed::SupSpec::new(restart_strategy)
         .with_child(tcp_acceptor_spec)
         .with_child(worker_sup_spec);

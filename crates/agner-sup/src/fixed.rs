@@ -12,5 +12,5 @@ use std::pin::Pin;
 
 pub use behaviour::fixed_sup;
 pub use child_spec::{arg_arc, arg_call, arg_clone, child_spec, ArgFactory, ChildSpec};
-pub use restart_strategy::{Decider, RestartStrategy};
+pub use restart_strategy::{AllForOne, Decider, OneForOne, RestartStrategy};
 pub use sup_spec::SupSpec;

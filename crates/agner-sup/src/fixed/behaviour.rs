@@ -5,6 +5,8 @@ use crate::fixed::SupSpec;
 
 use crate::fixed::sup_spec::SupSpecStartChild;
 
+use super::RestartStrategy;
+
 pub enum Message {}
 
 pub async fn fixed_sup<R, CS>(
@@ -13,6 +15,7 @@ pub async fn fixed_sup<R, CS>(
 ) -> Result<(), BoxError>
 where
     CS: HList,
+    R: RestartStrategy,
     SupSpec<R, CS>: SupSpecStartChild<Message>,
 {
     context.trap_exit(true).await;
@@ -29,6 +32,9 @@ where
         log::trace!("[{}]   child #{}: {}", context.actor_id(), child_idx, child_id);
     }
     assert_eq!(children.len(), CS::LEN);
+
+    log::trace!("initializing restart decider for {}", sup_spec.restart_strategy);
+    let mut restart_decider = sup_spec.restart_strategy.new_decider(children.into());
 
     std::future::pending().await
 }

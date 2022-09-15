@@ -1,5 +1,5 @@
 use agner::actors::{ArcError, System};
-use agner::sup::fixed::ChildSpec;
+use agner::sup::fixed::{AllForOne, ChildSpec};
 
 mod room {
     use agner::actors::{ActorID, BoxError, Context, Event, ExitReason};
@@ -187,7 +187,7 @@ async fn main() {
 async fn run() -> Result<(), ArcError> {
     let system = System::new(Default::default());
 
-    let restart_strategy = ();
+    let restart_strategy = AllForOne::default();
 
     let top_sup_spec = {
         use agner::sup::{dynamic, fixed};
