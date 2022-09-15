@@ -5,11 +5,12 @@ use agner_actors::Actor;
 
 use crate::Registered;
 
-pub fn child_spec<B, AF, A, M>(behaviour: B, arg_factory: AF) -> impl ChildSpec<M>
+pub fn child_spec<B, AF, A, M>(behaviour: B, arg_factory: AF) -> impl ChildSpec
 where
     AF: ArgFactory<A>,
     B: for<'a> Actor<'a, A, M>,
     AF: Send + Sync + 'static,
+    M: Send + Sync + Unpin + 'static,
     B: Clone + Send + Sync + 'static,
     A: Send + Sync + 'static,
 {
@@ -37,8 +38,9 @@ pub fn arg_arc<A>(a: impl Into<Arc<A>>) -> impl ArgFactory<Arc<A>> {
     ArgFactoryArc(a.into())
 }
 
-pub trait ChildSpec<M> {
-    type Behaviour: for<'a> Actor<'a, Self::Arg, M> + Send + Sync + 'static;
+pub trait ChildSpec {
+    type Message: Send + Sync + Unpin + 'static;
+    type Behaviour: for<'a> Actor<'a, Self::Arg, Self::Message> + Send + Sync + 'static;
     type Arg: Send + Sync + 'static;
 
     fn create(&mut self) -> (Self::Behaviour, Self::Arg);
@@ -90,14 +92,16 @@ struct ChildSpecImpl<B, AF, A, M> {
     _pd: PhantomData<(A, M)>,
 }
 
-impl<B, AF, A, M> ChildSpec<M> for ChildSpecImpl<B, AF, A, M>
+impl<B, AF, A, M> ChildSpec for ChildSpecImpl<B, AF, A, M>
 where
     AF: ArgFactory<A>,
     B: for<'a> Actor<'a, A, M>,
     AF: Send + Sync + 'static,
+    M: Send + Sync + Unpin + 'static,
     B: Clone + Send + Sync + 'static,
     A: Send + Sync + 'static,
 {
+    type Message = M;
     type Behaviour = B;
     type Arg = A;
 
