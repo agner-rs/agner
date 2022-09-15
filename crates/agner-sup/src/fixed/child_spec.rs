@@ -106,11 +106,14 @@ mod tests {
 
     #[tokio::test]
     async fn ergonomics() {
-        async fn behaviour_unit(_context: &mut Context<std::convert::Infallible>, _arg: ()) {}
+        async fn behaviour_unit(_context: &mut Context<std::convert::Infallible>, _arg: ()) {
+            std::future::pending().await
+        }
         async fn behaviour_arc_unit(
             _context: &mut Context<std::convert::Infallible>,
             _arg: Arc<()>,
         ) {
+            std::future::pending().await
         }
 
         let system = System::new(Default::default());

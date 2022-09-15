@@ -1,4 +1,7 @@
+mod child_spec;
+mod sup_spec;
+
 pub mod hlist;
 
-mod child_spec;
 pub use child_spec::{arg_arc, arg_call, arg_clone, child_spec, ArgFactory, ChildSpec};
+pub use sup_spec::SupSpec;
