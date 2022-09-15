@@ -3,6 +3,8 @@ use std::sync::Arc;
 
 use agner_actors::Actor;
 
+use crate::Registered;
+
 pub fn child_spec<B, AF, A, M>(behaviour: B, arg_factory: AF) -> impl ChildSpec<M>
 where
     AF: ArgFactory<A>,
@@ -11,7 +13,13 @@ where
     B: Clone + Send + Sync + 'static,
     A: Send + Sync + 'static,
 {
-    ChildSpecImpl { behaviour, arg_factory, _pd: Default::default() }
+    ChildSpecImpl {
+        name: None,
+        regs: Default::default(),
+        behaviour,
+        arg_factory,
+        _pd: Default::default(),
+    }
 }
 pub fn arg_call<F, A>(f: F) -> impl ArgFactory<A>
 where
@@ -34,6 +42,8 @@ pub trait ChildSpec<M> {
     type Arg: Send + Sync + 'static;
 
     fn create(&mut self) -> (Self::Behaviour, Self::Arg);
+    fn with_name(self, name: impl Into<String>) -> Self;
+    fn register(self, registered: Registered) -> Self;
 }
 
 pub trait ArgFactory<Arg> {
@@ -74,6 +84,8 @@ struct ArgFactoryArc<A>(Arc<A>);
 #[derive(Debug, Clone)]
 struct ChildSpecImpl<B, AF, A, M> {
     behaviour: B,
+    name: Option<String>,
+    regs: Vec<Registered>,
     arg_factory: AF,
     _pd: PhantomData<(A, M)>,
 }
@@ -92,6 +104,15 @@ where
     fn create(&mut self) -> (Self::Behaviour, Self::Arg) {
         let arg = self.arg_factory.create();
         (self.behaviour.to_owned(), arg)
+    }
+
+    fn with_name(self, name: impl Into<String>) -> Self {
+        Self { name: Some(name.into()), ..self }
+    }
+
+    fn register(mut self, reg: Registered) -> Self {
+        self.regs.push(reg);
+        self
     }
 }
 
