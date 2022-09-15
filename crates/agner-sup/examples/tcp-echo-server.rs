@@ -1,5 +1,6 @@
 use std::convert::Infallible;
 use std::net::SocketAddr;
+use std::time::Duration;
 
 use agner_actors::{ArcError, BoxError, Context, System};
 use tokio::io::{AsyncBufReadExt, AsyncWriteExt};
@@ -74,7 +75,8 @@ async fn run() -> Result<(), ArcError> {
                 tcp_acceptor,
                 fixed::arg_clone(TcpAcceptorArgs { bind_addr, worker_sup: worker_sup.to_owned() }),
             )
-            .with_name("tcp-acceptor"),
+            .with_name("tcp-acceptor")
+            .with_init_timeout(Duration::from_secs(3)),
         )
         .with_child(
             fixed::child_spec(
@@ -87,6 +89,7 @@ async fn run() -> Result<(), ArcError> {
                 }),
             )
             .with_name("worker-sup")
+            .with_init_timeout(Duration::from_secs(1))
             .register(worker_sup.to_owned()),
         );
 
