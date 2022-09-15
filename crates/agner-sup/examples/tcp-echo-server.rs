@@ -2,6 +2,7 @@ use std::convert::Infallible;
 use std::net::SocketAddr;
 
 use agner_actors::{ArcError, BoxError, Context, System};
+use tokio::io::{AsyncBufReadExt, AsyncWriteExt};
 use tokio::net::{TcpListener, TcpStream};
 
 use agner_sup::fixed::{self, ChildSpec};
@@ -11,8 +12,23 @@ struct WorkerArgs {
     tcp_stream: TcpStream,
     peer_addr: SocketAddr,
 }
-async fn worker(_context: &mut Context<Infallible>, _args: WorkerArgs) {
-    std::future::pending().await
+async fn worker(context: &mut Context<Infallible>, args: WorkerArgs) -> Result<(), BoxError> {
+    let WorkerArgs { mut tcp_stream, peer_addr } = args;
+    let (tcp_read_half, mut tcp_write_half) = tcp_stream.split();
+    let tcp_buf_read = tokio::io::BufReader::new(tcp_read_half);
+    let mut tcp_read_lines = tcp_buf_read.lines();
+
+    log::info!("[{}] worker [peer-addr: {}]", context.actor_id(), peer_addr);
+
+    while let Some(line) = tcp_read_lines.next_line().await? {
+        tcp_write_half.write_all(line.as_bytes()).await?;
+        tcp_write_half.write_all(b"\n").await?;
+        tcp_write_half.flush().await?;
+    }
+
+    log::info!("[{}] peer-gone [peer-addr: {}]", context.actor_id(), peer_addr);
+
+    Ok(())
 }
 
 #[derive(Debug, Clone)]

@@ -2,8 +2,6 @@ use std::fmt;
 use std::future::Future;
 use std::pin::Pin;
 
-use futures::Stream;
-
 use crate::actor_id::ActorID;
 use crate::exit_reason::ExitReason;
 

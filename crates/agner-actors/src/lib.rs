@@ -10,7 +10,7 @@ mod system_config;
 pub mod spsc;
 
 mod exports {
-    pub use crate::actor::Actor;
+    pub use crate::actor::{Actor, IntoExitReason};
     pub use crate::actor_id::ActorID;
     pub use crate::context::{Context, Event, Signal};
     pub use crate::exit_reason::ExitReason;

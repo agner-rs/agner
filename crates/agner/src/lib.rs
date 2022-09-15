@@ -3,5 +3,5 @@ pub mod actors {
 }
 
 pub mod sup {
-    pub use agner_sup::dynamic;
+    pub use agner_sup::{dynamic, fixed};
 }

@@ -14,8 +14,9 @@ where
     B: Clone,
     A: Send + Sync + 'static,
 {
+    let behaviour = crate::exit_reason_hack::normalize_exit_reason(behaviour);
     ChildSpecImpl {
-        name: None,
+        // name: None,
         regs: Default::default(),
         behaviour,
         arg_factory,
@@ -87,7 +88,7 @@ struct ArgFactoryArc<A>(Arc<A>);
 #[derive(Debug, Clone)]
 struct ChildSpecImpl<B, AF, A, M> {
     behaviour: B,
-    name: Option<String>,
+    // name: Option<String>,
     regs: Vec<Registered>,
     arg_factory: AF,
     _pd: PhantomData<(A, M)>,
@@ -111,8 +112,10 @@ where
         (self.behaviour.to_owned(), arg)
     }
 
-    fn with_name(self, name: impl Into<String>) -> Self {
-        Self { name: Some(name.into()), ..self }
+    fn with_name(self, _name: impl Into<String>) -> Self {
+        log::warn!("setting names to supervisor's children is not yet supported :(");
+        // Self { name: Some(name.into()), ..self }
+        self
     }
 
     fn register(mut self, reg: Registered) -> Self {

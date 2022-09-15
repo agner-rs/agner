@@ -81,6 +81,15 @@ impl<M> Context<M> {
         })))
         .await;
     }
+
+    // pub async fn stream_to_inbox<S>(&mut self, stream: S)
+    // where
+    //     S: Stream,
+    //     <S as Stream>::Item: Into<M>,
+    //     S: Into<M>,
+    // {
+    //     unimplemented!()
+    // }
 }
 
 impl<M> Context<M> {
