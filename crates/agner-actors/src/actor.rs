@@ -5,7 +5,7 @@ use crate::context::Context;
 use crate::exit_reason::ExitReason;
 use crate::ArcError;
 
-pub trait Actor<'a, A, M> {
+pub trait Actor<'a, A, M>: Send + Sync + 'static {
     type Out: IntoExitReason;
     type Fut: Future<Output = Self::Out> + Send + Sync + 'a;
 
@@ -51,6 +51,7 @@ where
     Fut: Future<Output = Out> + 'a,
     Fut: Send + Sync,
     Out: IntoExitReason,
+    F: Send + Sync + 'static,
 {
     type Out = Out;
     type Fut = Fut;

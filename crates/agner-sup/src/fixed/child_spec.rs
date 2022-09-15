@@ -1,7 +1,7 @@
 use std::marker::PhantomData;
 use std::sync::Arc;
 
-use agner_actors::Actor;
+use agner_actors::{Actor};
 
 use crate::Registered;
 
@@ -46,6 +46,7 @@ pub trait ChildSpec {
     fn create(&mut self) -> (Self::Behaviour, Self::Arg);
     fn with_name(self, name: impl Into<String>) -> Self;
     fn register(self, registered: Registered) -> Self;
+    fn regs(&self) -> &[Registered];
 }
 
 pub trait ArgFactory<Arg> {
@@ -117,6 +118,10 @@ where
     fn register(mut self, reg: Registered) -> Self {
         self.regs.push(reg);
         self
+    }
+
+    fn regs(&self) -> &[Registered] {
+        &self.regs
     }
 }
 

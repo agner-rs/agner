@@ -2,7 +2,7 @@ use super::hlist::push::PushBack;
 use super::hlist::Nil;
 
 mod start;
-pub use start::SupSpecStart;
+pub use start::SupSpecStartChild;
 
 #[derive(Debug)]
 pub struct SupSpec<R, CS> {

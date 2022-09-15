@@ -86,8 +86,7 @@ impl System {
         Arg: Send + Sync + 'static,
         Message: Unpin + Send + Sync + 'static,
         for<'a> Behaviour: Actor<'a, Arg, Message>,
-        for<'a> <Behaviour as Actor<'a, Arg, Message>>::Fut: Send + Sync,
-        Behaviour: Send + Sync + 'static,
+        // for<'a> <Behaviour as Actor<'a, Arg, Message>>::Fut: Send + Sync,
     {
         let system = self.to_owned();
         let actor_id_lease = system

@@ -10,7 +10,7 @@ pub trait OpMut<In> {
 }
 
 impl<O, Out> ApplyMut<O, Out> for Nil {
-    fn apply_mut(&mut self, index: usize, len: usize, operation: &mut O) -> Out {
+    fn apply_mut(&mut self, _index: usize, _len: usize, _operation: &mut O) -> Out {
         panic!("index out of range");
     }
 }
