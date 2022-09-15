@@ -196,39 +196,35 @@ async fn run() -> Result<(), ArcError> {
         let conn_sup = agner::sup::Registered::new();
         let acceptor = agner::sup::Registered::new();
 
+        let room_spec =
+            fixed::child_spec(room::run, fixed::arg_clone(())).register(room.to_owned());
+        let conn_sup_spec = {
+            let room = room.to_owned();
+
+            let make_conn_args = move |(tcp_stream, peer_addr)| conn::Args {
+                room: room.to_owned(),
+                tcp_stream,
+                peer_addr,
+            };
+            let make_sup_args = move || dynamic::child_spec(conn::run, make_conn_args.to_owned());
+
+            fixed::child_spec(dynamic::dynamic_sup, fixed::arg_call(make_sup_args))
+                .register(conn_sup.to_owned())
+        };
+
+        let acceptor_spec = fixed::child_spec(
+            acceptor::run,
+            fixed::arg_clone(acceptor::Args {
+                bind_addr: "127.0.0.1:8090".parse().unwrap(),
+                conn_sup: conn_sup.to_owned(),
+            }),
+        )
+        .register(acceptor);
+
         fixed::SupSpec::new(restart_strategy)
-            .with_child(
-                fixed::child_spec(room::run, fixed::arg_clone(())).register(room.to_owned()),
-            )
-            .with_child(
-                fixed::child_spec(
-                    dynamic::dynamic_sup,
-                    fixed::arg_call({
-                        let room = room.to_owned();
-                        move || {
-                            dynamic::child_spec(conn::run, {
-                                let room = room.to_owned();
-                                move |(tcp_stream, peer_addr)| conn::Args {
-                                    room: room.to_owned(),
-                                    tcp_stream,
-                                    peer_addr,
-                                }
-                            })
-                        }
-                    }),
-                )
-                .register(conn_sup.to_owned()),
-            )
-            .with_child(
-                fixed::child_spec(
-                    acceptor::run,
-                    fixed::arg_clone(acceptor::Args {
-                        bind_addr: "127.0.0.1:8090".parse().unwrap(),
-                        conn_sup: conn_sup.to_owned(),
-                    }),
-                )
-                .register(acceptor),
-            )
+            .with_child(room_spec)
+            .with_child(conn_sup_spec)
+            .with_child(acceptor_spec)
     };
 
     let top_sup = system

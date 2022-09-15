@@ -1,9 +1,7 @@
 use std::time::Duration;
 
-
 pub trait RestartStrategy {
     type Decider: Decider;
-    
 }
 
 pub trait Decider {}
@@ -23,4 +21,3 @@ pub struct OneForOne {
 pub struct AllForOne {
     pub frequency: Frequency,
 }
-

@@ -2,12 +2,12 @@ use std::convert::Infallible;
 use std::net::SocketAddr;
 use std::time::Duration;
 
-use agner_actors::{ArcError, BoxError, Context, System};
+use agner::actors::{ArcError, BoxError, Context, System};
 use tokio::io::{AsyncBufReadExt, AsyncWriteExt};
 use tokio::net::{TcpListener, TcpStream};
 
-use agner_sup::fixed::{self, ChildSpec};
-use agner_sup::{dynamic, Registered};
+use agner::sup::fixed::{self, ChildSpec};
+use agner::sup::{dynamic, Registered};
 
 struct WorkerArgs {
     tcp_stream: TcpStream,
@@ -66,32 +66,29 @@ async fn run() -> Result<(), ArcError> {
     let system = System::new(Default::default());
 
     let bind_addr = "127.0.0.1:8090".parse::<SocketAddr>().unwrap();
+
     let worker_sup = Registered::new();
+
+    let tcp_acceptor_spec = {
+        let args = TcpAcceptorArgs { bind_addr, worker_sup: worker_sup.to_owned() };
+        fixed::child_spec(tcp_acceptor, fixed::arg_clone(args))
+            .with_name("tcp-acceptor")
+            .with_init_timeout(Duration::from_secs(3))
+    };
+
+    let worker_sup_spec = {
+        let make_worker_args = |(tcp_stream, peer_addr)| WorkerArgs { tcp_stream, peer_addr };
+        let make_sup_args = move || dynamic::child_spec(worker, make_worker_args);
+        fixed::child_spec(dynamic::dynamic_sup, fixed::arg_call(make_sup_args))
+            .with_name("worker-sup")
+            .with_init_timeout(Duration::from_secs(1))
+            .register(worker_sup.to_owned())
+    };
 
     let restart_strategy = ();
     let top_sup_spec = fixed::SupSpec::new(restart_strategy)
-        .with_child(
-            fixed::child_spec(
-                tcp_acceptor,
-                fixed::arg_clone(TcpAcceptorArgs { bind_addr, worker_sup: worker_sup.to_owned() }),
-            )
-            .with_name("tcp-acceptor")
-            .with_init_timeout(Duration::from_secs(3)),
-        )
-        .with_child(
-            fixed::child_spec(
-                dynamic::dynamic_sup,
-                fixed::arg_call(|| {
-                    dynamic::child_spec(worker, |(tcp_stream, peer_addr)| WorkerArgs {
-                        tcp_stream,
-                        peer_addr,
-                    })
-                }),
-            )
-            .with_name("worker-sup")
-            .with_init_timeout(Duration::from_secs(1))
-            .register(worker_sup.to_owned()),
-        );
+        .with_child(tcp_acceptor_spec)
+        .with_child(worker_sup_spec);
 
     let top_sup = system.spawn(fixed::fixed_sup, top_sup_spec, Default::default()).await?;
 
