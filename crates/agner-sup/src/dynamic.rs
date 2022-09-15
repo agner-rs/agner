@@ -70,10 +70,7 @@ where
     }
 }
 
-pub trait ChildSpec<IA, M>
-where
-    M: Send + Sync + Unpin + 'static,
-{
+pub trait ChildSpec<IA, M> {
     type Behavoiur: for<'a> Actor<'a, Self::Arg, M> + Send + Sync + 'static;
 
     type Arg: Send + Sync + 'static;
@@ -92,7 +89,6 @@ where
     B: for<'a> Actor<'a, OA, M> + Send + Sync + 'static,
     B: Clone,
     AF: FnMut(IA) -> OA,
-    M: Send + Sync + Unpin + 'static,
     OA: Send + Sync + 'static,
 {
     type Behavoiur = B;

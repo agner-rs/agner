@@ -1,7 +1,7 @@
 use std::marker::PhantomData;
 use std::sync::Arc;
 
-use agner_actors::{Actor};
+use agner_actors::Actor;
 
 use crate::Registered;
 
@@ -11,7 +11,7 @@ where
     B: for<'a> Actor<'a, A, M>,
     AF: Send + Sync + 'static,
     M: Send + Sync + Unpin + 'static,
-    B: Clone + Send + Sync + 'static,
+    B: Clone,
     A: Send + Sync + 'static,
 {
     ChildSpecImpl {
