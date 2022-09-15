@@ -7,6 +7,7 @@ use crate::actor_runner::call_msg::CallMsg;
 use crate::actor_runner::pipe::{PipeRx, PipeTx};
 use crate::exit_reason::ExitReason;
 use crate::imports::Never;
+use crate::init_ack::InitAckTx;
 use crate::system::{System, SystemOpt};
 
 /// Actor's API to itself
@@ -17,6 +18,7 @@ pub struct Context<M> {
     messages: PipeRx<M>,
     signals: PipeRx<Signal>,
     calls: PipeTx<CallMsg<M>>,
+    init_ack_tx: Option<InitAckTx>,
 }
 
 #[derive(Debug)]
@@ -57,6 +59,16 @@ impl<M> Context<M> {
 }
 
 impl<M> Context<M> {
+    pub fn init_ack(&mut self, actor_id: Option<ActorID>) -> bool {
+        if let Some(tx) = self.init_ack_tx.take() {
+            let actor_id = actor_id.unwrap_or_else(|| self.actor_id());
+            tx.ack(actor_id);
+            true
+        } else {
+            false
+        }
+    }
+
     pub async fn exit(&mut self, exit_reason: ExitReason) -> Never {
         self.backend_call(CallMsg::Exit(exit_reason)).await;
         std::future::pending().await
@@ -100,8 +112,9 @@ impl<M> Context<M> {
         inbox: PipeRx<M>,
         signals: PipeRx<Signal>,
         calls: PipeTx<CallMsg<M>>,
+        init_ack_tx: Option<InitAckTx>,
     ) -> Self {
-        Self { actor_id, system, messages: inbox, signals, calls }
+        Self { actor_id, system, messages: inbox, signals, calls, init_ack_tx }
     }
 }
 

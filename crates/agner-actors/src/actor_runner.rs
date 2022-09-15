@@ -41,7 +41,8 @@ where
     where
         for<'a> Behaviour: Actor<'a, Arg, Message>,
     {
-        let Self { actor_id, system_opt, messages_rx, sys_msg_rx, sys_msg_tx, spawn_opts } = self;
+        let Self { actor_id, system_opt, messages_rx, sys_msg_rx, sys_msg_tx, mut spawn_opts } =
+            self;
 
         log::trace!(
             "[{}] init [m-inbox: {:?}, s-inbox: {:?}, msg-type: {}]",
@@ -54,8 +55,14 @@ where
         let (inbox_w, inbox_r) = pipe::new::<Message>(spawn_opts.msg_inbox_size());
         let (signals_w, signals_r) = pipe::new::<Signal>(spawn_opts.sig_inbox_size());
         let (calls_w, calls_r) = pipe::new::<CallMsg<Message>>(1);
-        let mut context =
-            Context::new(actor_id, system_opt.to_owned(), inbox_r, signals_r, calls_w);
+        let mut context = Context::new(
+            actor_id,
+            system_opt.to_owned(),
+            inbox_r,
+            signals_r,
+            calls_w,
+            spawn_opts.take_init_ack(),
+        );
 
         let behaviour_running = async move {
             let exit_reason = behaviour.run(&mut context, arg).await.into_exit_reason();

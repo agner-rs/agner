@@ -1,9 +1,12 @@
 use std::marker::PhantomData;
 use std::sync::Arc;
+use std::time::Duration;
 
 use agner_actors::Actor;
 
 use crate::Registered;
+
+const DEFAULT_INIT_TIMEOUT: Duration = Duration::from_secs(5);
 
 pub fn child_spec<B, AF, A, M>(behaviour: B, arg_factory: AF) -> impl ChildSpec
 where
@@ -20,6 +23,7 @@ where
         regs: Default::default(),
         behaviour,
         arg_factory,
+        init_timeout: DEFAULT_INIT_TIMEOUT,
         _pd: Default::default(),
     }
 }
@@ -46,8 +50,12 @@ pub trait ChildSpec {
 
     fn create(&mut self) -> (Self::Behaviour, Self::Arg);
     fn with_name(self, name: impl Into<String>) -> Self;
+
     fn register(self, registered: Registered) -> Self;
     fn regs(&self) -> &[Registered];
+
+    fn with_init_timeout(self, init_timeout: Duration) -> Self;
+    fn init_timeout(&self) -> Duration;
 }
 
 pub trait ArgFactory<Arg> {
@@ -91,6 +99,7 @@ struct ChildSpecImpl<B, AF, A, M> {
     // name: Option<String>,
     regs: Vec<Registered>,
     arg_factory: AF,
+    init_timeout: Duration,
     _pd: PhantomData<(A, M)>,
 }
 
@@ -125,6 +134,13 @@ where
 
     fn regs(&self) -> &[Registered] {
         &self.regs
+    }
+
+    fn with_init_timeout(self, init_timeout: Duration) -> Self {
+        Self { init_timeout, ..self }
+    }
+    fn init_timeout(&self) -> Duration {
+        self.init_timeout
     }
 }
 

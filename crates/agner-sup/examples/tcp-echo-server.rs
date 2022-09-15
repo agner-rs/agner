@@ -13,6 +13,8 @@ struct WorkerArgs {
     peer_addr: SocketAddr,
 }
 async fn worker(context: &mut Context<Infallible>, args: WorkerArgs) -> Result<(), BoxError> {
+    context.init_ack(Default::default());
+
     let WorkerArgs { mut tcp_stream, peer_addr } = args;
     let (tcp_read_half, mut tcp_write_half) = tcp_stream.split();
     let tcp_buf_read = tokio::io::BufReader::new(tcp_read_half);
@@ -41,6 +43,7 @@ async fn tcp_acceptor(
     args: TcpAcceptorArgs,
 ) -> Result<(), BoxError> {
     let tcp_listener = TcpListener::bind(args.bind_addr).await?;
+    context.init_ack(Default::default());
 
     loop {
         let (tcp_stream, peer_addr) = tcp_listener.accept().await?;

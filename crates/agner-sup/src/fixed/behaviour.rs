@@ -16,6 +16,7 @@ where
     SupSpec<R, CS>: SupSpecStartChild<Message>,
 {
     context.trap_exit(true).await;
+    context.init_ack(Default::default());
 
     log::trace!("[{}] starting fixed sup with {} children", context.actor_id(), CS::LEN);
 

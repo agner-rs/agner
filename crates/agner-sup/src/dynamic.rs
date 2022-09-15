@@ -43,6 +43,7 @@ where
     M: Send + Sync + Unpin + 'static,
 {
     context.trap_exit(true).await;
+    context.init_ack(Default::default());
 
     let mut children = HashSet::new();
     loop {

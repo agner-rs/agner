@@ -3,6 +3,7 @@ mod actor_id;
 mod actor_runner;
 mod context;
 mod exit_reason;
+mod init_ack;
 mod spawn_opts;
 mod system;
 mod system_config;
@@ -14,6 +15,7 @@ mod exports {
     pub use crate::actor_id::ActorID;
     pub use crate::context::{Context, Event, Signal};
     pub use crate::exit_reason::ExitReason;
+    pub use crate::init_ack::{new as new_init_ack, InitAckRx, InitAckTx};
     pub use crate::spawn_opts::SpawnOpts;
     pub use crate::system::System;
     pub use crate::system_config::SystemConfig;
