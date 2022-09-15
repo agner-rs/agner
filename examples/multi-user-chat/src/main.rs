@@ -1,4 +1,5 @@
 use agner::actors::{ArcError, System};
+use agner::sup::fixed::ChildSpec;
 
 mod room {
     use agner::actors::{ActorID, BoxError, Context, Event, ExitReason};
@@ -16,6 +17,8 @@ mod room {
     }
 
     pub async fn run(context: &mut Context<Message>, _arg: ()) -> Result<(), BoxError> {
+        context.init_ack(Default::default());
+
         let mut participants = HashMap::new();
 
         loop {
@@ -74,7 +77,8 @@ mod room {
 }
 
 mod conn {
-    use agner::actors::{ActorID, BoxError, Context, Event, ExitReason};
+    use agner::actors::{BoxError, Context, Event, ExitReason};
+    use agner::sup::Registered;
     use std::net::SocketAddr;
     use std::sync::Arc;
     use tokio::io::{AsyncBufReadExt, AsyncWriteExt, BufReader};
@@ -85,7 +89,7 @@ mod conn {
     pub struct Args {
         pub tcp_stream: TcpStream,
         pub peer_addr: SocketAddr,
-        pub room: ActorID,
+        pub room: Registered,
     }
 
     pub enum Message {
@@ -95,9 +99,14 @@ mod conn {
     }
 
     pub async fn run(context: &mut Context<Message>, mut args: Args) -> Result<(), BoxError> {
+        context.init_ack(Default::default());
+
         context
             .system()
-            .send(args.room, room::Message::Join(context.actor_id(), args.peer_addr))
+            .send(
+                args.room.get().ok_or("room is not ready")?,
+                room::Message::Join(context.actor_id(), args.peer_addr),
+            )
             .await;
 
         let (read_half, mut write_half) = args.tcp_stream.split();
@@ -109,7 +118,7 @@ mod conn {
                     let next_line = next_line?;
                     let next_line = next_line.ok_or("EOF")?;
 
-                    context.system().send(args.room, room::Message::Post(context.actor_id(), next_line.into())).await;
+                    context.system().send(args.room.get().ok_or("room is not ready")?, room::Message::Post(context.actor_id(), next_line.into())).await;
                 },
                 event = context.next_event() => {
                     match event {
@@ -139,12 +148,13 @@ mod conn {
 mod acceptor {
     use std::net::SocketAddr;
 
-    use agner::actors::{ActorID, BoxError, Context};
-    use agner::sup::dynamic;
+    use agner::actors::{BoxError, Context};
+    use agner::sup::{dynamic, Registered};
     use tokio::net::TcpListener;
 
+    #[derive(Debug, Clone)]
     pub struct Args {
-        pub conn_sup: ActorID,
+        pub conn_sup: Registered,
         pub bind_addr: SocketAddr,
     }
 
@@ -152,10 +162,16 @@ mod acceptor {
 
     pub async fn run(context: &mut Context<Message>, args: Args) -> Result<(), BoxError> {
         let tcp_listener = TcpListener::bind(args.bind_addr).await?;
+        context.init_ack(Default::default());
 
         loop {
             let (tcp_stream, peer_addr) = tcp_listener.accept().await?;
-            dynamic::start_child(&context.system(), args.conn_sup, (tcp_stream, peer_addr)).await?;
+            dynamic::start_child(
+                &context.system(),
+                args.conn_sup.get().ok_or("conn-sup is not ready")?,
+                (tcp_stream, peer_addr),
+            )
+            .await?;
         }
     }
 }
@@ -171,30 +187,53 @@ async fn main() {
 async fn run() -> Result<(), ArcError> {
     let system = System::new(Default::default());
 
-    let room = system.spawn(room::run, (), Default::default()).await?;
-    let conn_sup =
-        system
-            .spawn(
-                agner::sup::dynamic::dynamic_sup,
-                agner::sup::dynamic::child_spec(conn::run, move |(tcp_stream, peer_addr)| {
-                    conn::Args { tcp_stream, peer_addr, room }
-                }),
-                Default::default(),
+    let restart_strategy = ();
+
+    let top_sup_spec = {
+        use agner::sup::{dynamic, fixed};
+
+        let room = agner::sup::Registered::new();
+        let conn_sup = agner::sup::Registered::new();
+        let acceptor = agner::sup::Registered::new();
+
+        fixed::SupSpec::new(restart_strategy)
+            .with_child(
+                fixed::child_spec(room::run, fixed::arg_clone(())).register(room.to_owned()),
             )
-            .await?;
-    let acceptor = system
-        .spawn(
-            acceptor::run,
-            acceptor::Args { bind_addr: "127.0.0.1:8090".parse().unwrap(), conn_sup },
-            Default::default(),
-        )
+            .with_child(
+                fixed::child_spec(
+                    dynamic::dynamic_sup,
+                    fixed::arg_call({
+                        let room = room.to_owned();
+                        move || {
+                            dynamic::child_spec(conn::run, {
+                                let room = room.to_owned();
+                                move |(tcp_stream, peer_addr)| conn::Args {
+                                    room: room.to_owned(),
+                                    tcp_stream,
+                                    peer_addr,
+                                }
+                            })
+                        }
+                    }),
+                )
+                .register(conn_sup.to_owned()),
+            )
+            .with_child(
+                fixed::child_spec(
+                    acceptor::run,
+                    fixed::arg_clone(acceptor::Args {
+                        bind_addr: "127.0.0.1:8090".parse().unwrap(),
+                        conn_sup: conn_sup.to_owned(),
+                    }),
+                )
+                .register(acceptor),
+            )
+    };
+
+    let top_sup = system
+        .spawn(agner::sup::fixed::fixed_sup, top_sup_spec, Default::default())
         .await?;
 
-    let failure = ArcError::clone(&tokio::select! {
-        room_down = system.wait(room) => room_down,
-        conn_sup_down = system.wait(conn_sup) => conn_sup_down,
-        acceptor_down = system.wait(acceptor) => acceptor_down,
-    });
-
-    Err(failure)
+    Err(system.wait(top_sup).await)
 }
