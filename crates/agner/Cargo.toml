@@ -1,6 +1,6 @@
 [package]
 name = "agner"
-version = "0.2.2"
+version = "0.2.3"
 edition = "2021"
 
 authors = ["Raman Hafiyatulin <r.gafiyatullin@me.com>"]
@@ -12,5 +12,5 @@ description = "An actor toolkit inspired by Erlang/OTP"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-agner-actors = { path = "../agner-actors", version = "=0.2.2" }
-agner-sup = { path = "../agner-sup", version = "=0.2.2" }
+agner-actors = { path = "../agner-actors", version = "=0.2.3" }
+agner-sup = { path = "../agner-sup", version = "=0.2.3" }
