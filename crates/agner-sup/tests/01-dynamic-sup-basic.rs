@@ -2,7 +2,7 @@ use agner_actors::{Context, ExitReason, System};
 
 mod common;
 
-use agner_sup::dynamic;
+use agner_sup::dynamic::{self, ChildSpec};
 
 #[test]
 fn dynamic_sup_basic_test() {
@@ -24,7 +24,7 @@ fn dynamic_sup_basic_test() {
                 id += 1;
                 WorkerArgs { group_name: "group-name", worker_id: id }
             }
-        });
+        }).without_init_ack();
         let sup_spec = dynamic::SupSpec::new(child_spec);
         let sup = system.spawn(dynamic::dynamic_sup, sup_spec, Default::default()).await.unwrap();
 
