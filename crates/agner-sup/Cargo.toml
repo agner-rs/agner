@@ -18,7 +18,7 @@ futures = "^0.3"
 log = "^0.4"
 pin-project = "^1"
 thiserror = "^1"
-tokio = {version = "^1", features = ["sync"]}
+tokio = {version = "^1", features = ["sync", "time"]}
 
 [dev-dependencies]
 dotenv = "^0.15"
