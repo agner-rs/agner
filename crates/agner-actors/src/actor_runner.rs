@@ -1,6 +1,5 @@
 use std::future::Future;
 use std::pin::Pin;
-use std::sync::Arc;
 
 use futures::stream::FuturesUnordered;
 use futures::StreamExt;
@@ -149,8 +148,6 @@ where
         };
         log::trace!("[{}] exiting: {}", self.actor_id, exit_reason.pp());
 
-        let exit_reason = Arc::new(exit_reason);
-
         self.sys_msg_rx.close();
         self.messages_rx.close();
 
@@ -175,10 +172,10 @@ where
         }
     }
 
-    async fn handle_sys_msg_on_shutdown(&mut self, sys_msg: SysMsg, exit_reason: Arc<ExitReason>) {
+    async fn handle_sys_msg_on_shutdown(&mut self, sys_msg: SysMsg, exit_reason: ExitReason) {
         match sys_msg {
             SysMsg::Link(linked) =>
-                if matches!(*exit_reason, ExitReason::Normal) {
+                if matches!(exit_reason, ExitReason::Normal) {
                     self.send_sys_msg(linked, SysMsg::Unlink(self.actor_id)).await;
                 } else {
                     self.send_sys_msg(linked, SysMsg::SigExit(self.actor_id, exit_reason)).await;

@@ -1,4 +1,4 @@
-use agner::actors::{ArcError, System};
+use agner::actors::{BoxError, System};
 use agner::sup::fixed::{AllForOne, ChildSpec};
 
 mod room {
@@ -13,7 +13,7 @@ mod room {
         Join(ActorID, SocketAddr),
         Post(ActorID, Arc<str>),
 
-        ConnDown(ActorID, Arc<ExitReason>),
+        ConnDown(ActorID, ExitReason),
     }
 
     pub async fn run(context: &mut Context<Message>, _arg: ()) -> Result<(), BoxError> {
@@ -32,7 +32,7 @@ mod room {
                                 .system()
                                 .send(
                                     participant_actor_id,
-                                    conn::Message::Left(addr, Arc::clone(&exit_reason)),
+                                    conn::Message::Left(addr, exit_reason.to_owned()),
                                 )
                                 .await;
                         }
@@ -94,7 +94,7 @@ mod conn {
 
     pub enum Message {
         Joined(SocketAddr),
-        Left(SocketAddr, Arc<ExitReason>),
+        Left(SocketAddr, ExitReason),
         Posted(SocketAddr, Arc<str>),
     }
 
@@ -184,7 +184,7 @@ async fn main() {
     run().await.expect("Failure")
 }
 
-async fn run() -> Result<(), ArcError> {
+async fn run() -> Result<(), BoxError> {
     let system = System::new(Default::default());
 
     let restart_strategy = AllForOne::default();
@@ -237,5 +237,5 @@ async fn run() -> Result<(), ArcError> {
         .spawn(agner::sup::fixed::fixed_sup, top_sup_spec, Default::default())
         .await?;
 
-    Err(system.wait(top_sup).await)
+    Err(system.wait(top_sup).await.into())
 }

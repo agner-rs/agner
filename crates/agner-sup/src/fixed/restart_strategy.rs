@@ -1,5 +1,4 @@
 use std::fmt;
-use std::sync::Arc;
 use std::time::Duration;
 
 mod all_for_one;
@@ -32,7 +31,7 @@ pub trait RestartStrategy: fmt::Display {
 pub trait Decider {
     fn next_action(&mut self) -> Option<Action>;
     fn child_up(&mut self, at: Instant, child_idx: usize, actor_id: ActorID);
-    fn child_dn(&mut self, at: Instant, actor_id: ActorID, exit_reason: Arc<ExitReason>);
+    fn child_dn(&mut self, at: Instant, actor_id: ActorID, exit_reason: ExitReason);
 }
 
 #[derive(Debug, Clone)]

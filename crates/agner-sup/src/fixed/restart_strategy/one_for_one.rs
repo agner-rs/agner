@@ -44,7 +44,7 @@ impl Decider for OneForOneDecider {
     fn child_up(&mut self, _at: Instant, child_idx: usize, actor_id: ActorID) {
         self.children[child_idx] = actor_id;
     }
-    fn child_dn(&mut self, at: Instant, actor_id: ActorID, exit_reason: Arc<ExitReason>) {
+    fn child_dn(&mut self, at: Instant, actor_id: ActorID, exit_reason: ExitReason) {
         if self.ignored_exits.remove(&actor_id) {
             log::trace!(
                 "[{}] actor exited as expected {}, reason: {}",
@@ -70,7 +70,7 @@ impl Decider for OneForOneDecider {
                         .copied()
                         .filter(|&child_id| child_id != actor_id)
                         .map(|child_id| Action::Stop(child_id, ExitReason::Shutdown(None)))
-                        .chain([Action::Exit(ExitReason::Shutdown(Some(exit_reason)))]),
+                        .chain([Action::Exit(ExitReason::Shutdown(Some(Arc::new(exit_reason))))]),
                 );
             } else {
                 self.pending.push_back(Action::Start(idx));
@@ -89,7 +89,7 @@ impl Decider for OneForOneDecider {
                     .rev()
                     .copied()
                     .map(|child_id| Action::Stop(child_id, ExitReason::Shutdown(None)))
-                    .chain([Action::Exit(ExitReason::Shutdown(Some(exit_reason)))]),
+                    .chain([Action::Exit(ExitReason::Shutdown(Some(Arc::new(exit_reason))))]),
             );
         }
     }

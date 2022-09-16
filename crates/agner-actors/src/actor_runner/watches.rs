@@ -10,13 +10,13 @@ use super::*;
 pub(crate) struct Watches {
     pub trap_exit: bool,
     pub links: HashSet<ActorID>,
-    pub waits: Vec<oneshot::Sender<Arc<ExitReason>>>,
+    pub waits: Vec<oneshot::Sender<ExitReason>>,
 }
 
 impl<M> Backend<M> {
-    pub(super) async fn notify_linked_actors(&mut self, exit_reason: Arc<ExitReason>) {
+    pub(super) async fn notify_linked_actors(&mut self, exit_reason: ExitReason) {
         for linked in std::mem::replace(&mut self.watches.links, Default::default()).drain() {
-            if matches!(*exit_reason, ExitReason::Normal) {
+            if matches!(exit_reason, ExitReason::Normal) {
                 self.send_sys_msg(linked, SysMsg::Unlink(self.actor_id)).await;
             } else {
                 log::trace!("[{}] notifying linked actor: {}", self.actor_id, linked);
@@ -25,7 +25,7 @@ impl<M> Backend<M> {
             }
         }
     }
-    pub(super) fn notify_waiting_chans(&mut self, exit_reason: Arc<ExitReason>) {
+    pub(super) fn notify_waiting_chans(&mut self, exit_reason: ExitReason) {
         for report_to in std::mem::replace(&mut self.watches.waits, Default::default())
             .drain(..)
             .filter(|c| !c.is_closed())
@@ -40,8 +40,7 @@ impl<M> Backend<M> {
             log::trace!("[{}] linking to {}", self.actor_id, link_to);
 
             if !self.send_sys_msg(link_to, SysMsg::Link(self.actor_id)).await {
-                let _ =
-                    self.sys_msg_tx.send(SysMsg::SigExit(link_to, Arc::new(ExitReason::NoProcess)));
+                let _ = self.sys_msg_tx.send(SysMsg::SigExit(link_to, ExitReason::NoProcess));
             }
         }
     }
@@ -77,7 +76,7 @@ impl<M> Backend<M> {
     pub(super) async fn handle_sys_msg_sig_exit(
         &mut self,
         receiver_id: ActorID,
-        exit_reason: Arc<ExitReason>,
+        exit_reason: ExitReason,
     ) -> Result<(), ExitReason> {
         if receiver_id == self.actor_id || self.watches.links.remove(&receiver_id) {
             log::trace!(
@@ -90,15 +89,15 @@ impl<M> Backend<M> {
             match (
                 self.watches.trap_exit,
                 receiver_id == self.actor_id,
-                matches!(exit_reason.as_ref(), &ExitReason::Kill),
+                matches!(exit_reason, ExitReason::Kill),
             ) {
                 (_, true, true) => Err(ExitReason::Kill),
 
-                (false, true, _) => Err(ExitReason::clone(exit_reason.as_ref())),
-                (false, false, _) => Err(ExitReason::Exited(receiver_id, exit_reason)),
+                (false, true, _) => Err(exit_reason),
+                (false, false, _) => Err(ExitReason::Exited(receiver_id, exit_reason.into())),
 
                 (true, _, _) => {
-                    let signal = Signal::Exited(receiver_id, exit_reason);
+                    let signal = Signal::Exit(receiver_id, exit_reason);
                     self.signals_w
                         .send(signal)
                         .await
@@ -124,7 +123,7 @@ impl<M> Backend<M> {
 
     pub(super) fn handle_sys_msg_wait(
         &mut self,
-        report_to: oneshot::Sender<Arc<ExitReason>>,
+        report_to: oneshot::Sender<ExitReason>,
     ) -> Result<(), ExitReason> {
         if let Some(to_replace) = self.watches.waits.iter_mut().find(|tx| tx.is_closed()) {
             log::trace!("adding 'wait' [replace]");

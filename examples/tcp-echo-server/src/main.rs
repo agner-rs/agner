@@ -2,7 +2,7 @@ use std::convert::Infallible;
 use std::net::SocketAddr;
 use std::time::Duration;
 
-use agner::actors::{ArcError, BoxError, Context, System};
+use agner::actors::{BoxError, Context, System};
 use tokio::io::{AsyncBufReadExt, AsyncWriteExt};
 use tokio::net::{TcpListener, TcpStream};
 
@@ -60,7 +60,7 @@ async fn tcp_acceptor(
     }
 }
 
-async fn run() -> Result<(), ArcError> {
+async fn run() -> Result<(), BoxError> {
     log::info!("starting up...");
 
     let system = System::new(Default::default());
@@ -93,7 +93,7 @@ async fn run() -> Result<(), ArcError> {
 
     let top_sup = system.spawn(fixed::fixed_sup, top_sup_spec, Default::default()).await?;
 
-    Err(system.wait(top_sup).await)
+    Err(system.wait(top_sup).await.into())
 }
 
 #[tokio::main]

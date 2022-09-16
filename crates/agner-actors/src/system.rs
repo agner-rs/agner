@@ -117,16 +117,15 @@ impl System {
     }
 
     pub async fn exit(&self, actor_id: ActorID, exit_reason: ExitReason) {
-        self.send_sys_msg(actor_id, SysMsg::SigExit(actor_id, Arc::new(exit_reason)))
-            .await;
+        self.send_sys_msg(actor_id, SysMsg::SigExit(actor_id, exit_reason)).await;
     }
 
-    pub async fn wait(&self, actor_id: ActorID) -> Arc<ExitReason> {
+    pub async fn wait(&self, actor_id: ActorID) -> ExitReason {
         let (tx, rx) = oneshot::channel();
         if self.send_sys_msg(actor_id, SysMsg::Wait(tx)).await {
-            rx.await.unwrap_or_else(|_| Arc::new(ExitReason::NoProcess))
+            rx.await.unwrap_or_else(|_| ExitReason::NoProcess)
         } else {
-            Arc::new(ExitReason::NoProcess)
+            ExitReason::NoProcess
         }
     }
 

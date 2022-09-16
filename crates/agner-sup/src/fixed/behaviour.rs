@@ -48,7 +48,7 @@ where
 
         match event {
             Event::Message(message) => unimplemented!("message: {:?}", message),
-            Event::Signal(Signal::Exited(actor_id, exit_reason)) =>
+            Event::Signal(Signal::Exit(actor_id, exit_reason)) =>
                 restart_decider.child_dn(Instant::now(), actor_id, exit_reason),
         }
     }

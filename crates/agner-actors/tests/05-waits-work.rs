@@ -42,6 +42,6 @@ fn waits_work() {
         assert!(future::join_all(waits)
             .await
             .into_iter()
-            .all(|e| matches!(*e, ExitReason::Normal)));
+            .all(|e| matches!(e, ExitReason::Normal)));
     });
 }

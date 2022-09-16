@@ -61,9 +61,10 @@ where
                 };
                 let _ = reply_to.send(response);
             },
-            Event::Signal(Signal::Exited(terminated, exit_reason)) => {
+
+            Event::Signal(Signal::Exit(terminated, exit_reason)) => {
                 if !children.remove(&terminated) {
-                    context.exit(ExitReason::Exited(terminated, exit_reason)).await;
+                    context.exit(ExitReason::Exited(terminated, exit_reason.into())).await;
                     unreachable!()
                 }
             },

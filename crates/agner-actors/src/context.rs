@@ -1,5 +1,3 @@
-use std::sync::Arc;
-
 use futures::Future;
 
 use crate::actor_id::ActorID;
@@ -29,7 +27,7 @@ pub enum Event<M> {
 
 #[derive(Debug)]
 pub enum Signal {
-    Exited(ActorID, Arc<ExitReason>),
+    Exit(ActorID, ExitReason),
 }
 
 impl<M> Context<M> {

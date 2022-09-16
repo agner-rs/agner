@@ -1,5 +1,3 @@
-use std::sync::Arc;
-
 use tokio::sync::oneshot;
 
 use crate::actor_id::ActorID;
@@ -11,8 +9,8 @@ use super::Backend;
 pub enum SysMsg {
     Link(ActorID),
     Unlink(ActorID),
-    SigExit(ActorID, Arc<ExitReason>),
-    Wait(oneshot::Sender<Arc<ExitReason>>),
+    SigExit(ActorID, ExitReason),
+    Wait(oneshot::Sender<ExitReason>),
 }
 
 impl<M> Backend<M> {

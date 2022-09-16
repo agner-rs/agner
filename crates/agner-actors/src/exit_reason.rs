@@ -1,6 +1,5 @@
 use std::error::Error as StdError;
 use std::fmt;
-use std::sync::Arc;
 
 use crate::actor_id::ActorID;
 use crate::imports::ArcError;
@@ -14,7 +13,7 @@ pub enum ExitReason {
     Kill,
 
     #[error("Exited: {}", _0)]
-    Exited(ActorID, #[source] Arc<Self>),
+    Exited(ActorID, #[source] Box<Self>),
 
     #[error("No Process")]
     NoProcess,
