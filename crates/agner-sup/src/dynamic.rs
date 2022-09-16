@@ -2,9 +2,7 @@ use std::collections::HashSet;
 use std::marker::PhantomData;
 use std::time::Duration;
 
-use agner_actors::{
-    Actor, ActorID, BoxError, Context, Event, ExitReason, InitAckRx, Signal, SpawnOpts, System,
-};
+use agner_actors::{Actor, ActorID, BoxError, Context, Event, ExitReason, Signal, System};
 use futures::{stream, StreamExt};
 use tokio::sync::oneshot;
 
