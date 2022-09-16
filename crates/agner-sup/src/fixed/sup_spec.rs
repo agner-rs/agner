@@ -4,6 +4,9 @@ use super::hlist::Nil;
 mod start;
 pub use start::SupSpecStartChild;
 
+mod stop;
+pub use stop::SupSpecStopChild;
+
 #[derive(Debug)]
 pub struct SupSpec<R, CS> {
     pub restart_strategy: R,

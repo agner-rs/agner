@@ -1,4 +1,4 @@
-use std::time::Duration;
+use std::time::{Duration, Instant};
 
 use agner_actors::{Actor, ActorID, ExitReason, SpawnOpts, System};
 
@@ -15,6 +15,12 @@ pub enum StartChildError {
 
     #[error("init-ack: timeout")]
     InitAckTimeout,
+}
+
+#[derive(Debug, thiserror::Error)]
+pub enum StopChildError {
+    #[error("Timeout")]
+    Timeout,
 }
 
 pub async fn start_child<ChB, ChA, ChM>(
@@ -50,6 +56,74 @@ where
     }
 
     Ok(child_id)
+}
+
+pub async fn stop_child(
+    system: System,
+    sup_id: ActorID,
+    child_id: ActorID,
+    stop_timeout: Duration,
+    exit_reason: ExitReason,
+) -> Result<(), StopChildError> {
+    let t0 = Instant::now();
+    log::trace!(
+        "[{}] terminating child {} [timeout: {:?}, reason: {}]",
+        sup_id,
+        child_id,
+        stop_timeout,
+        exit_reason.pp()
+    );
+    system.exit(child_id, exit_reason.to_owned()).await;
+    let child_exited = system.wait(child_id);
+    let child_exited_or_timeout = tokio::time::timeout(stop_timeout, child_exited);
+
+    match child_exited_or_timeout.await {
+        Ok(exit_reason) => {
+            log::trace!(
+                "[{}] child {} exited [elapsed: {:?}, timeout: {:?}, reason: {}]",
+                sup_id,
+                child_id,
+                t0.elapsed(),
+                stop_timeout,
+                exit_reason.pp()
+            );
+            Ok(())
+        },
+        Err(_elapsed) => {
+            log::trace!(
+                "[{}] child {} timed out on termination. Killing [elapsed: {:?}, timeout: {:?}]",
+                sup_id,
+                child_id,
+                t0.elapsed(),
+                stop_timeout
+            );
+            system.exit(child_id, ExitReason::Kill).await;
+            let child_exited = system.wait(child_id);
+            let child_exited_or_timeout = tokio::time::timeout(stop_timeout, child_exited);
+
+            match child_exited_or_timeout.await {
+                Ok(exit_reason) => {
+                    log::trace!(
+                        "[{}] child {} killed [elapsed: {:?}, reason: {}]",
+                        sup_id,
+                        child_id,
+                        t0.elapsed(),
+                        exit_reason.pp()
+                    );
+                    Ok(())
+                },
+                Err(_elapsed) => {
+                    log::trace!(
+                        "[{}] child {} kill timed out [elapsed: {:?}]",
+                        sup_id,
+                        child_id,
+                        t0.elapsed()
+                    );
+                    Err(StopChildError::Timeout)
+                },
+            }
+        },
+    }
 }
 
 async fn start_child_without_init_ack<ChB, ChA, ChM>(

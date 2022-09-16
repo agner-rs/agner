@@ -1,5 +1,6 @@
-use agner::actors::{BoxError, System};
+use agner::actors::{BoxError, ExitReason, System};
 use agner::sup::fixed::{AllForOne, ChildSpec};
+use tokio::signal::unix::SignalKind;
 
 mod room {
     use agner::actors::{ActorID, BoxError, Context, Event, ExitReason};
@@ -252,6 +253,28 @@ async fn run() -> Result<(), BoxError> {
     let top_sup = system
         .spawn(agner::sup::fixed::fixed_sup, top_sup_spec, Default::default())
         .await?;
+
+    tokio::spawn({
+        let system = system.to_owned();
+        async move {
+            let mut interrupt = tokio::signal::unix::signal(SignalKind::interrupt()).unwrap();
+            let mut terminate = tokio::signal::unix::signal(SignalKind::terminate()).unwrap();
+
+            let sig_name = tokio::select! {
+                _ = interrupt.recv() => { "SIGINT" },
+                _ = terminate.recv() => { "SIGTERM" },
+            };
+
+            let sig_boxed_error: BoxError = sig_name.into();
+            system.exit(top_sup, ExitReason::Shutdown(Some(sig_boxed_error.into()))).await;
+
+            let _sig_name = tokio::select! {
+                _ = interrupt.recv() => { "SIGINT" },
+                _ = terminate.recv() => { "SIGTERM" },
+            };
+            std::process::exit(1);
+        }
+    });
 
     Err(system.wait(top_sup).await.into())
 }

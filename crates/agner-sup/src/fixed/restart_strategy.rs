@@ -31,13 +31,13 @@ pub trait RestartStrategy: fmt::Display {
 pub trait Decider {
     fn next_action(&mut self) -> Option<Action>;
     fn child_up(&mut self, at: Instant, child_idx: usize, actor_id: ActorID);
-    fn child_dn(&mut self, at: Instant, actor_id: ActorID, exit_reason: ExitReason);
+    fn actor_down(&mut self, at: Instant, actor_id: ActorID, exit_reason: ExitReason);
 }
 
 #[derive(Debug, Clone)]
 pub enum Action {
     Exit(ExitReason),
-    Stop(ActorID, ExitReason),
+    Stop(usize, ActorID, ExitReason),
     Start(usize),
 }
 

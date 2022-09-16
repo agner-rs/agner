@@ -8,7 +8,7 @@ use crate::fixed::{BoxedFuture, ChildSpec, SupSpec};
 pub trait SupSpecStartChild<M> {
     fn start_child(
         &mut self,
-        _context: &mut Context<M>,
+        context: &mut Context<M>,
         index: usize,
     ) -> BoxedFuture<Result<ActorID, StartChildError>>;
 }

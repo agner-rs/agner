@@ -3,5 +3,5 @@ pub mod actors {
 }
 
 pub mod sup {
-    pub use agner_sup::{adapt_exit_reason, dynamic, fixed, Registered};
+    pub use agner_sup::{adapt_exit_reason, dynamic, fixed, common, Registered};
 }

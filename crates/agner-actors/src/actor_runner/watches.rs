@@ -26,11 +26,12 @@ impl<M> Backend<M> {
         }
     }
     pub(super) fn notify_waiting_chans(&mut self, exit_reason: ExitReason) {
-        for report_to in std::mem::replace(&mut self.watches.waits, Default::default())
-            .drain(..)
-            .filter(|c| !c.is_closed())
+        for (idx, report_to) in std::mem::replace(&mut self.watches.waits, Default::default())
+            .into_iter()
+            .enumerate()
+            .filter(|(_idx, c)| !c.is_closed())
         {
-            log::trace!("[{}] notifying waiting chan", self.actor_id);
+            log::trace!("[{}] notifying waiting chan #{}", self.actor_id, idx);
             let _ = report_to.send(exit_reason.to_owned());
         }
     }
@@ -125,11 +126,13 @@ impl<M> Backend<M> {
         &mut self,
         report_to: oneshot::Sender<ExitReason>,
     ) -> Result<(), ExitReason> {
-        if let Some(to_replace) = self.watches.waits.iter_mut().find(|tx| tx.is_closed()) {
-            log::trace!("[{}] adding 'wait' [replace]", self.actor_id);
+        if let Some((idx, to_replace)) =
+            self.watches.waits.iter_mut().enumerate().find(|(_idx, tx)| tx.is_closed())
+        {
+            log::trace!("[{}] adding 'wait' [replace #{}]", self.actor_id, idx);
             *to_replace = report_to;
         } else {
-            log::trace!("[{}] adding 'wait' [append]", self.actor_id);
+            log::trace!("[{}] adding 'wait' [append #{}]", self.actor_id, self.watches.waits.len());
             self.watches.waits.push(report_to);
         }
         Ok(())

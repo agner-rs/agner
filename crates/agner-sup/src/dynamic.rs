@@ -79,20 +79,14 @@ where
 
                 let _ = reply_to.send(response);
             },
-            Event::Signal(Signal::Exit(myself, exit_reason)) if myself == context.actor_id() => {
-                context.exit(exit_reason).await;
-                unreachable!()
-            },
             Event::Signal(Signal::Exit(terminated, exit_reason)) => {
-                assert_ne!(terminated, context.actor_id());
-
                 if !children.remove(&terminated) {
-                    log::trace!(
-                        "[{}] Received SigExit from {} — {}",
-                        context.actor_id(),
-                        terminated,
-                        exit_reason.pp()
-                    );
+                    let message = if terminated == context.actor_id() {
+                        "Shutdown requested".to_owned()
+                    } else {
+                        format!("Received SigExit from {}", terminated)
+                    };
+                    log::trace!("[{}] {} — {}", context.actor_id(), message, exit_reason.pp());
                     let sup_exit_reason = ExitReason::Exited(terminated, exit_reason.into());
                     let child_exit_reason =
                         ExitReason::Exited(context.actor_id(), sup_exit_reason.to_owned().into());

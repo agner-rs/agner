@@ -42,8 +42,11 @@ impl Decider for OneForOneDecider {
     fn child_up(&mut self, _at: Instant, child_idx: usize, actor_id: ActorID) {
         self.children[child_idx] = actor_id;
     }
-    fn child_dn(&mut self, at: Instant, actor_id: ActorID, exit_reason: ExitReason) {
-        if self.ignored_exits.remove(&actor_id) {
+    fn actor_down(&mut self, at: Instant, actor_id: ActorID, exit_reason: ExitReason) {
+        if self.sup_id == actor_id {
+            log::info!("[{}] Requested shutdown", self);
+            self.initiate_shutdown(exit_reason);
+        } else if self.ignored_exits.remove(&actor_id) {
             log::trace!(
                 "[{}] actor exited as expected {}, reason: {}",
                 self,
@@ -60,36 +63,41 @@ impl Decider for OneForOneDecider {
             if self.failures[idx].report(at) {
                 self.ignored_exits.extend(self.children.iter().copied());
 
-                self.pending.clear();
-                self.pending.extend(
-                    self.children
-                        .iter()
-                        .rev()
-                        .copied()
-                        .filter(|&child_id| child_id != actor_id)
-                        .map(|child_id| Action::Stop(child_id, ExitReason::Shutdown(None)))
-                        .chain([Action::Exit(ExitReason::Shutdown(Some(Arc::new(exit_reason))))]),
-                );
+                self.initiate_shutdown(ExitReason::Shutdown(Some(Arc::new(exit_reason))))
             } else {
                 self.pending.push_back(Action::Start(idx));
             }
         } else {
             log::info!(
-                "Unknown linked actor exited. Initiating shutdown. [reason: {}]",
+                "[{}] Unknown linked actor exited. Initiating shutdown. [reason: {}]",
+                self,
                 exit_reason.pp()
             );
             self.ignored_exits.extend(self.children.iter().copied());
-
-            self.pending.clear();
-            self.pending.extend(
-                self.children
-                    .iter()
-                    .rev()
-                    .copied()
-                    .map(|child_id| Action::Stop(child_id, ExitReason::Shutdown(None)))
-                    .chain([Action::Exit(ExitReason::Shutdown(Some(Arc::new(exit_reason))))]),
-            );
+            self.initiate_shutdown(exit_reason);
         }
+    }
+}
+
+impl OneForOneDecider {
+    fn initiate_shutdown(&mut self, exit_reason: ExitReason) {
+        let arc_exit_reason = Arc::new(exit_reason.to_owned());
+        self.pending.clear();
+        self.pending.extend(
+            self.children
+                .iter()
+                .copied()
+                .enumerate()
+                .rev()
+                .map(|(child_idx, child_id)| {
+                    Action::Stop(
+                        child_idx,
+                        child_id,
+                        ExitReason::Shutdown(Some(arc_exit_reason.to_owned())),
+                    )
+                })
+                .chain([Action::Exit(exit_reason)]),
+        );
     }
 }
 

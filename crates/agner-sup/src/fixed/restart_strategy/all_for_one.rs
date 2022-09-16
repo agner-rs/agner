@@ -49,29 +49,35 @@ impl Decider for AllForOneDecider {
         self.ch_ids[child_idx] = actor_id;
         self.ch_states[child_idx] = ChState::Up;
     }
-    fn child_dn(&mut self, at: Instant, actor_id: ActorID, exit_reason: ExitReason) {
-        let idx_opt = self
-            .ch_ids
-            .iter()
-            .enumerate()
-            .find(|&(_, &id)| id == actor_id)
-            .map(|(idx, _)| idx);
-
-        if let Some(idx) = idx_opt {
-            if matches!(self.ch_states[idx], ChState::ShuttingDown) {
-                self.ch_states[idx] = ChState::Down;
-            } else if self.failures[idx].report(at) {
-                self.initiate_shutdown(exit_reason)
-            } else {
-                self.initiate_restart(exit_reason)
-            }
+    fn actor_down(&mut self, at: Instant, actor_id: ActorID, exit_reason: ExitReason) {
+        if actor_id == self.sup_id {
+            log::trace!("[{}] Requested shutdown [reason: {}]", self, exit_reason.pp());
+            self.initiate_shutdown(exit_reason)
         } else {
-            log::info!(
-                "Unknown linked actor exited. Initiating shutdown. [reason: {}]",
-                exit_reason.pp()
-            );
+            let idx_opt = self
+                .ch_ids
+                .iter()
+                .enumerate()
+                .find(|&(_, &id)| id == actor_id)
+                .map(|(idx, _)| idx);
 
-            self.initiate_shutdown(ExitReason::Exited(actor_id, exit_reason.into()))
+            if let Some(idx) = idx_opt {
+                if matches!(self.ch_states[idx], ChState::ShuttingDown) {
+                    self.ch_states[idx] = ChState::Down;
+                } else if self.failures[idx].report(at) {
+                    self.initiate_shutdown(exit_reason)
+                } else {
+                    self.initiate_restart(exit_reason)
+                }
+            } else {
+                log::info!(
+                    "[{}] Unknown linked actor exited. Initiating shutdown. [reason: {}]",
+                    self,
+                    exit_reason.pp()
+                );
+
+                self.initiate_shutdown(ExitReason::Exited(actor_id, exit_reason.into()))
+            }
         }
     }
 }
@@ -88,6 +94,7 @@ impl AllForOneDecider {
                     if !matches!(self.ch_states[idx], ChState::Down) {
                         self.ch_states[idx] = ChState::ShuttingDown;
                         Some(Action::Stop(
+                            idx,
                             self.ch_ids[idx],
                             ExitReason::Shutdown(Some(arc_cause.to_owned())),
                         ))
@@ -99,8 +106,8 @@ impl AllForOneDecider {
         );
     }
 
-    fn initiate_shutdown(&mut self, exit_reason: ExitReason) {
-        let arc_exit_reason = Arc::new(exit_reason.to_owned());
+    fn initiate_shutdown(&mut self, cause: ExitReason) {
+        let arc_exit_reason = Arc::new(cause.to_owned());
 
         self.pending.clear();
         self.pending.extend(
@@ -110,6 +117,7 @@ impl AllForOneDecider {
                     if !matches!(self.ch_states[idx], ChState::Down) {
                         self.ch_states[idx] = ChState::ShuttingDown;
                         Some(Action::Stop(
+                            idx,
                             self.ch_ids[idx],
                             ExitReason::Shutdown(Some(arc_exit_reason.to_owned())),
                         ))
@@ -117,7 +125,7 @@ impl AllForOneDecider {
                         None
                     }
                 })
-                .chain([Action::Exit(exit_reason)]),
+                .chain([Action::Exit(cause)]),
         );
     }
 }
