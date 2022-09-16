@@ -7,6 +7,7 @@ use agner_actors::Actor;
 use crate::Registered;
 
 const DEFAULT_INIT_TIMEOUT: Duration = Duration::from_secs(5);
+const DEFAULT_STOP_TIMEOUT: Duration = Duration::from_secs(5);
 
 pub fn child_spec<B, AF, A, M>(behaviour: B, arg_factory: AF) -> impl ChildSpec
 where
@@ -23,6 +24,8 @@ where
         behaviour,
         arg_factory,
         init_timeout: DEFAULT_INIT_TIMEOUT,
+        stop_timeout: DEFAULT_STOP_TIMEOUT,
+        init_ack: true,
         _pd: Default::default(),
     }
 }
@@ -54,8 +57,15 @@ pub trait ChildSpec {
     fn register(self, registered: Registered) -> Self;
     fn regs(&self) -> &[Registered];
 
+    fn with_init_ack(self) -> Self;
+    fn without_init_ack(self) -> Self;
+    fn init_ack(&self) -> bool;
+
     fn with_init_timeout(self, init_timeout: Duration) -> Self;
     fn init_timeout(&self) -> Duration;
+
+    fn with_stop_timeout(self, init_timeout: Duration) -> Self;
+    fn stop_timeout(&self) -> Duration;
 }
 
 pub trait ArgFactory<Arg> {
@@ -100,6 +110,8 @@ struct ChildSpecImpl<B, AF, A, M> {
     regs: Vec<Registered>,
     arg_factory: AF,
     init_timeout: Duration,
+    stop_timeout: Duration,
+    init_ack: bool,
     _pd: PhantomData<(A, M)>,
 }
 
@@ -141,6 +153,23 @@ where
     }
     fn init_timeout(&self) -> Duration {
         self.init_timeout
+    }
+
+    fn with_stop_timeout(self, stop_timeout: Duration) -> Self {
+        Self { stop_timeout, ..self }
+    }
+    fn stop_timeout(&self) -> Duration {
+        self.stop_timeout
+    }
+
+    fn with_init_ack(self) -> Self {
+        Self { init_ack: true, ..self }
+    }
+    fn without_init_ack(self) -> Self {
+        Self { init_ack: false, ..self }
+    }
+    fn init_ack(&self) -> bool {
+        self.init_ack
     }
 }
 

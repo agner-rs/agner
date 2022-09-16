@@ -163,6 +163,18 @@ impl System {
             })
             .await;
     }
+
+    pub async fn link(&self, left: ActorID, right: ActorID) {
+        let left_accepted_sys_msg = self.send_sys_msg(left, SysMsg::Link(right)).await;
+        let right_accepted_sys_msg = self.send_sys_msg(right, SysMsg::Link(left)).await;
+
+        if !right_accepted_sys_msg {
+            self.send_sys_msg(left, SysMsg::SigExit(right, ExitReason::NoProcess)).await;
+        }
+        if !left_accepted_sys_msg {
+            self.send_sys_msg(right, SysMsg::SigExit(left, ExitReason::NoProcess)).await;
+        }
+    }
 }
 
 #[derive(Debug)]

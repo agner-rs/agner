@@ -126,10 +126,10 @@ impl<M> Backend<M> {
         report_to: oneshot::Sender<ExitReason>,
     ) -> Result<(), ExitReason> {
         if let Some(to_replace) = self.watches.waits.iter_mut().find(|tx| tx.is_closed()) {
-            log::trace!("adding 'wait' [replace]");
+            log::trace!("[{}] adding 'wait' [replace]", self.actor_id);
             *to_replace = report_to;
         } else {
-            log::trace!("adding 'wait' [append]");
+            log::trace!("[{}] adding 'wait' [append]", self.actor_id);
             self.watches.waits.push(report_to);
         }
         Ok(())

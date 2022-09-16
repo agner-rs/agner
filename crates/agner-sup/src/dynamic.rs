@@ -3,13 +3,14 @@ use std::marker::PhantomData;
 use std::time::Duration;
 
 use agner_actors::{
-    Actor, ActorID, BoxError, Context, Event, ExitReason, Signal, SpawnOpts, System,
+    Actor, ActorID, BoxError, Context, Event, ExitReason, InitAckRx, Signal, SpawnOpts, System,
 };
 use futures::{stream, StreamExt};
 use tokio::sync::oneshot;
 
 pub type SpawnError = BoxError;
 
+const DEFAULT_INIT_TIMEOUT: Duration = Duration::from_secs(5);
 const DEFAULT_SHUTDOWN_TIMEOUT: Duration = Duration::from_secs(5);
 const SHUTDOWN_MAX_PARALLELISM: usize = 32;
 
@@ -29,16 +30,12 @@ where
 
 #[derive(Debug, Clone)]
 pub struct SupSpec<CS> {
-    pub shutdown_timeout: Duration,
     pub child_spec: CS,
 }
 
 impl<CS> SupSpec<CS> {
     pub fn new(child_spec: CS) -> Self {
-        Self { shutdown_timeout: DEFAULT_SHUTDOWN_TIMEOUT, child_spec }
-    }
-    pub fn with_shutdown_timeout(self, shutdown_timeout: Duration) -> Self {
-        Self { shutdown_timeout, ..self }
+        Self { child_spec }
     }
 }
 
@@ -51,7 +48,14 @@ where
     M: Send + Sync + Unpin + 'static,
     OA: Send + Sync + 'static,
 {
-    ChildSpecImpl { behaviour, arg_factory, _pd: Default::default() }
+    ChildSpecImpl {
+        behaviour,
+        arg_factory,
+        init_ack: true,
+        init_timeout: DEFAULT_INIT_TIMEOUT,
+        stop_timeout: DEFAULT_SHUTDOWN_TIMEOUT,
+        _pd: Default::default(),
+    }
 }
 
 /// The behaviour function of a dynamic supervisor.
@@ -65,20 +69,16 @@ where
     context.init_ack(Default::default());
 
     let mut children = HashSet::new();
+
     loop {
         match context.next_event().await {
             Event::Message(Message::StartChild(arg, reply_to)) => {
-                let (child_behaviour, child_arg) = sup_spec.child_spec.create(arg);
-                let spawn_opts = SpawnOpts::new().with_link(context.actor_id());
-                let spawn_result =
-                    context.system().spawn(child_behaviour, child_arg, spawn_opts).await;
-                let response = match spawn_result {
-                    Ok(child_id) => {
-                        children.insert(child_id);
-                        Ok(child_id)
-                    },
-                    Err(reason) => Err(reason),
-                };
+                let response =
+                    match do_start_child(context, &mut sup_spec, arg, &mut children).await {
+                        Ok(child_id) => Ok(child_id),
+                        Err(reason) => Err(reason),
+                    };
+
                 let _ = reply_to.send(response);
             },
             Event::Signal(Signal::Exit(myself, exit_reason)) if myself == context.actor_id() => {
@@ -90,7 +90,7 @@ where
 
                 if !children.remove(&terminated) {
                     log::trace!(
-                        "[{}] received SigExit from {} — {}",
+                        "[{}] Received SigExit from {} — {}",
                         context.actor_id(),
                         terminated,
                         exit_reason.pp()
@@ -109,6 +109,7 @@ where
                         |child_id| {
                             let sup_id = context.actor_id();
                             let system = context.system();
+                            let child_stop_timeout = sup_spec.child_spec.stop_timeout();
                             let child_exit_reason = child_exit_reason.to_owned();
                             let graceful_shutdown =
                                 async move {
@@ -119,7 +120,7 @@ where
                             let system = context.system();
                             let sure_shutdown =
                                 async move {
-                                    let graceful_shutdown_or_timeout = tokio::time::timeout(sup_spec.shutdown_timeout, graceful_shutdown);
+                                    let graceful_shutdown_or_timeout = tokio::time::timeout(child_stop_timeout, graceful_shutdown);
                                     match graceful_shutdown_or_timeout.await {
                                         Ok(exit_reason) => log::trace!("[{}] child {} has gracefully exited: {}", sup_id, child_id, exit_reason),
                                         Err(_) => {
@@ -163,11 +164,23 @@ pub trait ChildSpec<IA, M> {
     type Arg: Send + Sync + 'static;
 
     fn create(&mut self, arg: IA) -> (Self::Behavoiur, Self::Arg);
+    fn with_init_ack(self) -> Self;
+    fn without_init_ack(self) -> Self;
+    fn init_ack(&self) -> bool;
+
+    fn with_init_timeout(self, init_timeout: Duration) -> Self;
+    fn init_timeout(&self) -> Duration;
+
+    fn with_stop_timeout(self, stop_timeout: Duration) -> Self;
+    fn stop_timeout(&self) -> Duration;
 }
 
 struct ChildSpecImpl<B, M, IA, OA, AF> {
     behaviour: B,
     arg_factory: AF,
+    init_ack: bool,
+    init_timeout: Duration,
+    stop_timeout: Duration,
     _pd: PhantomData<(IA, OA, M)>,
 }
 
@@ -185,4 +198,58 @@ where
         let arg = (self.arg_factory)(arg);
         (self.behaviour.clone(), arg)
     }
+    fn init_ack(&self) -> bool {
+        self.init_ack
+    }
+    fn with_init_ack(self) -> Self {
+        Self { init_ack: true, ..self }
+    }
+    fn without_init_ack(self) -> Self {
+        Self { init_ack: false, ..self }
+    }
+
+    fn with_init_timeout(self, init_timeout: Duration) -> Self {
+        Self { init_timeout, ..self }
+    }
+    fn init_timeout(&self) -> Duration {
+        self.init_timeout
+    }
+
+    fn with_stop_timeout(self, stop_timeout: Duration) -> Self {
+        Self { stop_timeout, ..self }
+    }
+    fn stop_timeout(&self) -> Duration {
+        self.stop_timeout
+    }
+}
+
+async fn do_start_child<CS, IA, M>(
+    context: &mut Context<Message<IA>>,
+    sup_spec: &mut SupSpec<CS>,
+    arg: IA,
+    children: &mut HashSet<ActorID>,
+) -> Result<ActorID, SpawnError>
+where
+    CS: ChildSpec<IA, M>,
+    IA: Send + Sync + Unpin + 'static,
+    M: Send + Sync + Unpin + 'static,
+{
+    let (child_behaviour, child_arg) = sup_spec.child_spec.create(arg);
+    let init_timeouts =
+        Some((sup_spec.child_spec.init_timeout(), sup_spec.child_spec.stop_timeout()))
+            .filter(|_| sup_spec.child_spec.init_ack());
+
+    let child_id = crate::common::start_child(
+        context.system(),
+        context.actor_id(),
+        child_behaviour,
+        child_arg,
+        init_timeouts,
+        [],
+    )
+    .await?;
+    log::trace!("[{}] adding {} to children", context.actor_id(), child_id);
+    children.insert(child_id);
+
+    Ok(child_id)
 }

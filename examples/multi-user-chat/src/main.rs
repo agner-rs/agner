@@ -166,12 +166,27 @@ mod acceptor {
 
         loop {
             let (tcp_stream, peer_addr) = tcp_listener.accept().await?;
-            dynamic::start_child(
+            let conn_start_result = dynamic::start_child(
                 &context.system(),
                 args.conn_sup.get().ok_or("conn-sup is not ready")?,
                 (tcp_stream, peer_addr),
             )
-            .await?;
+            .await;
+
+            match conn_start_result {
+                Ok(conn_id) => log::info!(
+                    "[{}] started conn for {}: {}",
+                    context.actor_id(),
+                    conn_id,
+                    peer_addr
+                ),
+                Err(reason) => log::warn!(
+                    "[{}] failed to start conn for {}: {}",
+                    context.actor_id(),
+                    peer_addr,
+                    reason
+                ),
+            }
         }
     }
 }

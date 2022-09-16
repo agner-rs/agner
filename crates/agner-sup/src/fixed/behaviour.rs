@@ -35,7 +35,11 @@ where
     }
     assert_eq!(children.len(), CS::LEN);
 
-    log::trace!("initializing restart decider for {}", sup_spec.restart_strategy);
+    log::trace!(
+        "[{}] initializing restart decider for {}",
+        context.actor_id(),
+        sup_spec.restart_strategy
+    );
     let mut restart_decider =
         sup_spec.restart_strategy.new_decider(context.actor_id(), children.into());
 
