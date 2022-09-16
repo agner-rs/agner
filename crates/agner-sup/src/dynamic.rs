@@ -119,7 +119,7 @@ where
                             let system = context.system();
                             let sure_shutdown =
                                 async move {
-                                    let graceful_shutdown_or_timeout = tokio::time::timeout(DEFAULT_SHUTDOWN_TIMEOUT, graceful_shutdown);
+                                    let graceful_shutdown_or_timeout = tokio::time::timeout(sup_spec.shutdown_timeout, graceful_shutdown);
                                     match graceful_shutdown_or_timeout.await {
                                         Ok(exit_reason) => log::trace!("[{}] child {} has gracefully exited: {}", sup_id, child_id, exit_reason),
                                         Err(_) => {
