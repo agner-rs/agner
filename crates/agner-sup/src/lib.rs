@@ -1,6 +1,6 @@
+pub mod common;
 pub mod dynamic;
 pub mod fixed;
-pub mod common;
 
 mod registered;
 pub use registered::Registered;
