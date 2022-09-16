@@ -26,20 +26,15 @@ mod room {
             match context.next_event().await {
                 Event::Signal { .. } => unreachable!(),
 
-                Event::Message(Message::ConnDown(actor_id, exit_reason)) => {
-                    if let Some(addr) = participants.remove(&actor_id) {
-                        for participant_actor_id in participants.keys().copied() {
-                            context
-                                .system()
-                                .send(
-                                    participant_actor_id,
-                                    conn::Message::Left(addr, exit_reason.to_owned()),
-                                )
-                                .await;
-                        }
-                    }
-                },
                 Event::Message(Message::Join(actor_id, peer_addr)) => {
+                    log::info!(
+                        "[{}|room] joined {} ({}) [participants-before: {}]",
+                        context.actor_id(),
+                        actor_id,
+                        peer_addr,
+                        participants.len()
+                    );
+
                     for participant_actor_id in participants.keys().copied() {
                         context
                             .system()
@@ -57,8 +52,39 @@ mod room {
                     };
                     context.future_to_inbox(notification).await;
                 },
+
+                Event::Message(Message::ConnDown(actor_id, exit_reason)) => {
+                    if let Some(peer_addr) = participants.remove(&actor_id) {
+                        log::info!(
+                            "[{}|room] conn-down {} ({}) [participants-after: {}]",
+                            context.actor_id(),
+                            actor_id,
+                            peer_addr,
+                            participants.len()
+                        );
+
+                        for participant_actor_id in participants.keys().copied() {
+                            context
+                                .system()
+                                .send(
+                                    participant_actor_id,
+                                    conn::Message::Left(peer_addr, exit_reason.to_owned()),
+                                )
+                                .await;
+                        }
+                    }
+                },
+
                 Event::Message(Message::Post(actor_id, message)) => {
                     if let Some(from_addr) = participants.get(&actor_id).copied() {
+                        log::info!(
+                            "[{}|room] message from {} ({}) [participants-count: {}]",
+                            context.actor_id(),
+                            actor_id,
+                            from_addr,
+                            participants.len()
+                        );
+
                         for participand_actor_id in
                             participants.keys().copied().filter(|p| *p != actor_id)
                         {
@@ -176,13 +202,13 @@ mod acceptor {
 
             match conn_start_result {
                 Ok(conn_id) => log::info!(
-                    "[{}] started conn for {}: {}",
+                    "[{}|acceptor] started conn for {}: {}",
                     context.actor_id(),
                     conn_id,
                     peer_addr
                 ),
                 Err(reason) => log::warn!(
-                    "[{}] failed to start conn for {}: {}",
+                    "[{}|acceptor] failed to start conn for {}: {}",
                     context.actor_id(),
                     peer_addr,
                     reason

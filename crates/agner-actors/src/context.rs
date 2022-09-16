@@ -112,14 +112,13 @@ impl<M> Context<M> {
         calls: PipeTx<CallMsg<M>>,
         init_ack_tx: Option<InitAckTx>,
     ) -> Self {
+        let calls = calls.blocking();
         Self { actor_id, system, messages: inbox, signals, calls, init_ack_tx }
     }
 }
 
 impl<M> Context<M> {
     async fn backend_call(&mut self, call: CallMsg<M>) {
-        if let Err(_rejected) = self.calls.send(call).await {
-            panic!("Failed to perform backend-call");
-        }
+        self.calls.send(call).await.expect("It's a blocking Tx. Should not reject.")
     }
 }

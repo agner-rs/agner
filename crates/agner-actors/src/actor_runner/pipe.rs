@@ -4,11 +4,20 @@ use crate::spsc;
 pub struct PipeRx<T>(spsc::Receiver<T>);
 
 #[derive(Debug)]
-pub struct PipeTx<T>(spsc::Sender<T>);
+pub struct PipeTx<T>(spsc::Sender<T>, bool);
+
+impl<T> PipeTx<T> {
+    pub fn blocking(self) -> Self {
+        Self(self.0, true)
+    }
+    // pub fn rejecting(self) -> Self {
+    //     Self(self.0, false)
+    // }
+}
 
 pub fn new<M>(max_len: usize) -> (PipeTx<M>, PipeRx<M>) {
     let (tx, rx) = spsc::channel(max_len);
-    (PipeTx(tx), PipeRx(rx))
+    (PipeTx(tx, false), PipeRx(rx))
 }
 
 impl<T> PipeTx<T>
@@ -16,7 +25,7 @@ where
     T: Unpin,
 {
     pub async fn send(&mut self, message: T) -> Result<(), T> {
-        self.0.send(message, false).await
+        self.0.send(message, self.1).await
     }
 }
 
