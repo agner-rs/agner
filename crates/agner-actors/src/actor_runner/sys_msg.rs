@@ -11,9 +11,7 @@ use super::Backend;
 pub enum SysMsg {
     Link(ActorID),
     Unlink(ActorID),
-    Exit(ExitReason),
-    Exited(ActorID, Arc<ExitReason>),
-
+    SigExit(ActorID, Arc<ExitReason>),
     Wait(oneshot::Sender<Arc<ExitReason>>),
 }
 

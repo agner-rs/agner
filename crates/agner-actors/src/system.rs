@@ -117,7 +117,8 @@ impl System {
     }
 
     pub async fn exit(&self, actor_id: ActorID, exit_reason: ExitReason) {
-        self.send_sys_msg(actor_id, SysMsg::Exit(exit_reason)).await;
+        self.send_sys_msg(actor_id, SysMsg::SigExit(actor_id, Arc::new(exit_reason)))
+            .await;
     }
 
     pub async fn wait(&self, actor_id: ActorID) -> Arc<ExitReason> {

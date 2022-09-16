@@ -10,6 +10,9 @@ pub enum ExitReason {
     #[error("Normal")]
     Normal,
 
+    #[error("Kill")]
+    Kill,
+
     #[error("Exited: {}", _0)]
     Exited(ActorID, #[source] Arc<Self>),
 

@@ -52,6 +52,4 @@ where
                 restart_decider.child_dn(Instant::now(), actor_id, exit_reason),
         }
     }
-
-    std::future::pending().await
 }

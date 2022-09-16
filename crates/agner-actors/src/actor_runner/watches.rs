@@ -20,7 +20,7 @@ impl<M> Backend<M> {
                 self.send_sys_msg(linked, SysMsg::Unlink(self.actor_id)).await;
             } else {
                 log::trace!("[{}] notifying linked actor: {}", self.actor_id, linked);
-                self.send_sys_msg(linked, SysMsg::Exited(self.actor_id, exit_reason.to_owned()))
+                self.send_sys_msg(linked, SysMsg::SigExit(self.actor_id, exit_reason.to_owned()))
                     .await;
             }
         }
@@ -41,7 +41,7 @@ impl<M> Backend<M> {
 
             if !self.send_sys_msg(link_to, SysMsg::Link(self.actor_id)).await {
                 let _ =
-                    self.sys_msg_tx.send(SysMsg::Exited(link_to, Arc::new(ExitReason::NoProcess)));
+                    self.sys_msg_tx.send(SysMsg::SigExit(link_to, Arc::new(ExitReason::NoProcess)));
             }
         }
     }
@@ -74,27 +74,37 @@ impl<M> Backend<M> {
         Ok(())
     }
 
-    pub(super) async fn handle_sys_msg_exit(
+    pub(super) async fn handle_sys_msg_sig_exit(
         &mut self,
-        terminated: ActorID,
+        receiver_id: ActorID,
         exit_reason: Arc<ExitReason>,
     ) -> Result<(), ExitReason> {
-        if self.watches.links.remove(&terminated) {
+        if receiver_id == self.actor_id || self.watches.links.remove(&receiver_id) {
             log::trace!(
-                "[{}] Received Signal::Exited({}, ..) [trap-exit: {}]",
+                "[{}] Received SigExit({}, ..) [trap-exit: {}]",
                 self.actor_id,
-                terminated,
+                receiver_id,
                 self.watches.trap_exit
             );
-            if self.watches.trap_exit {
-                let signal = Signal::Exited(terminated, exit_reason);
-                self.signals_w
-                    .send(signal)
-                    .await
-                    .map_err(|_| ExitReason::InboxFull("signals"))?;
-                Ok(())
-            } else {
-                Err(ExitReason::Exited(terminated, exit_reason))
+
+            match (
+                self.watches.trap_exit,
+                receiver_id == self.actor_id,
+                matches!(exit_reason.as_ref(), &ExitReason::Kill),
+            ) {
+                (_, true, true) => Err(ExitReason::Kill),
+
+                (false, true, _) => Err(ExitReason::clone(exit_reason.as_ref())),
+                (false, false, _) => Err(ExitReason::Exited(receiver_id, exit_reason)),
+
+                (true, _, _) => {
+                    let signal = Signal::Exited(receiver_id, exit_reason);
+                    self.signals_w
+                        .send(signal)
+                        .await
+                        .map_err(|_| ExitReason::InboxFull("signals"))?;
+                    Ok(())
+                },
             }
         } else {
             Ok(())
