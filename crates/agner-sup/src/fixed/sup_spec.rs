@@ -7,7 +7,7 @@ pub use start::SupSpecStartChild;
 mod stop;
 pub use stop::SupSpecStopChild;
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct SupSpec<R, CS> {
     pub restart_strategy: R,
     pub children: CS,
