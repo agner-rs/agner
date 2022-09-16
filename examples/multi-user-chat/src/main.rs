@@ -208,10 +208,11 @@ async fn run() -> Result<(), BoxError> {
                 peer_addr,
             };
             let make_sup_args = move || {
-                dynamic::child_spec(
+                let child_spec = dynamic::child_spec(
                     agner::sup::adapt_exit_reason(conn::run),
                     make_conn_args.to_owned(),
-                )
+                );
+                dynamic::SupSpec::new(child_spec)
             };
 
             fixed::child_spec(dynamic::dynamic_sup, fixed::arg_call(make_sup_args))

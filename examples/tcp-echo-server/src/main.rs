@@ -78,8 +78,11 @@ async fn run() -> Result<(), BoxError> {
 
     let worker_sup_spec = {
         let make_worker_args = |(tcp_stream, peer_addr)| WorkerArgs { tcp_stream, peer_addr };
-        let make_sup_args =
-            move || dynamic::child_spec(agner::sup::adapt_exit_reason(worker), make_worker_args);
+        let make_sup_args = move || {
+            let child_spec =
+                dynamic::child_spec(agner::sup::adapt_exit_reason(worker), make_worker_args);
+            dynamic::SupSpec::new(child_spec)
+        };
         fixed::child_spec(dynamic::dynamic_sup, fixed::arg_call(make_sup_args))
             .with_name("worker-sup")
             .with_init_timeout(Duration::from_secs(1))

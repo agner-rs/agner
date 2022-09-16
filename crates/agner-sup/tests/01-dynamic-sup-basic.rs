@@ -18,20 +18,15 @@ fn dynamic_sup_basic_test() {
 
     common::run(async {
         let system = System::new(Default::default());
-        let sup = system
-            .spawn(
-                dynamic::dynamic_sup,
-                dynamic::child_spec(worker_behaviour, {
-                    let mut id: usize = 0;
-                    move |()| {
-                        id += 1;
-                        WorkerArgs { group_name: "group-name", worker_id: id }
-                    }
-                }),
-                Default::default(),
-            )
-            .await
-            .unwrap();
+        let child_spec = dynamic::child_spec(worker_behaviour, {
+            let mut id: usize = 0;
+            move |()| {
+                id += 1;
+                WorkerArgs { group_name: "group-name", worker_id: id }
+            }
+        });
+        let sup_spec = dynamic::SupSpec::new(child_spec);
+        let sup = system.spawn(dynamic::dynamic_sup, sup_spec, Default::default()).await.unwrap();
 
         for _ in 0..100 {
             let child_id =
