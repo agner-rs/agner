@@ -25,7 +25,7 @@ where
     context.trap_exit(true).await;
     context.init_ack(Default::default());
 
-    log::trace!("[{}] starting fixed sup with {} children", context.actor_id(), CS::LEN);
+    log::debug!("[{}] starting fixed sup with {} children", context.actor_id(), CS::LEN);
 
     let mut children = Vec::with_capacity(CS::LEN);
 
@@ -51,6 +51,7 @@ where
         if let Some(action) = restart_decider.next_action() {
             match action {
                 Action::Exit(exit_reason) => {
+                    log::debug!("[{}] exitting {}", context.actor_id(), exit_reason.pp());
                     context.exit(exit_reason).await;
                     unreachable!()
                 },

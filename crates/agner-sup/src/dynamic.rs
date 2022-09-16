@@ -81,12 +81,12 @@ where
             },
             Event::Signal(Signal::Exit(terminated, exit_reason)) => {
                 if !children.remove(&terminated) {
-                    let message = if terminated == context.actor_id() {
-                        "Shutdown requested".to_owned()
+                    if terminated == context.actor_id() {
+                        log::debug!("[{}] Shutdown requested — {}", context.actor_id(), exit_reason.pp());
                     } else {
-                        format!("Received SigExit from {}", terminated)
+                        log::debug!("[{}] Received SigExit from {} — {}", context.actor_id(), terminated, exit_reason.pp());
                     };
-                    log::trace!("[{}] {} — {}", context.actor_id(), message, exit_reason.pp());
+                    
                     let sup_exit_reason = ExitReason::Exited(terminated, exit_reason.into());
                     let child_exit_reason =
                         ExitReason::Exited(context.actor_id(), sup_exit_reason.to_owned().into());
@@ -129,8 +129,8 @@ where
                         .count()
                         .await;
 
-                    log::trace!(
-                        "[{}] successfully shutdown {} children",
+                    log::debug!(
+                        "[{}] successfully shutdown {} children. Exitting",
                         context.actor_id(),
                         children_count
                     );
