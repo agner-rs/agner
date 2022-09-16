@@ -14,7 +14,6 @@ pub struct OneForOne {
 
 pub struct OneForOneDecider {
     sup_id: ActorID,
-    frequency_policy: FrequencyPolicy,
     children: Box<[ActorID]>,
     failures: Box<[FrequencyStats]>,
     ignored_exits: HashSet<ActorID>,
@@ -24,11 +23,10 @@ pub struct OneForOneDecider {
 impl RestartStrategy for OneForOne {
     type Decider = OneForOneDecider;
 
-    fn new_decider(&self, sup: ActorID, children: &[ActorID]) -> Self::Decider {
+    fn new_decider(&self, sup_id: ActorID, children: &[ActorID]) -> Self::Decider {
         let failures = children.iter().map(|_| self.frequency_policy.new_stats()).collect();
         OneForOneDecider {
-            sup_id: sup,
-            frequency_policy: self.frequency_policy,
+            sup_id,
             children: children.into(),
             failures,
             ignored_exits: Default::default(),

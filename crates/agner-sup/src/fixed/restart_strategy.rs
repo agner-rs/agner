@@ -25,7 +25,7 @@ pub struct FrequencyStats {
 pub trait RestartStrategy: fmt::Display {
     type Decider: Decider;
 
-    fn new_decider(&self, sup: ActorID, children: &[ActorID]) -> Self::Decider;
+    fn new_decider(&self, sup_id: ActorID, children: &[ActorID]) -> Self::Decider;
 }
 
 pub trait Decider {
