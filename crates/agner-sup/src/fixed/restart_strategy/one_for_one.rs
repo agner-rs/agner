@@ -41,7 +41,7 @@ impl Decider for OneForOneDecider {
     fn next_action(&mut self) -> Option<super::Action> {
         self.pending.pop_front()
     }
-    fn child_up(&mut self, at: Instant, child_idx: usize, actor_id: ActorID) {
+    fn child_up(&mut self, _at: Instant, child_idx: usize, actor_id: ActorID) {
         self.children[child_idx] = actor_id;
     }
     fn child_dn(&mut self, at: Instant, actor_id: ActorID, exit_reason: Arc<ExitReason>) {

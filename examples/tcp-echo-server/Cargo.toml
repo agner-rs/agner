@@ -1,5 +1,5 @@
 [package]
-name = "tcp-echo-server"
+name = "agner-examples-tcp-echo-server"
 version = "0.1.0"
 edition = "2021"
 

@@ -4,7 +4,7 @@ use std::task::{Context, Poll};
 
 use agner_actors::{Actor, Context as ActorContext, ExitReason, IntoExitReason};
 
-pub(crate) fn normalize_exit_reason<A, M>(
+pub fn adapt_exit_reason<A, M>(
     behaviour: impl for<'a> Actor<'a, A, M> + Clone,
 ) -> impl for<'a> Actor<'a, A, M> + Clone {
     NormalizeExitReason(behaviour)

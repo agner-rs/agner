@@ -71,14 +71,15 @@ async fn run() -> Result<(), ArcError> {
 
     let tcp_acceptor_spec = {
         let args = TcpAcceptorArgs { bind_addr, worker_sup: worker_sup.to_owned() };
-        fixed::child_spec(tcp_acceptor, fixed::arg_clone(args))
+        fixed::child_spec(agner::sup::adapt_exit_reason(tcp_acceptor), fixed::arg_clone(args))
             .with_name("tcp-acceptor")
             .with_init_timeout(Duration::from_secs(3))
     };
 
     let worker_sup_spec = {
         let make_worker_args = |(tcp_stream, peer_addr)| WorkerArgs { tcp_stream, peer_addr };
-        let make_sup_args = move || dynamic::child_spec(worker, make_worker_args);
+        let make_sup_args =
+            move || dynamic::child_spec(agner::sup::adapt_exit_reason(worker), make_worker_args);
         fixed::child_spec(dynamic::dynamic_sup, fixed::arg_call(make_sup_args))
             .with_name("worker-sup")
             .with_init_timeout(Duration::from_secs(1))

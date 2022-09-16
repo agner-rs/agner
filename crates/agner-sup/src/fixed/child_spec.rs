@@ -17,7 +17,6 @@ where
     B: Clone,
     A: Send + Sync + 'static,
 {
-    let behaviour = crate::exit_reason_hack::normalize_exit_reason(behaviour);
     ChildSpecImpl {
         // name: None,
         regs: Default::default(),
@@ -27,6 +26,7 @@ where
         _pd: Default::default(),
     }
 }
+
 pub fn arg_call<F, A>(f: F) -> impl ArgFactory<A>
 where
     F: FnMut() -> A,

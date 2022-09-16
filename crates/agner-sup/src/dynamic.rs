@@ -31,7 +31,6 @@ where
     M: Send + Sync + Unpin + 'static,
     OA: Send + Sync + 'static,
 {
-    let behaviour = crate::exit_reason_hack::normalize_exit_reason(behaviour);
     ChildSpecImpl { behaviour, arg_factory, _pd: Default::default() }
 }
 
