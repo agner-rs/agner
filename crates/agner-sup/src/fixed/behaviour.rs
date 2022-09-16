@@ -1,7 +1,7 @@
 use agner_actors::{BoxError, Context, Event, Signal};
 
 use crate::fixed::hlist::HList;
-use crate::fixed::restart_strategy::Instant;
+use crate::fixed::restart_strategy::{Action, Instant};
 use crate::fixed::{Decider, SupSpec};
 
 use crate::fixed::sup_spec::SupSpecStartChild;
@@ -41,11 +41,17 @@ where
         sup_spec.restart_strategy
     );
     let mut restart_decider =
-        sup_spec.restart_strategy.new_decider(context.actor_id(), children.into());
+        sup_spec.restart_strategy.new_decider(context.actor_id(), &children[..]);
 
     loop {
         if let Some(action) = restart_decider.next_action() {
-            unimplemented!("next-action: {:?}", action);
+            match action {
+                Action::Exit(exit_reason) => {
+                    context.exit(exit_reason).await;
+                    unreachable!()
+                },
+                action => unimplemented!("action: {:?}", action),
+            }
         }
 
         let event = context.next_event().await;

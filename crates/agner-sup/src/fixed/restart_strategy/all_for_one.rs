@@ -26,12 +26,12 @@ pub struct AllForOneDecider {
 impl RestartStrategy for AllForOne {
     type Decider = AllForOneDecider;
 
-    fn new_decider(&self, sup: ActorID, children: Box<[ActorID]>) -> Self::Decider {
+    fn new_decider(&self, sup: ActorID, children: &[ActorID]) -> Self::Decider {
         let failures = children.iter().map(|_| self.frequency_policy.new_stats()).collect();
         AllForOneDecider {
             sup_id: sup,
             frequency_policy: self.frequency_policy,
-            children,
+            children: children.into(),
             failures,
             ignored_exits: Default::default(),
             pending: Default::default(),
