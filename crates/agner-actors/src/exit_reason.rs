@@ -1,5 +1,6 @@
 use std::error::Error as StdError;
 use std::fmt;
+use std::sync::Arc;
 
 use crate::actor_id::ActorID;
 use crate::imports::ArcError;
@@ -34,6 +35,12 @@ pub enum ExitReason {
 impl Default for ExitReason {
     fn default() -> Self {
         Self::Normal
+    }
+}
+
+impl ExitReason {
+    pub fn generic<E: std::error::Error + Send + Sync + 'static>(e: E) -> ExitReason {
+        Self::Generic(Arc::new(e))
     }
 }
 
