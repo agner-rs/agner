@@ -2,7 +2,9 @@ use std::time::{Duration, Instant};
 
 use agner_actors::{Actor, ActorID, ExitReason, SpawnOpts, System};
 use agner_utils::future_timeout_ext::FutureTimeoutExt;
+use agner_utils::result_err_flatten::ResultErrFlattenIn;
 use tokio::sync::oneshot;
+use tokio::time::error::Elapsed;
 
 use crate::Registered;
 use agner_actors::SysSpawnError;
@@ -16,7 +18,7 @@ pub enum StartChildError {
     InitAckBrokenPipe,
 
     #[error("Timeout")]
-    Timeout,
+    Timeout(#[source] Elapsed),
 
     #[error("oneshot-rx error")]
     Rx(#[source] oneshot::error::RecvError),
@@ -190,11 +192,10 @@ where
     log::trace!("[{}] intermediary-id: {}", sup_id, intermediary_id);
 
     let init_ack_with_timeout = init_ack_rx.timeout(init_timeout);
-    let child_id_result = match init_ack_with_timeout.await {
-        Err(_elapsed) => Err(StartChildError::Timeout),
-        Ok(None) => Err(StartChildError::InitAckBrokenPipe),
-        Ok(Some(child_id)) => Ok(child_id),
-    };
+    let child_id_result = init_ack_with_timeout
+        .await
+        .map(|opt| opt.ok_or(StartChildError::InitAckBrokenPipe))
+        .err_flatten_in();
 
     if let Err(reason) = child_id_result.as_ref() {
         log::trace!("[{}] init-ack error: {}. Terminating intermediary", sup_id, reason);
@@ -216,4 +217,15 @@ where
     system.link(sup_id, child_id).await;
 
     Ok(child_id)
+}
+
+impl From<Elapsed> for StartChildError {
+    fn from(elapsed: Elapsed) -> Self {
+        Self::Timeout(elapsed)
+    }
+}
+impl From<oneshot::error::RecvError> for StartChildError {
+    fn from(recv_error: oneshot::error::RecvError) -> Self {
+        Self::Rx(recv_error)
+    }
 }
