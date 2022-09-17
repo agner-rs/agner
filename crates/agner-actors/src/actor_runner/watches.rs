@@ -41,7 +41,7 @@ impl<M> Backend<M> {
             log::trace!("[{}] linking to {}", self.actor_id, link_to);
 
             if !self.send_sys_msg(link_to, SysMsg::Link(self.actor_id)).await {
-                let _ = self.sys_msg_tx.send(SysMsg::SigExit(link_to, ExitReason::NoProcess));
+                let _ = self.sys_msg_tx.send(SysMsg::SigExit(link_to, ExitReason::NoActor));
             }
         }
     }

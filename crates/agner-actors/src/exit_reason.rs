@@ -16,8 +16,8 @@ pub enum ExitReason {
     #[error("Exited: {}", _0)]
     Exited(ActorID, #[source] Box<Self>),
 
-    #[error("No Process")]
-    NoProcess,
+    #[error("No Actor")]
+    NoActor,
 
     #[error("Shutdown")]
     Shutdown(#[source] Option<ArcError>),

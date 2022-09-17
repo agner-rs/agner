@@ -1,6 +1,7 @@
 use std::sync::atomic::AtomicUsize;
 use std::sync::{Arc, Weak};
 
+use futures::{stream, Stream, StreamExt};
 use tokio::sync::{mpsc, oneshot, RwLock};
 
 use crate::actor::Actor;
@@ -115,19 +116,28 @@ impl System {
         Ok(actor_id)
     }
 
+    /// Send SigExit to the specified actor.
     pub async fn exit(&self, actor_id: ActorID, exit_reason: ExitReason) {
         self.send_sys_msg(actor_id, SysMsg::SigExit(actor_id, exit_reason)).await;
     }
 
+    /// Wait for the specified actor to terminate, and return upon its termination the
+    /// [`ExitReason`]. In case the actor with the specified `actor_id` does not exist — return
+    /// [`ExitReason::NoProcess`] right away.
     pub async fn wait(&self, actor_id: ActorID) -> ExitReason {
         let (tx, rx) = oneshot::channel();
         if self.send_sys_msg(actor_id, SysMsg::Wait(tx)).await {
-            rx.await.unwrap_or_else(|_| ExitReason::NoProcess)
+            rx.await.unwrap_or_else(|_| ExitReason::NoActor)
         } else {
-            ExitReason::NoProcess
+            ExitReason::NoActor
         }
     }
 
+    /// Send a [`SysMsg`] to the specified process.
+    /// Returns `true` if both:
+    /// - the process entry corresponding to the `to` existed;
+    /// - the underlying mpsc-channel accepted the message (i.e. was not closed before this message
+    ///   is sent).
     pub(crate) async fn send_sys_msg(&self, to: ActorID, sys_msg: SysMsg) -> bool {
         self.actor_entry_read(to, |entry| entry.sys_msg_tx.send(sys_msg).ok())
             .await
@@ -135,6 +145,21 @@ impl System {
             .is_some()
     }
 
+    /// Send a single message to the specified actor.
+    pub async fn send<M>(&self, actor_id: ActorID, message: M)
+    where
+        M: 'static,
+    {
+        let _ = self
+            .actor_entry_read(actor_id, move |e| {
+                e.messages_tx
+                    .downcast_ref::<mpsc::UnboundedSender<M>>()
+                    .map(move |tx| tx.send(message))
+            })
+            .await;
+    }
+
+    /// Open a channel to the specified actor.
     pub async fn channel<M>(
         &self,
         actor_id: ActorID,
@@ -153,29 +178,24 @@ impl System {
         Ok(chan)
     }
 
-    pub async fn send<M>(&self, actor_id: ActorID, message: M)
-    where
-        M: 'static,
-    {
-        let _ = self
-            .actor_entry_read(actor_id, move |e| {
-                e.messages_tx
-                    .downcast_ref::<mpsc::UnboundedSender<M>>()
-                    .map(move |tx| tx.send(message))
-            })
-            .await;
-    }
-
+    /// Link two actors
     pub async fn link(&self, left: ActorID, right: ActorID) {
         let left_accepted_sys_msg = self.send_sys_msg(left, SysMsg::Link(right)).await;
         let right_accepted_sys_msg = self.send_sys_msg(right, SysMsg::Link(left)).await;
 
         if !right_accepted_sys_msg {
-            self.send_sys_msg(left, SysMsg::SigExit(right, ExitReason::NoProcess)).await;
+            self.send_sys_msg(left, SysMsg::SigExit(right, ExitReason::NoActor)).await;
         }
         if !left_accepted_sys_msg {
-            self.send_sys_msg(right, SysMsg::SigExit(left, ExitReason::NoProcess)).await;
+            self.send_sys_msg(right, SysMsg::SigExit(left, ExitReason::NoActor)).await;
         }
+    }
+
+    pub fn all_actors<'a>(&'a self) -> impl Stream<Item = ActorID> + 'a {
+        stream::iter(&self.0.actor_entries[..]).filter_map(|slot| async move {
+            let locked = slot.read().await;
+            locked.as_ref().map(|entry| *entry.actor_id_lease)
+        })
     }
 }
 

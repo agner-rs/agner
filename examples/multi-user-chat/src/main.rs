@@ -1,5 +1,8 @@
+use std::time::Duration;
+
 use agner::actors::{BoxError, ExitReason, System};
 use agner::sup::fixed::{AllForOne, ChildSpec};
+use futures::StreamExt;
 use tokio::signal::unix::SignalKind;
 
 mod room {
@@ -299,6 +302,20 @@ async fn run() -> Result<(), BoxError> {
                 _ = terminate.recv() => { "SIGTERM" },
             };
             std::process::exit(1);
+        }
+    });
+
+    tokio::spawn({
+        let system = system.to_owned();
+        async move {
+            loop {
+                tokio::time::sleep(Duration::from_secs(5)).await;
+                let all_actor_ids = system.all_actors().collect::<Vec<_>>().await;
+                log::info!("All actors ({}):", all_actor_ids.len());
+                for actor_id in all_actor_ids {
+                    log::info!(" - {}", actor_id);
+                }
+            }
         }
     });
 
