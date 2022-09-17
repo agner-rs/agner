@@ -1,6 +1,6 @@
 [package]
 name = "agner-actors"
-version = "0.2.4"
+version = "0.2.5"
 edition = "2021"
 
 authors = ["Raman Hafiyatulin <r.gafiyatullin@me.com>"]
@@ -13,7 +13,9 @@ default = []
 serde = ["dep:serde"]
 
 [dependencies]
-futures = { version = "^0.3", features = ["bilock", "unstable"]}
+agner-utils = { version = "=0.2.5", path = "../agner-utils" }
+
+futures = { version = "^0.3"}
 log = "0.4"
 pin-project = "^1"
 serde = { version = "^1", features = ["derive"], optional = true }

@@ -3,6 +3,7 @@ use std::marker::PhantomData;
 use std::time::Duration;
 
 use agner_actors::{Actor, ActorID, Context, Event, ExitReason, Signal, System};
+use agner_utils::future_timeout_ext::FutureTimeoutExt;
 use futures::{stream, StreamExt};
 use tokio::sync::oneshot;
 
@@ -125,7 +126,7 @@ where
                             let system = context.system();
                             let sure_shutdown =
                                 async move {
-                                    let graceful_shutdown_or_timeout = tokio::time::timeout(child_stop_timeout, graceful_shutdown);
+                                    let graceful_shutdown_or_timeout = graceful_shutdown.timeout(child_stop_timeout);
                                     match graceful_shutdown_or_timeout.await {
                                         Ok(exit_reason) => log::trace!("[{}] child {} has gracefully exited: {}", sup_id, child_id, exit_reason),
                                         Err(_) => {

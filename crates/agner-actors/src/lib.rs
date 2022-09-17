@@ -8,8 +8,6 @@ mod spawn_opts;
 mod system;
 mod system_config;
 
-pub mod spsc;
-
 mod exports {
     pub use crate::actor::{Actor, IntoExitReason};
     pub use crate::actor_id::ActorID;

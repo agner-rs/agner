@@ -1,4 +1,4 @@
-use crate::spsc;
+use agner_utils::spsc;
 
 #[derive(Debug)]
 pub struct PipeRx<T>(spsc::Receiver<T>);

@@ -1,6 +1,7 @@
 use std::time::{Duration, Instant};
 
 use agner_actors::{Actor, ActorID, ExitReason, SpawnOpts, System};
+use agner_utils::future_timeout_ext::FutureTimeoutExt;
 use tokio::sync::oneshot;
 
 use crate::Registered;
@@ -79,7 +80,7 @@ pub async fn stop_child(
     );
     system.exit(child_id, exit_reason.to_owned()).await;
     let child_exited = system.wait(child_id);
-    let child_exited_or_timeout = tokio::time::timeout(stop_timeout, child_exited);
+    let child_exited_or_timeout = child_exited.timeout(stop_timeout);
 
     match child_exited_or_timeout.await {
         Ok(exit_reason) => {
@@ -103,7 +104,7 @@ pub async fn stop_child(
             );
             system.exit(child_id, ExitReason::Kill).await;
             let child_exited = system.wait(child_id);
-            let child_exited_or_timeout = tokio::time::timeout(stop_timeout, child_exited);
+            let child_exited_or_timeout = child_exited.timeout(stop_timeout);
 
             match child_exited_or_timeout.await {
                 Ok(exit_reason) => {
@@ -188,7 +189,7 @@ where
         .map_err(StartChildError::Spawn)?;
     log::trace!("[{}] intermediary-id: {}", sup_id, intermediary_id);
 
-    let init_ack_with_timeout = tokio::time::timeout(init_timeout, init_ack_rx);
+    let init_ack_with_timeout = init_ack_rx.timeout(init_timeout);
     let child_id_result = match init_ack_with_timeout.await {
         Err(_elapsed) => Err(StartChildError::InitAckTimeout),
         Ok(None) => Err(StartChildError::InitAckBrokenPipe),
@@ -199,7 +200,7 @@ where
         log::trace!("[{}] init-ack error: {}. Terminating intermediary", sup_id, reason);
 
         system.exit(intermediary_id, ExitReason::Shutdown(None)).await;
-        if tokio::time::timeout(stop_timeout, system.wait(intermediary_id)).await.is_err() {
+        if system.wait(intermediary_id).timeout(stop_timeout).await.is_err() {
             log::trace!(
                 "[{}] intermediary {} took too long to terminate. Killing it.",
                 sup_id,
