@@ -7,7 +7,6 @@ use crate::actor::Actor;
 use crate::actor_id::ActorID;
 use crate::actor_runner::sys_msg::SysMsg;
 use crate::actor_runner::ActorRunner;
-use crate::imports::BoxError;
 use crate::spawn_opts::SpawnOpts;
 use crate::system_config::SystemConfig;
 use crate::ExitReason;
@@ -17,6 +16,9 @@ use actor_entry::ActorEntry;
 
 mod actor_id_pool;
 use actor_id_pool::ActorIDPool;
+
+mod errors;
+pub use errors::{SysChannelError, SysSpawnError};
 
 #[derive(Debug, Clone)]
 pub struct System(Arc<Inner>);
@@ -81,7 +83,7 @@ impl System {
         behaviour: Behaviour,
         arg: Arg,
         spawn_opts: SpawnOpts,
-    ) -> Result<ActorID, BoxError>
+    ) -> Result<ActorID, SysSpawnError>
     where
         Arg: Send + Sync + 'static,
         Message: Unpin + Send + Sync + 'static,
@@ -89,11 +91,8 @@ impl System {
         // for<'a> <Behaviour as Actor<'a, Arg, Message>>::Fut: Send + Sync,
     {
         let system = self.to_owned();
-        let actor_id_lease = system
-            .0
-            .actor_id_pool
-            .acquire_id()
-            .ok_or("No available IDs (max_actors limit reached)")?;
+        let actor_id_lease =
+            system.0.actor_id_pool.acquire_id().ok_or(SysSpawnError::MaxActorsLimit)?;
         let actor_id = *actor_id_lease;
 
         let (messages_tx, messages_rx) = mpsc::unbounded_channel::<Message>();
@@ -136,7 +135,10 @@ impl System {
             .is_some()
     }
 
-    pub async fn channel<M>(&self, actor_id: ActorID) -> Result<mpsc::UnboundedSender<M>, BoxError>
+    pub async fn channel<M>(
+        &self,
+        actor_id: ActorID,
+    ) -> Result<mpsc::UnboundedSender<M>, SysChannelError>
     where
         M: 'static,
     {
@@ -145,8 +147,8 @@ impl System {
                 e.messages_tx.downcast_ref::<mpsc::UnboundedSender<M>>().map(ToOwned::to_owned)
             })
             .await
-            .ok_or("No such actor")?
-            .ok_or("Incompatible message type")?;
+            .ok_or(SysChannelError::NoActor)?
+            .ok_or(SysChannelError::InvalidMessageType)?;
 
         Ok(chan)
     }

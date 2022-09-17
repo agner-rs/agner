@@ -1,20 +1,24 @@
 use std::time::{Duration, Instant};
 
 use agner_actors::{Actor, ActorID, ExitReason, SpawnOpts, System};
+use tokio::sync::oneshot;
 
-use crate::dynamic::SpawnError;
 use crate::Registered;
+use agner_actors::SysSpawnError;
 
 #[derive(Debug, thiserror::Error)]
 pub enum StartChildError {
     #[error("System.spawn error")]
-    Spawn(#[source] SpawnError),
+    Spawn(#[source] SysSpawnError),
 
     #[error("init-ack: oneshot-rx closed")]
     InitAckBrokenPipe,
 
     #[error("init-ack: timeout")]
     InitAckTimeout,
+
+    #[error("oneshot-rx error")]
+    Rx(#[source] oneshot::error::RecvError),
 }
 
 #[derive(Debug, thiserror::Error)]

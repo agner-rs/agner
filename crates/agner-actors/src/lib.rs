@@ -17,7 +17,7 @@ mod exports {
     pub use crate::exit_reason::ExitReason;
     pub use crate::init_ack::{new as new_init_ack, InitAckRx, InitAckTx};
     pub use crate::spawn_opts::SpawnOpts;
-    pub use crate::system::System;
+    pub use crate::system::{SysChannelError, SysSpawnError, System};
     pub use crate::system_config::SystemConfig;
 }
 mod imports {

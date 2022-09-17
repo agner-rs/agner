@@ -2,28 +2,32 @@ use std::collections::HashSet;
 use std::marker::PhantomData;
 use std::time::Duration;
 
-use agner_actors::{Actor, ActorID, BoxError, Context, Event, ExitReason, Signal, System};
+use agner_actors::{Actor, ActorID, Context, Event, ExitReason, Signal, System};
 use futures::{stream, StreamExt};
 use tokio::sync::oneshot;
 
-pub type SpawnError = BoxError;
+use crate::common::StartChildError;
 
 const DEFAULT_INIT_TIMEOUT: Duration = Duration::from_secs(5);
 const DEFAULT_SHUTDOWN_TIMEOUT: Duration = Duration::from_secs(5);
 const SHUTDOWN_MAX_PARALLELISM: usize = 32;
 
 pub enum Message<IA> {
-    StartChild(IA, oneshot::Sender<Result<ActorID, BoxError>>),
+    StartChild(IA, oneshot::Sender<Result<ActorID, StartChildError>>),
 }
 
 /// Start a child under the given sup
-pub async fn start_child<IA>(system: &System, sup: ActorID, arg: IA) -> Result<ActorID, SpawnError>
+pub async fn start_child<IA>(
+    system: &System,
+    sup: ActorID,
+    arg: IA,
+) -> Result<ActorID, StartChildError>
 where
     IA: Send + Sync + 'static,
 {
-    let (tx, rx) = oneshot::channel::<Result<ActorID, SpawnError>>();
+    let (tx, rx) = oneshot::channel::<Result<ActorID, StartChildError>>();
     system.send(sup, Message::StartChild(arg, tx)).await;
-    rx.await.map_err(SpawnError::from)?
+    rx.await.map_err(StartChildError::Rx)?
 }
 
 #[derive(Debug, Clone)]
@@ -229,7 +233,7 @@ async fn do_start_child<CS, IA, M>(
     sup_spec: &mut SupSpec<CS>,
     arg: IA,
     children: &mut HashSet<ActorID>,
-) -> Result<ActorID, SpawnError>
+) -> Result<ActorID, StartChildError>
 where
     CS: ChildSpec<IA, M>,
     IA: Send + Sync + Unpin + 'static,
