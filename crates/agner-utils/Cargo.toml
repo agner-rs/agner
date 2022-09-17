@@ -1,6 +1,6 @@
 [package]
 name = "agner-utils"
-version = "0.2.5"
+version = "0.2.6"
 edition = "2021"
 
 authors = ["Raman Hafiyatulin <r.gafiyatullin@me.com>"]

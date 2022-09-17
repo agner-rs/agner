@@ -15,8 +15,8 @@ pub enum StartChildError {
     #[error("init-ack: oneshot-rx closed")]
     InitAckBrokenPipe,
 
-    #[error("init-ack: timeout")]
-    InitAckTimeout,
+    #[error("Timeout")]
+    Timeout,
 
     #[error("oneshot-rx error")]
     Rx(#[source] oneshot::error::RecvError),
@@ -191,7 +191,7 @@ where
 
     let init_ack_with_timeout = init_ack_rx.timeout(init_timeout);
     let child_id_result = match init_ack_with_timeout.await {
-        Err(_elapsed) => Err(StartChildError::InitAckTimeout),
+        Err(_elapsed) => Err(StartChildError::Timeout),
         Ok(None) => Err(StartChildError::InitAckBrokenPipe),
         Ok(Some(child_id)) => Ok(child_id),
     };

@@ -1,6 +1,6 @@
 [package]
 name = "agner-sup"
-version = "0.2.5"
+version = "0.2.6"
 edition = "2021"
 
 authors = ["Raman Hafiyatulin <r.gafiyatullin@me.com>"]
@@ -12,8 +12,8 @@ description = "An actor toolkit inspired by Erlang/OTP (supervisors)"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-agner-utils = { path = "../agner-utils", version = "=0.2.5" }
-agner-actors = { path = "../agner-actors", version = "=0.2.5" }
+agner-utils = { path = "../agner-utils", version = "=0.2.6" }
+agner-actors = { path = "../agner-actors", version = "=0.2.6" }
 arc-swap = "^1"
 futures = "^0.3"
 log = "^0.4"
