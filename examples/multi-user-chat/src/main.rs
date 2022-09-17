@@ -313,7 +313,10 @@ async fn run() -> Result<(), BoxError> {
                 let all_actor_ids = system.all_actors().collect::<Vec<_>>().await;
                 log::info!("All actors ({}):", all_actor_ids.len());
                 for actor_id in all_actor_ids {
-                    log::info!(" - {}", actor_id);
+                    let info_opt = system.actor_info(actor_id).await;
+                    let info_json =
+                        serde_json::to_string(&info_opt).expect("serde::Serialize failed");
+                    log::info!(" - {}: {}", actor_id, info_json);
                 }
             }
         }

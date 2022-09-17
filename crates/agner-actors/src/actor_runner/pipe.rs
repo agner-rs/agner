@@ -27,6 +27,13 @@ where
     pub async fn send(&mut self, message: T) -> Result<(), T> {
         self.0.send(message, self.1).await
     }
+
+    pub async fn len(&self) -> (usize, usize)
+    where
+        T: Unpin,
+    {
+        self.0.len().await
+    }
 }
 
 impl<T> PipeRx<T>
@@ -35,6 +42,13 @@ where
 {
     pub async fn recv(&mut self) -> T {
         self.0.recv(true).await.unwrap()
+    }
+
+    pub async fn len(&self) -> (usize, usize)
+    where
+        T: Unpin,
+    {
+        self.0.len().await
     }
 }
 

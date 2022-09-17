@@ -1,5 +1,8 @@
 mod impl_fmt;
 
+#[cfg(feature = "serde")]
+mod serde;
+
 #[cfg(test)]
 mod tests;
 

@@ -29,6 +29,11 @@ where
     pub fn recv<'a>(&'a mut self, should_block: bool) -> impl Future<Output = Option<T>> + 'a {
         Receive { lock: &self.0, should_block }
     }
+
+    pub async fn len(&self) -> (usize, usize) {
+        let locked = self.0.lock().await;
+        (locked.queue.len(), locked.max_len)
+    }
 }
 
 impl<T> Sender<T>
@@ -41,6 +46,11 @@ where
         should_block: bool,
     ) -> impl Future<Output = Result<(), T>> + 'a {
         Send { lock: &self.0, should_block, item: Some(item) }
+    }
+
+    pub async fn len(&self) -> (usize, usize) {
+        let locked = self.0.lock().await;
+        (locked.queue.len(), locked.max_len)
     }
 }
 

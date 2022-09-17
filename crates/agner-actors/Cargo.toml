@@ -8,10 +8,15 @@ license = "MIT"
 repository = "https://github.com/RGafiyatullin/agner"
 description = "An actor toolkit inspired by Erlang/OTP (actors)"
 
+[features]
+default = []
+serde = ["dep:serde"]
+
 [dependencies]
 futures = { version = "^0.3", features = ["bilock", "unstable"]}
 log = "0.4"
 pin-project = "^1"
+serde = { version = "^1", features = ["derive"], optional = true }
 thiserror = "^1"
 tokio = {version = "^1", features = ["sync", "macros", "rt"]}
 

@@ -3,7 +3,7 @@ use std::pin::Pin;
 
 use futures::stream::FuturesUnordered;
 use futures::StreamExt;
-use tokio::sync::mpsc;
+use tokio::sync::{mpsc, oneshot};
 
 use crate::actor::{Actor, IntoExitReason};
 use crate::actor_id::ActorID;
@@ -22,6 +22,7 @@ use sys_msg::SysMsg;
 use watches::Watches;
 
 use self::pipe::{PipeRx, PipeTx};
+pub use self::sys_msg::ActorInfo;
 
 pub(crate) struct ActorRunner<Message> {
     pub actor_id: ActorID,
@@ -169,6 +170,7 @@ where
             Some(SysMsg::Link(link_to)) => self.handle_sys_msg_link(link_to).await,
             Some(SysMsg::Unlink(unlink_from)) => self.handle_sys_msg_unlink(unlink_from).await,
             Some(SysMsg::Wait(report_to)) => self.handle_sys_msg_wait(report_to),
+            Some(SysMsg::GetInfo(report_to)) => self.handle_sys_msg_get_info(report_to).await,
         }
     }
 
@@ -182,6 +184,9 @@ where
                 },
             SysMsg::Wait(report_to) => {
                 let _ = report_to.send(exit_reason);
+            },
+            SysMsg::GetInfo(report_to) => {
+                let _ = self.handle_sys_msg_get_info(report_to).await;
             },
             SysMsg::Unlink { .. } => (),
             SysMsg::SigExit { .. } => (),
@@ -215,6 +220,24 @@ where
             .send(message)
             .await
             .map_err(|_rejected| ExitReason::InboxFull("messages"))?;
+        Ok(())
+    }
+
+    async fn handle_sys_msg_get_info(
+        &self,
+        report_to: oneshot::Sender<ActorInfo>,
+    ) -> Result<(), ExitReason> {
+        let info = ActorInfo {
+            actor_id: self.actor_id,
+            m_queue_len: self.inbox_w.len().await,
+            s_queue_len: self.signals_w.len().await,
+            c_queue_len: self.calls_r.len().await,
+            tasks_count: self.tasks.len(),
+            trap_exit: self.watches.trap_exit,
+            links: self.watches.links.iter().copied().collect(),
+            waits_len: self.watches.waits.len(),
+        };
+        let _ = report_to.send(info);
         Ok(())
     }
 }

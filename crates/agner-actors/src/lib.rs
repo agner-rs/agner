@@ -13,6 +13,7 @@ pub mod spsc;
 mod exports {
     pub use crate::actor::{Actor, IntoExitReason};
     pub use crate::actor_id::ActorID;
+    pub use crate::actor_runner::ActorInfo;
     pub use crate::context::{Context, Event, Signal};
     pub use crate::exit_reason::ExitReason;
     pub use crate::init_ack::{new as new_init_ack, InitAckRx, InitAckTx};

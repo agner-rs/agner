@@ -10,7 +10,7 @@ use crate::actor_runner::sys_msg::SysMsg;
 use crate::actor_runner::ActorRunner;
 use crate::spawn_opts::SpawnOpts;
 use crate::system_config::SystemConfig;
-use crate::ExitReason;
+use crate::{ActorInfo, ExitReason};
 
 mod actor_entry;
 use actor_entry::ActorEntry;
@@ -196,6 +196,12 @@ impl System {
             let locked = slot.read().await;
             locked.as_ref().map(|entry| *entry.actor_id_lease)
         })
+    }
+
+    pub async fn actor_info(&self, actor_id: ActorID) -> Option<ActorInfo> {
+        let (tx, rx) = oneshot::channel();
+        self.send_sys_msg(actor_id, SysMsg::GetInfo(tx)).await;
+        rx.await.ok()
     }
 }
 

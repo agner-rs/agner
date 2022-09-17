@@ -11,6 +11,21 @@ pub enum SysMsg {
     Unlink(ActorID),
     SigExit(ActorID, ExitReason),
     Wait(oneshot::Sender<ExitReason>),
+
+    GetInfo(oneshot::Sender<ActorInfo>),
+}
+
+#[derive(Debug, Clone)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+pub struct ActorInfo {
+    pub actor_id: ActorID,
+    pub m_queue_len: (usize, usize),
+    pub s_queue_len: (usize, usize),
+    pub c_queue_len: (usize, usize),
+    pub tasks_count: usize,
+    pub trap_exit: bool,
+    pub links: Box<[ActorID]>,
+    pub waits_len: usize,
 }
 
 impl<M> Backend<M> {
