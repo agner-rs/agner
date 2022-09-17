@@ -109,6 +109,7 @@ mod room {
 mod conn {
     use agner::actors::{BoxError, Context, Event, ExitReason};
     use agner::sup::Registered;
+    use agner::utils::std_error_pp::StdErrorPP;
     use std::net::SocketAddr;
     use std::sync::Arc;
     use tokio::io::{AsyncBufReadExt, AsyncWriteExt, BufReader};

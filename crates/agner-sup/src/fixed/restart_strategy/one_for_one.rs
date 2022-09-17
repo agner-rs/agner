@@ -3,6 +3,7 @@ use std::fmt;
 use std::sync::Arc;
 
 use agner_actors::{ActorID, ExitReason};
+use agner_utils::std_error_pp::StdErrorPP;
 
 use crate::fixed::restart_strategy::{
     Action, Decider, FrequencyPolicy, FrequencyStats, Instant, RestartStrategy,

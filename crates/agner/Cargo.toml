@@ -1,6 +1,6 @@
 [package]
 name = "agner"
-version = "0.2.7"
+version = "0.2.8"
 edition = "2021"
 
 authors = ["Raman Hafiyatulin <r.gafiyatullin@me.com>"]
@@ -17,6 +17,6 @@ sup = ["dep:agner-sup"]
 serde = ["agner-actors/serde"]
 
 [dependencies]
-agner-utils = { path = "../agner-utils", version = "=0.2.7" }
-agner-actors = { path = "../agner-actors", version = "=0.2.7" }
-agner-sup = { path = "../agner-sup", version = "=0.2.7", optional = true }
+agner-utils = { path = "../agner-utils", version = "=0.2.8" }
+agner-actors = { path = "../agner-actors", version = "=0.2.8" }
+agner-sup = { path = "../agner-sup", version = "=0.2.8", optional = true }
