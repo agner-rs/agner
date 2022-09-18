@@ -8,6 +8,8 @@
 
 ## agner-sup: dynamic sup needs a restart strategy
 
+## agner-sup: all-for-one does not restart children properly
+
 ### Example: a sup for several tcp-acceptors.
 The acceptors are configured, therefore it is not known at compile time — need to use a dynamic sup.
 There should be an ability to escalate the failure of an interface.
