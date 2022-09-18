@@ -114,7 +114,7 @@ fn small_ring() {
 
 #[test]
 fn large_ring() {
-    common::run(actor_ring(100_000));
+    common::run(actor_ring(1_000_000));
 }
 
 async fn actor_ring(ring_size: usize) {
@@ -136,6 +136,8 @@ async fn actor_ring(ring_size: usize) {
     let system = System::new(SystemConfig { max_actors: ring_size, ..Default::default() });
 
     let mut prev = None;
+
+    let t0 = Instant::now();
     for _i in 0..ring_size {
         let actor = system
             .spawn(actor_behaviour, prev, Default::default())
@@ -143,6 +145,7 @@ async fn actor_ring(ring_size: usize) {
             .expect("Failed to start another actor");
         prev = Some(actor);
     }
+    log::info!("spawn-time: {:?}", t0.elapsed());
 
     if let Some(last) = prev {
         for i in 1usize..10 {

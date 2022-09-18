@@ -5,7 +5,7 @@
         forward/1,
         % start_ring/1,
         % call/1,
-        run/1
+        run/2
     ]).
 
 
@@ -21,12 +21,14 @@ start_ring(Size) when is_integer(Size) ->
 forward(To) ->
     receive
         Payload -> To ! Payload
-    end.
+    end,
+    forward(To).
 
 reply_at_once() ->
     receive
         {ReplyTo, Ref} when is_pid(ReplyTo) -> ReplyTo ! Ref
-    end.
+    end,
+    reply_at_once().
 
 call(Ingress) ->
     Ref = erlang:make_ref(),
@@ -35,11 +37,12 @@ call(Ingress) ->
         Ref -> ok
     end.
 
-run(RingSize) ->
+run(RingSize, Times) ->
     {SpawnTime, Ingress} = timer:tc(fun() -> start_ring(RingSize) end),
-    {CallTime, ok} = timer:tc(fun() -> call(Ingress) end),
-    [
-        {spawn, SpawnTime},
-        {call, CallTime}
-    ].
+    io:format("spawn-time: ~p~n", [SpawnTime]),
+
+    lists:foreach(fun(I) ->
+        {CallTime, ok} = timer:tc(fun() -> call(Ingress) end),
+        io:format("[~p] RTT: ~p~n", [I, CallTime])
+    end, lists:seq(1, Times)).
 
