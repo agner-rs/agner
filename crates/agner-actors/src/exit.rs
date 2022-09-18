@@ -9,7 +9,7 @@ pub enum Exit {
     Standard(#[source] ExitStandard),
 
     #[error("Actor backend failure")]
-    BackendFailure(#[source] BackendFailure),
+    Backend(#[source] BackendFailure),
 
     #[error("Custom")]
     Custom(#[source] ArcError),
@@ -54,7 +54,7 @@ impl From<ExitStandard> for Exit {
 }
 impl From<BackendFailure> for Exit {
     fn from(e: BackendFailure) -> Self {
-        Self::BackendFailure(e)
+        Self::Backend(e)
     }
 }
 

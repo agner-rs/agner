@@ -86,6 +86,12 @@ where
                 tasks: FuturesUnordered::<
                     Pin<Box<dyn Future<Output = Message> + Send + Sync + 'static>>,
                 >::new(),
+
+                actor_type_info: (
+                    std::any::type_name::<Behaviour>(),
+                    std::any::type_name::<Arg>(),
+                    std::any::type_name::<Message>(),
+                ),
             };
 
         for link_to in spawn_opts.links() {
@@ -118,6 +124,8 @@ struct Backend<Message> {
     calls_r: PipeRx<CallMsg<Message>>,
     watches: Watches,
     tasks: FuturesUnordered<Pin<Box<dyn Future<Output = Message> + Send + Sync + 'static>>>,
+
+    actor_type_info: (&'static str, &'static str, &'static str),
 }
 
 impl<Message> Backend<Message>
@@ -228,6 +236,11 @@ where
     ) -> Result<(), Exit> {
         let info = ActorInfo {
             actor_id: self.actor_id,
+
+            behaviour: self.actor_type_info.0,
+            arg_type: self.actor_type_info.1,
+            message_type: self.actor_type_info.2,
+
             m_queue_len: self.inbox_w.len().await,
             s_queue_len: self.signals_w.len().await,
             c_queue_len: self.calls_r.len().await,

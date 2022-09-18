@@ -19,6 +19,9 @@ pub enum SysMsg {
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct ActorInfo {
     pub actor_id: ActorID,
+    pub behaviour: &'static str,
+    pub arg_type: &'static str,
+    pub message_type: &'static str,
     pub m_queue_len: (usize, usize),
     pub s_queue_len: (usize, usize),
     pub c_queue_len: (usize, usize),
