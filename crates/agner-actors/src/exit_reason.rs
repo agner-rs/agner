@@ -80,7 +80,7 @@ impl ExitReason {
     pub fn shutdown() -> Self {
         WellKnown::Shutdown(None).into()
     }
-    pub fn shutdown_after(source: ArcError) -> Self {
+    pub fn shutdown_with_source(source: ArcError) -> Self {
         WellKnown::Shutdown(Some(source)).into()
     }
 

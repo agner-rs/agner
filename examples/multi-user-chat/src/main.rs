@@ -293,7 +293,9 @@ async fn run() -> Result<(), BoxError> {
             };
 
             let sig_boxed_error: BoxError = sig_name.into();
-            system.exit(top_sup, ExitReason::shutdown_after(sig_boxed_error.into())).await;
+            system
+                .exit(top_sup, ExitReason::shutdown_with_source(sig_boxed_error.into()))
+                .await;
 
             let _sig_name = tokio::select! {
                 _ = interrupt.recv() => { "SIGINT" },

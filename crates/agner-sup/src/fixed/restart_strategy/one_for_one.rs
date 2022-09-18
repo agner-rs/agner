@@ -64,7 +64,7 @@ impl Decider for OneForOneDecider {
             if self.failures[idx].report(at) {
                 self.ignored_exits.extend(self.children.iter().copied());
 
-                self.initiate_shutdown(ExitReason::shutdown_after(Arc::new(exit_reason)))
+                self.initiate_shutdown(ExitReason::shutdown_with_source(Arc::new(exit_reason)))
             } else {
                 self.pending.push_back(Action::Start(idx));
             }
@@ -94,7 +94,7 @@ impl OneForOneDecider {
                     Action::Stop(
                         child_idx,
                         child_id,
-                        ExitReason::shutdown_after(arc_exit_reason.to_owned()),
+                        ExitReason::shutdown_with_source(arc_exit_reason.to_owned()),
                     )
                 })
                 .chain([Action::Exit(exit_reason)]),

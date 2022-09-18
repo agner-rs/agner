@@ -97,7 +97,7 @@ impl AllForOneDecider {
                         Some(Action::Stop(
                             idx,
                             self.ch_ids[idx],
-                            ExitReason::shutdown_after(arc_cause.to_owned()),
+                            ExitReason::shutdown_with_source(arc_cause.to_owned()),
                         ))
                     } else {
                         None
@@ -120,7 +120,7 @@ impl AllForOneDecider {
                         Some(Action::Stop(
                             idx,
                             self.ch_ids[idx],
-                            ExitReason::shutdown_after(arc_exit_reason.to_owned()),
+                            ExitReason::shutdown_with_source(arc_exit_reason.to_owned()),
                         ))
                     } else {
                         None
