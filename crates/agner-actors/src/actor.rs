@@ -31,13 +31,14 @@ impl IntoExitReason for Infallible {
         unreachable!("Whoa! An instance of {}: {:?}", std::any::type_name::<Self>(), self)
     }
 }
+
 impl<E> IntoExitReason for Result<(), E>
 where
     E: Into<ArcError>,
 {
     fn into_exit_reason(self) -> ExitReason {
         if let Err(reason) = self {
-            ExitReason::Generic(reason.into())
+            ExitReason::custom(reason.into())
         } else {
             ExitReason::normal()
         }

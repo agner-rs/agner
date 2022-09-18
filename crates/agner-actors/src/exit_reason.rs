@@ -11,8 +11,8 @@ pub enum ExitReason {
     #[error("Actor backend failure")]
     Backend(#[source] BackendFailure),
 
-    #[error("Generic")]
-    Generic(#[source] ArcError),
+    #[error("Custom")]
+    Custom(#[source] ArcError),
 }
 
 #[derive(Debug, Clone, thiserror::Error)]
@@ -84,7 +84,7 @@ impl ExitReason {
         WellKnown::Shutdown(Some(source)).into()
     }
 
-    pub fn generic<E: std::error::Error + Send + Sync + 'static>(e: E) -> ExitReason {
-        Self::Generic(Arc::new(e))
+    pub fn custom<E: std::error::Error + Send + Sync + 'static>(e: E) -> ExitReason {
+        Self::Custom(Arc::new(e))
     }
 }
