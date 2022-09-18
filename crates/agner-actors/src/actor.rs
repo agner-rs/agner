@@ -2,7 +2,7 @@ use std::convert::Infallible;
 use std::future::Future;
 
 use crate::context::Context;
-use crate::exit_reason::ExitReason;
+use crate::exit::Exit;
 use crate::ArcError;
 
 pub trait Actor<'a, A, M>: Send + Sync + 'static {
@@ -13,21 +13,21 @@ pub trait Actor<'a, A, M>: Send + Sync + 'static {
 }
 
 pub trait IntoExitReason {
-    fn into_exit_reason(self) -> ExitReason;
+    fn into_exit_reason(self) -> Exit;
 }
 
-impl IntoExitReason for ExitReason {
-    fn into_exit_reason(self) -> ExitReason {
+impl IntoExitReason for Exit {
+    fn into_exit_reason(self) -> Exit {
         self
     }
 }
 impl IntoExitReason for () {
-    fn into_exit_reason(self) -> ExitReason {
+    fn into_exit_reason(self) -> Exit {
         Default::default()
     }
 }
 impl IntoExitReason for Infallible {
-    fn into_exit_reason(self) -> ExitReason {
+    fn into_exit_reason(self) -> Exit {
         unreachable!("Whoa! An instance of {}: {:?}", std::any::type_name::<Self>(), self)
     }
 }
@@ -36,11 +36,11 @@ impl<E> IntoExitReason for Result<(), E>
 where
     E: Into<ArcError>,
 {
-    fn into_exit_reason(self) -> ExitReason {
+    fn into_exit_reason(self) -> Exit {
         if let Err(reason) = self {
-            ExitReason::custom(reason.into())
+            Exit::custom(reason.into())
         } else {
-            ExitReason::normal()
+            Exit::normal()
         }
     }
 }

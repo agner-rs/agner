@@ -1,6 +1,6 @@
 use std::time::Duration;
 
-use agner_actors::{ActorID, Context, Event, ExitReason, Signal, SpawnOpts, System};
+use agner_actors::{ActorID, Context, Event, Exit, Signal, SpawnOpts, System};
 use futures::{stream, StreamExt, TryStreamExt};
 use tokio::sync::oneshot;
 
@@ -13,14 +13,14 @@ fn links_test() {
         Link(ActorID),
         Unlink(ActorID),
         Ping,
-        Exit(ExitReason),
+        Exit(Exit),
         TrapExit(bool),
     }
 
     async fn actor_behaviour(
         context: &mut Context<(Request, oneshot::Sender<()>)>,
         _arg: (),
-    ) -> ExitReason {
+    ) -> Exit {
         loop {
             match context.next_event().await {
                 Event::Message((request, reply_to)) => {
@@ -99,7 +99,7 @@ fn links_test() {
             assert!(call(actor, Request::Ping).await.is_ok());
         }
 
-        assert!(call(a[0], Request::Exit(ExitReason::shutdown())).await.is_ok());
+        assert!(call(a[0], Request::Exit(Exit::shutdown())).await.is_ok());
 
         log::info!("---");
         tokio::time::sleep(Duration::from_millis(500)).await;
@@ -123,7 +123,7 @@ fn links_test() {
         tokio::time::sleep(Duration::from_millis(100)).await;
 
         for actor in a.iter().copied() {
-            let exit_requested = call(actor, Request::Exit(ExitReason::shutdown()));
+            let exit_requested = call(actor, Request::Exit(Exit::shutdown()));
             let actor_waited = system.wait(actor);
 
             let _ = exit_requested.await;

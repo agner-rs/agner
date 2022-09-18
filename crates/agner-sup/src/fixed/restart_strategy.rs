@@ -4,7 +4,7 @@ use std::time::Duration;
 mod all_for_one;
 mod one_for_one;
 
-use agner_actors::{ActorID, ExitReason};
+use agner_actors::{ActorID, Exit};
 pub use all_for_one::AllForOne;
 pub use one_for_one::OneForOne;
 
@@ -31,13 +31,13 @@ pub trait RestartStrategy: fmt::Display {
 pub trait Decider {
     fn next_action(&mut self) -> Option<Action>;
     fn child_up(&mut self, at: Instant, child_idx: usize, actor_id: ActorID);
-    fn actor_down(&mut self, at: Instant, actor_id: ActorID, exit_reason: ExitReason);
+    fn actor_down(&mut self, at: Instant, actor_id: ActorID, exit_reason: Exit);
 }
 
 #[derive(Debug, Clone)]
 pub enum Action {
-    Exit(ExitReason),
-    Stop(usize, ActorID, ExitReason),
+    Exit(Exit),
+    Stop(usize, ActorID, Exit),
     Start(usize),
 }
 

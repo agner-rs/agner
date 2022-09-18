@@ -3,10 +3,10 @@ use std::future::Future;
 use std::pin::Pin;
 
 use crate::actor_id::ActorID;
-use crate::exit_reason::ExitReason;
+use crate::exit::Exit;
 
 pub enum CallMsg<M> {
-    Exit(ExitReason),
+    Exit(Exit),
     Link(ActorID),
     Unlink(ActorID),
     TrapExit(bool),

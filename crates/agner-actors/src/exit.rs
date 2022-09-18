@@ -4,19 +4,19 @@ use crate::actor_id::ActorID;
 use crate::imports::ArcError;
 
 #[derive(Debug, Clone, thiserror::Error)]
-pub enum ExitReason {
+pub enum Exit {
     #[error("Well known")]
-    WellKnown(#[source] WellKnown),
+    Standard(#[source] ExitStandard),
 
     #[error("Actor backend failure")]
-    Backend(#[source] BackendFailure),
+    BackendFailure(#[source] BackendFailure),
 
     #[error("Custom")]
     Custom(#[source] ArcError),
 }
 
 #[derive(Debug, Clone, thiserror::Error)]
-pub enum WellKnown {
+pub enum ExitStandard {
     #[error("Normal")]
     Normal,
 
@@ -24,7 +24,7 @@ pub enum WellKnown {
     Kill,
 
     #[error("Exited: {}", _0)]
-    Exited(ActorID, #[source] Box<ExitReason>),
+    Exited(ActorID, #[source] Box<Exit>),
 
     #[error("No Actor")]
     NoActor,
@@ -42,49 +42,49 @@ pub enum BackendFailure {
     RxClosed(&'static str),
 }
 
-impl Default for ExitReason {
+impl Default for Exit {
     fn default() -> Self {
-        Self::WellKnown(WellKnown::Normal)
+        Self::Standard(ExitStandard::Normal)
     }
 }
-impl From<WellKnown> for ExitReason {
-    fn from(e: WellKnown) -> Self {
-        Self::WellKnown(e)
+impl From<ExitStandard> for Exit {
+    fn from(e: ExitStandard) -> Self {
+        Self::Standard(e)
     }
 }
-impl From<BackendFailure> for ExitReason {
+impl From<BackendFailure> for Exit {
     fn from(e: BackendFailure) -> Self {
-        Self::Backend(e)
+        Self::BackendFailure(e)
     }
 }
 
-impl ExitReason {
+impl Exit {
     pub fn is_normal(&self) -> bool {
-        matches!(self, Self::WellKnown(WellKnown::Normal))
+        matches!(self, Self::Standard(ExitStandard::Normal))
     }
     pub fn is_kill(&self) -> bool {
-        matches!(self, Self::WellKnown(WellKnown::Kill))
+        matches!(self, Self::Standard(ExitStandard::Kill))
     }
     pub fn normal() -> Self {
-        WellKnown::Normal.into()
+        ExitStandard::Normal.into()
     }
     pub fn kill() -> Self {
-        WellKnown::Kill.into()
+        ExitStandard::Kill.into()
     }
     pub fn exited(who: ActorID, reason: impl Into<Box<Self>>) -> Self {
-        WellKnown::Exited(who, reason.into()).into()
+        ExitStandard::Exited(who, reason.into()).into()
     }
     pub fn no_actor() -> Self {
-        WellKnown::NoActor.into()
+        ExitStandard::NoActor.into()
     }
     pub fn shutdown() -> Self {
-        WellKnown::Shutdown(None).into()
+        ExitStandard::Shutdown(None).into()
     }
     pub fn shutdown_with_source(source: ArcError) -> Self {
-        WellKnown::Shutdown(Some(source)).into()
+        ExitStandard::Shutdown(Some(source)).into()
     }
 
-    pub fn custom<E: std::error::Error + Send + Sync + 'static>(e: E) -> ExitReason {
+    pub fn custom<E: std::error::Error + Send + Sync + 'static>(e: E) -> Exit {
         Self::Custom(Arc::new(e))
     }
 }

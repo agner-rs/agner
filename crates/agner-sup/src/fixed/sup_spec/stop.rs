@@ -1,4 +1,4 @@
-use agner_actors::{ActorID, Context, ExitReason};
+use agner_actors::{ActorID, Context, Exit};
 
 use crate::common::StopChildError;
 use crate::fixed::hlist::index::{ApplyMut, OpMut};
@@ -11,7 +11,7 @@ pub trait SupSpecStopChild<M> {
         context: &mut Context<M>,
         index: usize,
         actor_id: ActorID,
-        exit_reason: ExitReason,
+        exit_reason: Exit,
     ) -> BoxedFuture<Result<(), StopChildError>>;
 }
 
@@ -26,7 +26,7 @@ where
         context: &mut Context<M>,
         index: usize,
         actor_id: ActorID,
-        exit_reason: ExitReason,
+        exit_reason: Exit,
     ) -> BoxedFuture<Result<(), StopChildError>> {
         let mut operation = StopChild { context, actor_id, exit_reason };
         self.children.apply_mut(index, CS::LEN, &mut operation)
@@ -36,7 +36,7 @@ where
 struct StopChild<'a, M> {
     context: &'a mut Context<M>,
     actor_id: ActorID,
-    exit_reason: ExitReason,
+    exit_reason: Exit,
 }
 
 impl<'a, M, CS> OpMut<CS> for StopChild<'a, M>

@@ -9,7 +9,7 @@ use tokio::sync::{mpsc, oneshot};
 use crate::actor::{Actor, IntoExitReason};
 use crate::actor_id::ActorID;
 use crate::context::{Context, Signal};
-use crate::exit_reason::ExitReason;
+use crate::exit::Exit;
 use crate::spawn_opts::SpawnOpts;
 use crate::system::SystemWeakRef;
 use crate::BackendFailure;
@@ -164,7 +164,7 @@ where
         log::trace!("[{}] exited", self.actor_id)
     }
 
-    async fn handle_sys_msg(&mut self, sys_msg_recv: Option<SysMsg>) -> Result<(), ExitReason> {
+    async fn handle_sys_msg(&mut self, sys_msg_recv: Option<SysMsg>) -> Result<(), Exit> {
         match sys_msg_recv {
             None => Err(BackendFailure::RxClosed("sys-msg").into()),
             Some(SysMsg::SigExit(terminated, exit_reason)) =>
@@ -176,7 +176,7 @@ where
         }
     }
 
-    async fn handle_sys_msg_on_shutdown(&mut self, sys_msg: SysMsg, exit_reason: ExitReason) {
+    async fn handle_sys_msg_on_shutdown(&mut self, sys_msg: SysMsg, exit_reason: Exit) {
         match sys_msg {
             SysMsg::Link(linked) =>
                 if exit_reason.is_normal() {
@@ -195,7 +195,7 @@ where
         }
     }
 
-    async fn handle_call_msg(&mut self, call_msg: CallMsg<Message>) -> Result<(), ExitReason> {
+    async fn handle_call_msg(&mut self, call_msg: CallMsg<Message>) -> Result<(), Exit> {
         match call_msg {
             CallMsg::Exit(exit_reason) => Err(exit_reason),
             CallMsg::Link(link_to) => self.handle_call_link(link_to).await,
@@ -208,15 +208,12 @@ where
     fn handle_future_to_inbox(
         &mut self,
         fut: Pin<Box<dyn Future<Output = Message> + Send + Sync + 'static>>,
-    ) -> Result<(), ExitReason> {
+    ) -> Result<(), Exit> {
         self.tasks.push(fut);
         Ok(())
     }
 
-    async fn handle_message_recv(
-        &mut self,
-        message_recv: Option<Message>,
-    ) -> Result<(), ExitReason> {
+    async fn handle_message_recv(&mut self, message_recv: Option<Message>) -> Result<(), Exit> {
         let message = message_recv.ok_or_else(|| BackendFailure::RxClosed("messages"))?;
         self.inbox_w
             .send(message)
@@ -228,7 +225,7 @@ where
     async fn handle_sys_msg_get_info(
         &self,
         report_to: oneshot::Sender<ActorInfo>,
-    ) -> Result<(), ExitReason> {
+    ) -> Result<(), Exit> {
         let info = ActorInfo {
             actor_id: self.actor_id,
             m_queue_len: self.inbox_w.len().await,

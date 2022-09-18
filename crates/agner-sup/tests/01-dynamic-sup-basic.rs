@@ -1,4 +1,4 @@
-use agner_actors::{Context, ExitReason, System};
+use agner_actors::{Context, Exit, System};
 
 mod common;
 
@@ -35,7 +35,7 @@ fn dynamic_sup_basic_test() {
             log::info!("child-started: {}", child_id);
         }
 
-        system.exit(sup, ExitReason::shutdown()).await;
+        system.exit(sup, Exit::shutdown()).await;
         system.wait(sup).await;
     })
 }

@@ -2,7 +2,7 @@ use std::collections::{HashSet, VecDeque};
 use std::fmt;
 use std::sync::Arc;
 
-use agner_actors::{ActorID, ExitReason};
+use agner_actors::{ActorID, Exit};
 use agner_utils::std_error_pp::StdErrorPP;
 
 use crate::fixed::restart_strategy::{
@@ -43,7 +43,7 @@ impl Decider for OneForOneDecider {
     fn child_up(&mut self, _at: Instant, child_idx: usize, actor_id: ActorID) {
         self.children[child_idx] = actor_id;
     }
-    fn actor_down(&mut self, at: Instant, actor_id: ActorID, exit_reason: ExitReason) {
+    fn actor_down(&mut self, at: Instant, actor_id: ActorID, exit_reason: Exit) {
         if self.sup_id == actor_id {
             log::info!("[{}] Requested shutdown", self);
             self.initiate_shutdown(exit_reason);
@@ -64,7 +64,7 @@ impl Decider for OneForOneDecider {
             if self.failures[idx].report(at) {
                 self.ignored_exits.extend(self.children.iter().copied());
 
-                self.initiate_shutdown(ExitReason::shutdown_with_source(Arc::new(exit_reason)))
+                self.initiate_shutdown(Exit::shutdown_with_source(Arc::new(exit_reason)))
             } else {
                 self.pending.push_back(Action::Start(idx));
             }
@@ -81,7 +81,7 @@ impl Decider for OneForOneDecider {
 }
 
 impl OneForOneDecider {
-    fn initiate_shutdown(&mut self, exit_reason: ExitReason) {
+    fn initiate_shutdown(&mut self, exit_reason: Exit) {
         let arc_exit_reason = Arc::new(exit_reason.to_owned());
         self.pending.clear();
         self.pending.extend(
@@ -94,7 +94,7 @@ impl OneForOneDecider {
                     Action::Stop(
                         child_idx,
                         child_id,
-                        ExitReason::shutdown_with_source(arc_exit_reason.to_owned()),
+                        Exit::shutdown_with_source(arc_exit_reason.to_owned()),
                     )
                 })
                 .chain([Action::Exit(exit_reason)]),

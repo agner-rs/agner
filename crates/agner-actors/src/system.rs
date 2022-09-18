@@ -10,7 +10,7 @@ use crate::actor_runner::sys_msg::SysMsg;
 use crate::actor_runner::ActorRunner;
 use crate::spawn_opts::SpawnOpts;
 use crate::system_config::SystemConfig;
-use crate::{ActorInfo, ExitReason};
+use crate::{ActorInfo, Exit};
 
 mod actor_entry;
 use actor_entry::ActorEntry;
@@ -117,19 +117,19 @@ impl System {
     }
 
     /// Send SigExit to the specified actor.
-    pub async fn exit(&self, actor_id: ActorID, exit_reason: ExitReason) {
+    pub async fn exit(&self, actor_id: ActorID, exit_reason: Exit) {
         self.send_sys_msg(actor_id, SysMsg::SigExit(actor_id, exit_reason)).await;
     }
 
     /// Wait for the specified actor to terminate, and return upon its termination the
     /// [`ExitReason`]. In case the actor with the specified `actor_id` does not exist — return
     /// [`ExitReason::NoProcess`] right away.
-    pub async fn wait(&self, actor_id: ActorID) -> ExitReason {
+    pub async fn wait(&self, actor_id: ActorID) -> Exit {
         let (tx, rx) = oneshot::channel();
         if self.send_sys_msg(actor_id, SysMsg::Wait(tx)).await {
-            rx.await.unwrap_or_else(|_| ExitReason::no_actor())
+            rx.await.unwrap_or_else(|_| Exit::no_actor())
         } else {
-            ExitReason::no_actor()
+            Exit::no_actor()
         }
     }
 
@@ -184,10 +184,10 @@ impl System {
         let right_accepted_sys_msg = self.send_sys_msg(right, SysMsg::Link(left)).await;
 
         if !right_accepted_sys_msg {
-            self.send_sys_msg(left, SysMsg::SigExit(right, ExitReason::no_actor())).await;
+            self.send_sys_msg(left, SysMsg::SigExit(right, Exit::no_actor())).await;
         }
         if !left_accepted_sys_msg {
-            self.send_sys_msg(right, SysMsg::SigExit(left, ExitReason::no_actor())).await;
+            self.send_sys_msg(right, SysMsg::SigExit(left, Exit::no_actor())).await;
         }
     }
 

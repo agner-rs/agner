@@ -2,7 +2,7 @@ use std::collections::VecDeque;
 use std::fmt;
 use std::sync::Arc;
 
-use agner_actors::{ActorID, ExitReason};
+use agner_actors::{ActorID, Exit};
 use agner_utils::std_error_pp::StdErrorPP;
 
 use crate::fixed::restart_strategy::{Action, Decider, FrequencyPolicy, Instant, RestartStrategy};
@@ -50,7 +50,7 @@ impl Decider for AllForOneDecider {
         self.ch_ids[child_idx] = actor_id;
         self.ch_states[child_idx] = ChState::Up;
     }
-    fn actor_down(&mut self, at: Instant, actor_id: ActorID, exit_reason: ExitReason) {
+    fn actor_down(&mut self, at: Instant, actor_id: ActorID, exit_reason: Exit) {
         if actor_id == self.sup_id {
             log::trace!("[{}] Requested shutdown [reason: {}]", self, exit_reason.pp());
             self.initiate_shutdown(exit_reason)
@@ -77,14 +77,14 @@ impl Decider for AllForOneDecider {
                     exit_reason.pp()
                 );
 
-                self.initiate_shutdown(ExitReason::exited(actor_id, exit_reason))
+                self.initiate_shutdown(Exit::exited(actor_id, exit_reason))
             }
         }
     }
 }
 
 impl AllForOneDecider {
-    fn initiate_restart(&mut self, cause: ExitReason) {
+    fn initiate_restart(&mut self, cause: Exit) {
         let arc_cause = Arc::new(cause);
 
         self.pending.clear();
@@ -97,7 +97,7 @@ impl AllForOneDecider {
                         Some(Action::Stop(
                             idx,
                             self.ch_ids[idx],
-                            ExitReason::shutdown_with_source(arc_cause.to_owned()),
+                            Exit::shutdown_with_source(arc_cause.to_owned()),
                         ))
                     } else {
                         None
@@ -107,7 +107,7 @@ impl AllForOneDecider {
         );
     }
 
-    fn initiate_shutdown(&mut self, cause: ExitReason) {
+    fn initiate_shutdown(&mut self, cause: Exit) {
         let arc_exit_reason = Arc::new(cause.to_owned());
 
         self.pending.clear();
@@ -120,7 +120,7 @@ impl AllForOneDecider {
                         Some(Action::Stop(
                             idx,
                             self.ch_ids[idx],
-                            ExitReason::shutdown_with_source(arc_exit_reason.to_owned()),
+                            Exit::shutdown_with_source(arc_exit_reason.to_owned()),
                         ))
                     } else {
                         None

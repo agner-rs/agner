@@ -1,6 +1,6 @@
 use std::time::{Duration, Instant};
 
-use agner_actors::{Actor, ActorID, ExitReason, SpawnOpts, System};
+use agner_actors::{Actor, ActorID, Exit, SpawnOpts, System};
 use agner_utils::future_timeout_ext::FutureTimeoutExt;
 use agner_utils::result_err_flatten::ResultErrFlattenIn;
 use agner_utils::std_error_pp::StdErrorPP;
@@ -71,7 +71,7 @@ pub async fn stop_child(
     sup_id: ActorID,
     child_id: ActorID,
     stop_timeout: Duration,
-    exit_reason: ExitReason,
+    exit_reason: Exit,
 ) -> Result<(), StopChildError> {
     let t0 = Instant::now();
     log::trace!(
@@ -105,7 +105,7 @@ pub async fn stop_child(
                 t0.elapsed(),
                 stop_timeout
             );
-            system.exit(child_id, ExitReason::kill()).await;
+            system.exit(child_id, Exit::kill()).await;
             let child_exited = system.wait(child_id);
             let child_exited_or_timeout = child_exited.timeout(stop_timeout);
 
@@ -201,14 +201,14 @@ where
     if let Err(reason) = child_id_result.as_ref() {
         log::trace!("[{}] init-ack error: {}. Terminating intermediary", sup_id, reason);
 
-        system.exit(intermediary_id, ExitReason::shutdown()).await;
+        system.exit(intermediary_id, Exit::shutdown()).await;
         if system.wait(intermediary_id).timeout(stop_timeout).await.is_err() {
             log::trace!(
                 "[{}] intermediary {} took too long to terminate. Killing it.",
                 sup_id,
                 intermediary_id
             );
-            system.exit(intermediary_id, ExitReason::kill()).await;
+            system.exit(intermediary_id, Exit::kill()).await;
         }
     }
 

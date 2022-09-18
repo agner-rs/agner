@@ -2,7 +2,7 @@ use std::future::Future;
 use std::pin::Pin;
 use std::task::{Context, Poll};
 
-use agner_actors::{Actor, Context as ActorContext, ExitReason, IntoExitReason};
+use agner_actors::{Actor, Context as ActorContext, Exit, IntoExitReason};
 
 pub fn adapt_exit_reason<A, M>(
     behaviour: impl for<'a> Actor<'a, A, M> + Clone,
@@ -21,17 +21,14 @@ where
     F: Future,
     F::Output: IntoExitReason,
 {
-    type Output = ExitReason;
+    type Output = Exit;
 
     fn poll(self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<Self::Output> {
         let this = self.project();
         let output = futures::ready!(this.0.poll(cx));
         let original_exit_reason = output.into_exit_reason();
-        let exit_reason = if original_exit_reason.is_normal() {
-            ExitReason::shutdown()
-        } else {
-            original_exit_reason
-        };
+        let exit_reason =
+            if original_exit_reason.is_normal() { Exit::shutdown() } else { original_exit_reason };
         Poll::Ready(exit_reason)
     }
 }
@@ -41,7 +38,7 @@ where
     B: Actor<'a, A, M>,
 {
     type Fut = OutputNormalized<B::Fut>;
-    type Out = ExitReason;
+    type Out = Exit;
 
     fn run(self, context: &'a mut ActorContext<M>, arg: A) -> Self::Fut {
         OutputNormalized(self.0.run(context, arg))

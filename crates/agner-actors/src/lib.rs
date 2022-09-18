@@ -2,7 +2,7 @@ mod actor;
 mod actor_id;
 mod actor_runner;
 mod context;
-mod exit_reason;
+mod exit;
 mod init_ack;
 mod spawn_opts;
 mod system;
@@ -13,7 +13,7 @@ mod exports {
     pub use crate::actor_id::ActorID;
     pub use crate::actor_runner::ActorInfo;
     pub use crate::context::{Context, Event, Signal};
-    pub use crate::exit_reason::{BackendFailure, ExitReason, WellKnown};
+    pub use crate::exit::{BackendFailure, Exit, ExitStandard};
     pub use crate::init_ack::{new as new_init_ack, InitAckRx, InitAckTx};
     pub use crate::spawn_opts::SpawnOpts;
     pub use crate::system::{SysChannelError, SysSpawnError, System};

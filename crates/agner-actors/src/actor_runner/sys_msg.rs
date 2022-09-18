@@ -1,7 +1,7 @@
 use tokio::sync::oneshot;
 
 use crate::actor_id::ActorID;
-use crate::exit_reason::ExitReason;
+use crate::exit::Exit;
 
 use super::Backend;
 
@@ -9,8 +9,8 @@ use super::Backend;
 pub enum SysMsg {
     Link(ActorID),
     Unlink(ActorID),
-    SigExit(ActorID, ExitReason),
-    Wait(oneshot::Sender<ExitReason>),
+    SigExit(ActorID, Exit),
+    Wait(oneshot::Sender<Exit>),
 
     GetInfo(oneshot::Sender<ActorInfo>),
 }

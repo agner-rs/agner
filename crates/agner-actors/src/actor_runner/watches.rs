@@ -10,11 +10,11 @@ use super::*;
 pub(crate) struct Watches {
     pub trap_exit: bool,
     pub links: HashSet<ActorID>,
-    pub waits: Vec<oneshot::Sender<ExitReason>>,
+    pub waits: Vec<oneshot::Sender<Exit>>,
 }
 
 impl<M> Backend<M> {
-    pub(super) async fn notify_linked_actors(&mut self, exit_reason: ExitReason) {
+    pub(super) async fn notify_linked_actors(&mut self, exit_reason: Exit) {
         for linked in std::mem::replace(&mut self.watches.links, Default::default()).drain() {
             if exit_reason.is_normal() {
                 self.send_sys_msg(linked, SysMsg::Unlink(self.actor_id)).await;
@@ -25,7 +25,7 @@ impl<M> Backend<M> {
             }
         }
     }
-    pub(super) fn notify_waiting_chans(&mut self, exit_reason: ExitReason) {
+    pub(super) fn notify_waiting_chans(&mut self, exit_reason: Exit) {
         for (idx, report_to) in std::mem::replace(&mut self.watches.waits, Default::default())
             .into_iter()
             .enumerate()
@@ -41,7 +41,7 @@ impl<M> Backend<M> {
             log::trace!("[{}] linking to {}", self.actor_id, link_to);
 
             if !self.send_sys_msg(link_to, SysMsg::Link(self.actor_id)).await {
-                let _ = self.sys_msg_tx.send(SysMsg::SigExit(link_to, ExitReason::no_actor()));
+                let _ = self.sys_msg_tx.send(SysMsg::SigExit(link_to, Exit::no_actor()));
             }
         }
     }
@@ -53,7 +53,7 @@ impl<M> Backend<M> {
         }
     }
 
-    pub(super) fn handle_set_trap_exit(&mut self, trap_exit: bool) -> Result<(), ExitReason> {
+    pub(super) fn handle_set_trap_exit(&mut self, trap_exit: bool) -> Result<(), Exit> {
         if self.watches.trap_exit != trap_exit {
             log::trace!("[{}] trap_exit = {}", self.actor_id, trap_exit);
             self.watches.trap_exit = trap_exit;
@@ -61,15 +61,12 @@ impl<M> Backend<M> {
         Ok(())
     }
 
-    pub(super) async fn handle_call_link(&mut self, link_to: ActorID) -> Result<(), ExitReason> {
+    pub(super) async fn handle_call_link(&mut self, link_to: ActorID) -> Result<(), Exit> {
         self.do_link(link_to).await;
         Ok(())
     }
 
-    pub(super) async fn handle_call_unlink(
-        &mut self,
-        unlink_from: ActorID,
-    ) -> Result<(), ExitReason> {
+    pub(super) async fn handle_call_unlink(&mut self, unlink_from: ActorID) -> Result<(), Exit> {
         self.do_unlink(unlink_from).await;
         Ok(())
     }
@@ -77,8 +74,8 @@ impl<M> Backend<M> {
     pub(super) async fn handle_sys_msg_sig_exit(
         &mut self,
         receiver_id: ActorID,
-        exit_reason: ExitReason,
-    ) -> Result<(), ExitReason> {
+        exit_reason: Exit,
+    ) -> Result<(), Exit> {
         if receiver_id == self.actor_id || self.watches.links.remove(&receiver_id) {
             log::trace!(
                 "[{}] Received SigExit({}, ..) [trap-exit: {}]",
@@ -88,10 +85,10 @@ impl<M> Backend<M> {
             );
 
             match (self.watches.trap_exit, receiver_id == self.actor_id, exit_reason.is_kill()) {
-                (_, true, true) => Err(ExitReason::kill()),
+                (_, true, true) => Err(Exit::kill()),
 
                 (false, true, _) => Err(exit_reason),
-                (false, false, _) => Err(ExitReason::exited(receiver_id, exit_reason)),
+                (false, false, _) => Err(Exit::exited(receiver_id, exit_reason)),
 
                 (true, _, _) => {
                     let signal = Signal::Exit(receiver_id, exit_reason);
@@ -106,22 +103,19 @@ impl<M> Backend<M> {
             Ok(())
         }
     }
-    pub(super) async fn handle_sys_msg_link(&mut self, link_to: ActorID) -> Result<(), ExitReason> {
+    pub(super) async fn handle_sys_msg_link(&mut self, link_to: ActorID) -> Result<(), Exit> {
         self.watches.links.insert(link_to);
         Ok(())
     }
-    pub(super) async fn handle_sys_msg_unlink(
-        &mut self,
-        unlink_from: ActorID,
-    ) -> Result<(), ExitReason> {
+    pub(super) async fn handle_sys_msg_unlink(&mut self, unlink_from: ActorID) -> Result<(), Exit> {
         self.watches.links.remove(&unlink_from);
         Ok(())
     }
 
     pub(super) fn handle_sys_msg_wait(
         &mut self,
-        report_to: oneshot::Sender<ExitReason>,
-    ) -> Result<(), ExitReason> {
+        report_to: oneshot::Sender<Exit>,
+    ) -> Result<(), Exit> {
         if let Some((idx, to_replace)) =
             self.watches.waits.iter_mut().enumerate().find(|(_idx, tx)| tx.is_closed())
         {

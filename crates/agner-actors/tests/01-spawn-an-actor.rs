@@ -1,6 +1,6 @@
 use std::convert::Infallible;
 
-use agner_actors::{Context, ExitReason, System};
+use agner_actors::{Context, Exit, System};
 use tokio::sync::oneshot;
 
 mod common;
@@ -24,12 +24,9 @@ fn actor_returning_unit() {
 
 #[test]
 fn actor_returning_exit_reason() {
-    async fn actor_behaviour(
-        _context: &mut Context<Infallible>,
-        arg: oneshot::Sender<()>,
-    ) -> ExitReason {
+    async fn actor_behaviour(_context: &mut Context<Infallible>, arg: oneshot::Sender<()>) -> Exit {
         arg.send(()).expect("oneshot send error");
-        ExitReason::shutdown()
+        Exit::shutdown()
     }
 
     common::run(async {

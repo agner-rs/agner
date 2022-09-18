@@ -3,7 +3,7 @@ use futures::Future;
 use crate::actor_id::ActorID;
 use crate::actor_runner::call_msg::CallMsg;
 use crate::actor_runner::pipe::{PipeRx, PipeTx};
-use crate::exit_reason::ExitReason;
+use crate::exit::Exit;
 use crate::imports::Never;
 use crate::init_ack::InitAckTx;
 use crate::system::{System, SystemWeakRef};
@@ -27,7 +27,7 @@ pub enum Event<M> {
 
 #[derive(Debug)]
 pub enum Signal {
-    Exit(ActorID, ExitReason),
+    Exit(ActorID, Exit),
 }
 
 impl<M> Context<M> {
@@ -67,7 +67,7 @@ impl<M> Context<M> {
         }
     }
 
-    pub async fn exit(&mut self, exit_reason: ExitReason) -> Never {
+    pub async fn exit(&mut self, exit_reason: Exit) -> Never {
         self.backend_call(CallMsg::Exit(exit_reason)).await;
         std::future::pending().await
     }

@@ -1,9 +1,9 @@
-use agner::actors::{BoxError, ExitReason, System};
+use agner::actors::{BoxError, Exit, System};
 use agner::sup::fixed::{AllForOne, ChildSpec};
 use tokio::signal::unix::SignalKind;
 
 mod room {
-    use agner::actors::{ActorID, BoxError, Context, Event, ExitReason};
+    use agner::actors::{ActorID, BoxError, Context, Event, Exit};
     use std::collections::HashMap;
     use std::net::SocketAddr;
     use std::sync::Arc;
@@ -14,7 +14,7 @@ mod room {
         Join(ActorID, SocketAddr),
         Post(ActorID, Arc<str>),
 
-        ConnDown(ActorID, ExitReason),
+        ConnDown(ActorID, Exit),
     }
 
     pub async fn run(context: &mut Context<Message>, _arg: ()) -> Result<(), BoxError> {
@@ -104,7 +104,7 @@ mod room {
 }
 
 mod conn {
-    use agner::actors::{BoxError, Context, Event, ExitReason};
+    use agner::actors::{BoxError, Context, Event, Exit};
     use agner::sup::Registered;
     use agner::utils::std_error_pp::StdErrorPP;
     use std::net::SocketAddr;
@@ -122,7 +122,7 @@ mod conn {
 
     pub enum Message {
         Joined(SocketAddr),
-        Left(SocketAddr, ExitReason),
+        Left(SocketAddr, Exit),
         Posted(SocketAddr, Arc<str>),
     }
 
@@ -293,9 +293,7 @@ async fn run() -> Result<(), BoxError> {
             };
 
             let sig_boxed_error: BoxError = sig_name.into();
-            system
-                .exit(top_sup, ExitReason::shutdown_with_source(sig_boxed_error.into()))
-                .await;
+            system.exit(top_sup, Exit::shutdown_with_source(sig_boxed_error.into())).await;
 
             let _sig_name = tokio::select! {
                 _ = interrupt.recv() => { "SIGINT" },
