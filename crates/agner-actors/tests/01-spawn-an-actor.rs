@@ -29,7 +29,7 @@ fn actor_returning_exit_reason() {
         arg: oneshot::Sender<()>,
     ) -> ExitReason {
         arg.send(()).expect("oneshot send error");
-        ExitReason::Shutdown(None)
+        ExitReason::shutdown()
     }
 
     common::run(async {

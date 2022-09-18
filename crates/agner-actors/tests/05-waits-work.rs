@@ -1,6 +1,6 @@
 use std::time::Duration;
 
-use agner_actors::{Context, ExitReason, System};
+use agner_actors::{Context, System};
 use futures::future;
 
 mod common;
@@ -39,9 +39,6 @@ fn waits_work() {
 
         system.exit(actor, Default::default()).await;
 
-        assert!(future::join_all(waits)
-            .await
-            .into_iter()
-            .all(|e| matches!(e, ExitReason::Normal)));
+        assert!(future::join_all(waits).await.into_iter().all(|e| e.is_normal()));
     });
 }

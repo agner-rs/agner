@@ -5,6 +5,7 @@ const DEFAULT_ACTOR_TERMINATION_TIMEOUT: Duration = Duration::from_secs(30);
 
 /// Configuration for [`System`](crate::system::System)
 #[derive(Debug, Clone)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct SystemConfig {
     /// max number of actors in the [`System`](crate::system::System)
     pub max_actors: usize,

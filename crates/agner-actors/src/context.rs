@@ -6,13 +6,13 @@ use crate::actor_runner::pipe::{PipeRx, PipeTx};
 use crate::exit_reason::ExitReason;
 use crate::imports::Never;
 use crate::init_ack::InitAckTx;
-use crate::system::{System, SystemOpt};
+use crate::system::{System, SystemWeakRef};
 
 /// Actor's API to itself
 #[derive(Debug)]
 pub struct Context<M> {
     actor_id: ActorID,
-    system: SystemOpt,
+    system: SystemWeakRef,
     messages: PipeRx<M>,
     signals: PipeRx<Signal>,
     calls: PipeTx<CallMsg<M>>,
@@ -106,7 +106,7 @@ impl<M> Context<M> {
     /// Create a new instance of [`Context`]
     pub(crate) fn new(
         actor_id: ActorID,
-        system: SystemOpt,
+        system: SystemWeakRef,
         inbox: PipeRx<M>,
         signals: PipeRx<Signal>,
         calls: PipeTx<CallMsg<M>>,

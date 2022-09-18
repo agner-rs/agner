@@ -11,7 +11,8 @@ use crate::actor_id::ActorID;
 use crate::context::{Context, Signal};
 use crate::exit_reason::ExitReason;
 use crate::spawn_opts::SpawnOpts;
-use crate::system::SystemOpt;
+use crate::system::SystemWeakRef;
+use crate::BackendFailure;
 
 pub(crate) mod call_msg;
 pub(crate) mod pipe;
@@ -27,7 +28,7 @@ pub use self::sys_msg::ActorInfo;
 
 pub(crate) struct ActorRunner<Message> {
     pub actor_id: ActorID,
-    pub system_opt: SystemOpt,
+    pub system_opt: SystemWeakRef,
     pub messages_rx: mpsc::UnboundedReceiver<Message>,
     pub sys_msg_rx: mpsc::UnboundedReceiver<SysMsg>,
     pub sys_msg_tx: mpsc::UnboundedSender<SysMsg>,
@@ -108,7 +109,7 @@ where
 
 struct Backend<Message> {
     actor_id: ActorID,
-    system_opt: SystemOpt,
+    system_opt: SystemWeakRef,
     sys_msg_rx: mpsc::UnboundedReceiver<SysMsg>,
     sys_msg_tx: mpsc::UnboundedSender<SysMsg>,
     messages_rx: mpsc::UnboundedReceiver<Message>,
@@ -165,7 +166,7 @@ where
 
     async fn handle_sys_msg(&mut self, sys_msg_recv: Option<SysMsg>) -> Result<(), ExitReason> {
         match sys_msg_recv {
-            None => Err(ExitReason::RxClosed("sys-msg")),
+            None => Err(BackendFailure::RxClosed("sys-msg").into()),
             Some(SysMsg::SigExit(terminated, exit_reason)) =>
                 self.handle_sys_msg_sig_exit(terminated, exit_reason).await,
             Some(SysMsg::Link(link_to)) => self.handle_sys_msg_link(link_to).await,
@@ -178,7 +179,7 @@ where
     async fn handle_sys_msg_on_shutdown(&mut self, sys_msg: SysMsg, exit_reason: ExitReason) {
         match sys_msg {
             SysMsg::Link(linked) =>
-                if matches!(exit_reason, ExitReason::Normal) {
+                if exit_reason.is_normal() {
                     self.send_sys_msg(linked, SysMsg::Unlink(self.actor_id)).await;
                 } else {
                     self.send_sys_msg(linked, SysMsg::SigExit(self.actor_id, exit_reason)).await;
@@ -216,11 +217,11 @@ where
         &mut self,
         message_recv: Option<Message>,
     ) -> Result<(), ExitReason> {
-        let message = message_recv.ok_or_else(|| ExitReason::RxClosed("messages"))?;
+        let message = message_recv.ok_or_else(|| BackendFailure::RxClosed("messages"))?;
         self.inbox_w
             .send(message)
             .await
-            .map_err(|_rejected| ExitReason::InboxFull("messages"))?;
+            .map_err(|_rejected| BackendFailure::InboxFull("messages"))?;
         Ok(())
     }
 

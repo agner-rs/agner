@@ -6,7 +6,7 @@ edition = "2021"
 authors = ["Raman Hafiyatulin <r.gafiyatullin@me.com>"]
 license = "MIT"
 repository = "https://github.com/RGafiyatullin/agner"
-description = "An actor toolkit inspired by Erlang/OTP (supervisors)"
+description = "An actor toolkit inspired by Erlang/OTP (utils)"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 

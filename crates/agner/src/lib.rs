@@ -10,3 +10,8 @@ pub mod actors {
 pub mod sup {
     pub use agner_sup::*;
 }
+
+#[cfg(feature = "helm")]
+pub mod helm {
+    pub use agner_helm::*;
+}

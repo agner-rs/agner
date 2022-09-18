@@ -77,7 +77,7 @@ impl Decider for AllForOneDecider {
                     exit_reason.pp()
                 );
 
-                self.initiate_shutdown(ExitReason::Exited(actor_id, exit_reason.into()))
+                self.initiate_shutdown(ExitReason::exited(actor_id, exit_reason))
             }
         }
     }
@@ -97,7 +97,7 @@ impl AllForOneDecider {
                         Some(Action::Stop(
                             idx,
                             self.ch_ids[idx],
-                            ExitReason::Shutdown(Some(arc_cause.to_owned())),
+                            ExitReason::shutdown_after(arc_cause.to_owned()),
                         ))
                     } else {
                         None
@@ -120,7 +120,7 @@ impl AllForOneDecider {
                         Some(Action::Stop(
                             idx,
                             self.ch_ids[idx],
-                            ExitReason::Shutdown(Some(arc_exit_reason.to_owned())),
+                            ExitReason::shutdown_after(arc_exit_reason.to_owned()),
                         ))
                     } else {
                         None

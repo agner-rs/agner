@@ -35,7 +35,7 @@ fn dynamic_sup_basic_test() {
             log::info!("child-started: {}", child_id);
         }
 
-        system.exit(sup, ExitReason::Shutdown(None)).await;
+        system.exit(sup, ExitReason::shutdown()).await;
         system.wait(sup).await;
     })
 }

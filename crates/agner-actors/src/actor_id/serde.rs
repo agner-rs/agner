@@ -5,7 +5,7 @@ impl serde::Serialize for ActorID {
     where
         S: serde::Serializer,
     {
-        [self.system(), self.actor(), self.seq()].serialize(serializer)
+        self.to_string().serialize(serializer)
     }
 }
 
@@ -14,7 +14,9 @@ impl<'de> serde::Deserialize<'de> for ActorID {
     where
         D: serde::Deserializer<'de>,
     {
-        let [system, actor, seq] = <[usize; 3]>::deserialize(deserializer)?;
-        Ok(Self::new(system, actor, seq))
+        let actor_id = String::deserialize(deserializer)?
+            .parse()
+            .map_err(<<D as serde::Deserializer<'de>>::Error as serde::de::Error>::custom)?;
+        Ok(actor_id)
     }
 }

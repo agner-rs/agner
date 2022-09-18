@@ -1,8 +1,5 @@
-use std::time::Duration;
-
 use agner::actors::{BoxError, ExitReason, System};
 use agner::sup::fixed::{AllForOne, ChildSpec};
-use futures::StreamExt;
 use tokio::signal::unix::SignalKind;
 
 mod room {
@@ -296,7 +293,7 @@ async fn run() -> Result<(), BoxError> {
             };
 
             let sig_boxed_error: BoxError = sig_name.into();
-            system.exit(top_sup, ExitReason::Shutdown(Some(sig_boxed_error.into()))).await;
+            system.exit(top_sup, ExitReason::shutdown_after(sig_boxed_error.into())).await;
 
             let _sig_name = tokio::select! {
                 _ = interrupt.recv() => { "SIGINT" },
@@ -306,22 +303,7 @@ async fn run() -> Result<(), BoxError> {
         }
     });
 
-    tokio::spawn({
-        let system = system.to_owned();
-        async move {
-            loop {
-                tokio::time::sleep(Duration::from_secs(5)).await;
-                let all_actor_ids = system.all_actors().collect::<Vec<_>>().await;
-                log::info!("All actors ({}):", all_actor_ids.len());
-                for actor_id in all_actor_ids {
-                    let info_opt = system.actor_info(actor_id).await;
-                    let info_json =
-                        serde_json::to_string(&info_opt).expect("serde::Serialize failed");
-                    log::info!(" - {}: {}", actor_id, info_json);
-                }
-            }
-        }
-    });
+    tokio::spawn(agner::helm::run(system.to_owned(), "127.0.0.1:8091".parse().unwrap()));
 
     Err(system.wait(top_sup).await.into())
 }

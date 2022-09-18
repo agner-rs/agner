@@ -39,7 +39,7 @@ where
         if let Err(reason) = self {
             ExitReason::Generic(reason.into())
         } else {
-            ExitReason::Normal
+            ExitReason::normal()
         }
     }
 }

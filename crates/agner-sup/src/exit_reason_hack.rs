@@ -26,9 +26,11 @@ where
     fn poll(self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<Self::Output> {
         let this = self.project();
         let output = futures::ready!(this.0.poll(cx));
-        let exit_reason = match output.into_exit_reason() {
-            ExitReason::Normal => ExitReason::Shutdown(None),
-            as_is => as_is,
+        let original_exit_reason = output.into_exit_reason();
+        let exit_reason = if original_exit_reason.is_normal() {
+            ExitReason::shutdown()
+        } else {
+            original_exit_reason
         };
         Poll::Ready(exit_reason)
     }

@@ -25,15 +25,15 @@ pub use errors::{SysChannelError, SysSpawnError};
 pub struct System(Arc<Inner>);
 
 impl System {
-    pub(crate) fn rc_downgrade(&self) -> SystemOpt {
-        SystemOpt(Arc::downgrade(&self.0))
+    pub fn rc_downgrade(&self) -> SystemWeakRef {
+        SystemWeakRef(Arc::downgrade(&self.0))
     }
 }
 
 #[derive(Debug, Clone)]
-pub(crate) struct SystemOpt(Weak<Inner>);
-impl SystemOpt {
-    pub(crate) fn rc_upgrade(&self) -> Option<System> {
+pub struct SystemWeakRef(Weak<Inner>);
+impl SystemWeakRef {
+    pub fn rc_upgrade(&self) -> Option<System> {
         self.0.upgrade().map(System)
     }
 }
@@ -127,9 +127,9 @@ impl System {
     pub async fn wait(&self, actor_id: ActorID) -> ExitReason {
         let (tx, rx) = oneshot::channel();
         if self.send_sys_msg(actor_id, SysMsg::Wait(tx)).await {
-            rx.await.unwrap_or_else(|_| ExitReason::NoActor)
+            rx.await.unwrap_or_else(|_| ExitReason::no_actor())
         } else {
-            ExitReason::NoActor
+            ExitReason::no_actor()
         }
     }
 
@@ -184,10 +184,10 @@ impl System {
         let right_accepted_sys_msg = self.send_sys_msg(right, SysMsg::Link(left)).await;
 
         if !right_accepted_sys_msg {
-            self.send_sys_msg(left, SysMsg::SigExit(right, ExitReason::NoActor)).await;
+            self.send_sys_msg(left, SysMsg::SigExit(right, ExitReason::no_actor())).await;
         }
         if !left_accepted_sys_msg {
-            self.send_sys_msg(right, SysMsg::SigExit(left, ExitReason::NoActor)).await;
+            self.send_sys_msg(right, SysMsg::SigExit(left, ExitReason::no_actor())).await;
         }
     }
 

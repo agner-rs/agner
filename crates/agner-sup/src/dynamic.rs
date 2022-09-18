@@ -102,9 +102,9 @@ where
                         );
                     };
 
-                    let sup_exit_reason = ExitReason::Exited(terminated, exit_reason.into());
+                    let sup_exit_reason = ExitReason::exited(terminated, exit_reason);
                     let child_exit_reason =
-                        ExitReason::Exited(context.actor_id(), sup_exit_reason.to_owned().into());
+                        ExitReason::exited(context.actor_id(), sup_exit_reason.to_owned());
 
                     log::trace!(
                         "[{}] shutting down {} children",
@@ -132,7 +132,7 @@ where
                                         Ok(exit_reason) => log::trace!("[{}] child {} has gracefully exited: {}", sup_id, child_id, exit_reason),
                                         Err(_) => {
                                             log::warn!("[{}] child {} hasn't shut down gracefully on time. Killing it", sup_id, child_id);
-                                            system.exit(child_id, ExitReason::Kill).await;
+                                            system.exit(child_id, ExitReason::kill()).await;
                                             system.wait(child_id).await;
                                         }
                                     }

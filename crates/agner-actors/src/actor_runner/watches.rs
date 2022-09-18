@@ -16,7 +16,7 @@ pub(crate) struct Watches {
 impl<M> Backend<M> {
     pub(super) async fn notify_linked_actors(&mut self, exit_reason: ExitReason) {
         for linked in std::mem::replace(&mut self.watches.links, Default::default()).drain() {
-            if matches!(exit_reason, ExitReason::Normal) {
+            if exit_reason.is_normal() {
                 self.send_sys_msg(linked, SysMsg::Unlink(self.actor_id)).await;
             } else {
                 log::trace!("[{}] notifying linked actor: {}", self.actor_id, linked);
@@ -41,7 +41,7 @@ impl<M> Backend<M> {
             log::trace!("[{}] linking to {}", self.actor_id, link_to);
 
             if !self.send_sys_msg(link_to, SysMsg::Link(self.actor_id)).await {
-                let _ = self.sys_msg_tx.send(SysMsg::SigExit(link_to, ExitReason::NoActor));
+                let _ = self.sys_msg_tx.send(SysMsg::SigExit(link_to, ExitReason::no_actor()));
             }
         }
     }
@@ -87,22 +87,18 @@ impl<M> Backend<M> {
                 self.watches.trap_exit
             );
 
-            match (
-                self.watches.trap_exit,
-                receiver_id == self.actor_id,
-                matches!(exit_reason, ExitReason::Kill),
-            ) {
-                (_, true, true) => Err(ExitReason::Kill),
+            match (self.watches.trap_exit, receiver_id == self.actor_id, exit_reason.is_kill()) {
+                (_, true, true) => Err(ExitReason::kill()),
 
                 (false, true, _) => Err(exit_reason),
-                (false, false, _) => Err(ExitReason::Exited(receiver_id, exit_reason.into())),
+                (false, false, _) => Err(ExitReason::exited(receiver_id, exit_reason)),
 
                 (true, _, _) => {
                     let signal = Signal::Exit(receiver_id, exit_reason);
                     self.signals_w
                         .send(signal)
                         .await
-                        .map_err(|_| ExitReason::InboxFull("signals"))?;
+                        .map_err(|_| BackendFailure::InboxFull("signals"))?;
                     Ok(())
                 },
             }

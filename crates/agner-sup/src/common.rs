@@ -105,7 +105,7 @@ pub async fn stop_child(
                 t0.elapsed(),
                 stop_timeout
             );
-            system.exit(child_id, ExitReason::Kill).await;
+            system.exit(child_id, ExitReason::kill()).await;
             let child_exited = system.wait(child_id);
             let child_exited_or_timeout = child_exited.timeout(stop_timeout);
 
@@ -201,14 +201,14 @@ where
     if let Err(reason) = child_id_result.as_ref() {
         log::trace!("[{}] init-ack error: {}. Terminating intermediary", sup_id, reason);
 
-        system.exit(intermediary_id, ExitReason::Shutdown(None)).await;
+        system.exit(intermediary_id, ExitReason::shutdown()).await;
         if system.wait(intermediary_id).timeout(stop_timeout).await.is_err() {
             log::trace!(
                 "[{}] intermediary {} took too long to terminate. Killing it.",
                 sup_id,
                 intermediary_id
             );
-            system.exit(intermediary_id, ExitReason::Kill).await;
+            system.exit(intermediary_id, ExitReason::kill()).await;
         }
     }
 
