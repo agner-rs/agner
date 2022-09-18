@@ -17,4 +17,5 @@ There should be an ability to escalate the failure of an interface.
 ## agner-utils: `Yield` future
 The future that resolves on its second poll. To be used in tight loops.
 
-
+## agner-actor: measure poll-duration for the actor's futures
+And provide those stats as part of `ActorInfo`
