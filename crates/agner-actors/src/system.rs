@@ -79,17 +79,16 @@ impl System {
     /// 	let bob = system.spawn(actor_behaviour, "Bob", Default::default()).await.expect("Failed to spawn an actor");
     /// };
     /// ```
-    pub async fn spawn<Behaviour, Arg, Message>(
+    pub async fn spawn<Behaviour, Args, Message>(
         &self,
         behaviour: Behaviour,
-        arg: Arg,
+        args: Args,
         spawn_opts: SpawnOpts,
     ) -> Result<ActorID, SysSpawnError>
     where
-        Arg: Send + Sync + 'static,
+        Args: Send + Sync + 'static,
         Message: Unpin + Send + Sync + 'static,
-        for<'a> Behaviour: Actor<'a, Arg, Message>,
-        // for<'a> <Behaviour as Actor<'a, Arg, Message>>::Fut: Send + Sync,
+        for<'a> Behaviour: Actor<'a, Args, Message>,
     {
         let system = self.to_owned();
         let actor_id_lease =
@@ -107,7 +106,7 @@ impl System {
             sys_msg_tx: sys_msg_tx.to_owned(),
             spawn_opts,
         };
-        tokio::spawn(actor.run(behaviour, arg));
+        tokio::spawn(actor.run(behaviour, args));
 
         let entry = ActorEntry { actor_id_lease, messages_tx: Box::new(messages_tx), sys_msg_tx };
 

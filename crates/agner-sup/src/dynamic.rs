@@ -22,13 +22,13 @@ pub enum Message<IA> {
 pub async fn start_child<IA>(
     system: &System,
     sup: ActorID,
-    arg: IA,
+    args: IA,
 ) -> Result<ActorID, StartChildError>
 where
     IA: Send + Sync + 'static,
 {
     let (tx, rx) = oneshot::channel::<Result<ActorID, StartChildError>>();
-    system.send(sup, Message::StartChild(arg, tx)).await;
+    system.send(sup, Message::StartChild(args, tx)).await;
     rx.await.map_err(StartChildError::Rx)?
 }
 
@@ -44,7 +44,7 @@ impl<CS> SupSpec<CS> {
 }
 
 /// Create a child-spec for a dynamic supervisor.
-pub fn child_spec<B, AF, IA, OA, M>(behaviour: B, arg_factory: AF) -> impl ChildSpec<IA, M>
+pub fn child_spec<B, AF, IA, OA, M>(behaviour: B, args_factory: AF) -> impl ChildSpec<IA, M>
 where
     B: for<'a> Actor<'a, OA, M> + Send + Sync + 'static,
     B: Clone,
@@ -54,7 +54,7 @@ where
 {
     ChildSpecImpl {
         behaviour,
-        arg_factory,
+        args_factory,
         init_ack: true,
         init_timeout: DEFAULT_INIT_TIMEOUT,
         stop_timeout: DEFAULT_SHUTDOWN_TIMEOUT,
@@ -76,9 +76,9 @@ where
 
     loop {
         match context.next_event().await {
-            Event::Message(Message::StartChild(arg, reply_to)) => {
+            Event::Message(Message::StartChild(args, reply_to)) => {
                 let response =
-                    match do_start_child(context, &mut sup_spec, arg, &mut children).await {
+                    match do_start_child(context, &mut sup_spec, args, &mut children).await {
                         Ok(child_id) => Ok(child_id),
                         Err(reason) => Err(reason),
                     };
@@ -166,11 +166,11 @@ where
 }
 
 pub trait ChildSpec<IA, M> {
-    type Behavoiur: for<'a> Actor<'a, Self::Arg, M> + Send + Sync + 'static;
+    type Behavoiur: for<'a> Actor<'a, Self::Args, M> + Send + Sync + 'static;
 
-    type Arg: Send + Sync + 'static;
+    type Args: Send + Sync + 'static;
 
-    fn create(&mut self, arg: IA) -> (Self::Behavoiur, Self::Arg);
+    fn create(&mut self, args: IA) -> (Self::Behavoiur, Self::Args);
     fn with_init_ack(self) -> Self;
     fn without_init_ack(self) -> Self;
     fn init_ack(&self) -> bool;
@@ -184,7 +184,7 @@ pub trait ChildSpec<IA, M> {
 
 struct ChildSpecImpl<B, M, IA, OA, AF> {
     behaviour: B,
-    arg_factory: AF,
+    args_factory: AF,
     init_ack: bool,
     init_timeout: Duration,
     stop_timeout: Duration,
@@ -199,11 +199,11 @@ where
     OA: Send + Sync + 'static,
 {
     type Behavoiur = B;
-    type Arg = OA;
+    type Args = OA;
 
-    fn create(&mut self, arg: IA) -> (Self::Behavoiur, Self::Arg) {
-        let arg = (self.arg_factory)(arg);
-        (self.behaviour.clone(), arg)
+    fn create(&mut self, args: IA) -> (Self::Behavoiur, Self::Args) {
+        let args = (self.args_factory)(args);
+        (self.behaviour.clone(), args)
     }
     fn init_ack(&self) -> bool {
         self.init_ack
@@ -233,7 +233,7 @@ where
 async fn do_start_child<CS, IA, M>(
     context: &mut Context<Message<IA>>,
     sup_spec: &mut SupSpec<CS>,
-    arg: IA,
+    args: IA,
     children: &mut HashSet<ActorID>,
 ) -> Result<ActorID, StartChildError>
 where
@@ -241,7 +241,7 @@ where
     IA: Send + Sync + Unpin + 'static,
     M: Send + Sync + Unpin + 'static,
 {
-    let (child_behaviour, child_arg) = sup_spec.child_spec.create(arg);
+    let (child_behaviour, child_args) = sup_spec.child_spec.create(args);
     let init_timeouts =
         Some((sup_spec.child_spec.init_timeout(), sup_spec.child_spec.stop_timeout()))
             .filter(|_| sup_spec.child_spec.init_ack());
@@ -250,7 +250,7 @@ where
         context.system(),
         context.actor_id(),
         child_behaviour,
-        child_arg,
+        child_args,
         init_timeouts,
         [],
     )

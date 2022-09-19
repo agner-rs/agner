@@ -9,9 +9,9 @@ use crate::Registered;
 const DEFAULT_INIT_TIMEOUT: Duration = Duration::from_secs(5);
 const DEFAULT_STOP_TIMEOUT: Duration = Duration::from_secs(5);
 
-pub fn child_spec<B, AF, A, M>(behaviour: B, arg_factory: AF) -> impl ChildSpec
+pub fn child_spec<B, AF, A, M>(behaviour: B, args_factory: AF) -> impl ChildSpec
 where
-    AF: ArgFactory<A>,
+    AF: ArgsFactory<A>,
     B: for<'a> Actor<'a, A, M>,
     AF: Send + Sync + 'static,
     M: Send + Sync + Unpin + 'static,
@@ -22,7 +22,7 @@ where
         // name: None,
         regs: Default::default(),
         behaviour,
-        arg_factory,
+        args_factory,
         init_timeout: DEFAULT_INIT_TIMEOUT,
         stop_timeout: DEFAULT_STOP_TIMEOUT,
         init_ack: true,
@@ -30,28 +30,49 @@ where
     }
 }
 
-pub fn arg_call<F, A>(f: F) -> impl ArgFactory<A>
+pub fn args_call<F, A>(f: F) -> impl ArgsFactory<A>
 where
     F: FnMut() -> A,
 {
-    ArgFactoryCall(f)
+    ArgsFactoryCall(f)
 }
-pub fn arg_clone<A>(a: A) -> impl ArgFactory<A>
+pub fn args_clone<A>(a: A) -> impl ArgsFactory<A>
 where
     A: Clone,
 {
-    ArgFactoryClone(a)
+    ArgsFactoryClone(a)
 }
-pub fn arg_arc<A>(a: impl Into<Arc<A>>) -> impl ArgFactory<Arc<A>> {
-    ArgFactoryArc(a.into())
+pub fn args_arc<A>(a: impl Into<Arc<A>>) -> impl ArgsFactory<Arc<A>> {
+    ArgsFactoryArc(a.into())
+}
+
+#[deprecated()]
+pub fn arg_call<F, A>(f: F) -> impl ArgsFactory<A>
+where
+    F: FnMut() -> A,
+{
+    args_call(f)
+}
+
+#[deprecated]
+pub fn arg_clone<A>(a: A) -> impl ArgsFactory<A>
+where
+    A: Clone,
+{
+    args_clone(a)
+}
+
+#[deprecated()]
+pub fn arg_arc<A>(a: impl Into<Arc<A>>) -> impl ArgsFactory<Arc<A>> {
+    args_arc(a)
 }
 
 pub trait ChildSpec {
     type Message: Send + Sync + Unpin + 'static;
-    type Behaviour: for<'a> Actor<'a, Self::Arg, Self::Message> + Send + Sync + 'static;
-    type Arg: Send + Sync + 'static;
+    type Behaviour: for<'a> Actor<'a, Self::Args, Self::Message> + Send + Sync + 'static;
+    type Args: Send + Sync + 'static;
 
-    fn create(&mut self) -> (Self::Behaviour, Self::Arg);
+    fn create(&mut self) -> (Self::Behaviour, Self::Args);
     fn with_name(self, name: impl Into<String>) -> Self;
 
     fn register(self, registered: Registered) -> Self;
@@ -68,11 +89,11 @@ pub trait ChildSpec {
     fn stop_timeout(&self) -> Duration;
 }
 
-pub trait ArgFactory<Arg> {
-    fn create(&mut self) -> Arg;
+pub trait ArgsFactory<Args> {
+    fn create(&mut self) -> Args;
 }
 
-impl<F, A> ArgFactory<A> for ArgFactoryCall<F>
+impl<F, A> ArgsFactory<A> for ArgsFactoryCall<F>
 where
     F: FnMut() -> A,
 {
@@ -80,7 +101,7 @@ where
         (self.0)()
     }
 }
-impl<A> ArgFactory<A> for ArgFactoryClone<A>
+impl<A> ArgsFactory<A> for ArgsFactoryClone<A>
 where
     A: Clone,
 {
@@ -88,27 +109,27 @@ where
         self.0.clone()
     }
 }
-impl<A> ArgFactory<Arc<A>> for ArgFactoryArc<A> {
+impl<A> ArgsFactory<Arc<A>> for ArgsFactoryArc<A> {
     fn create(&mut self) -> Arc<A> {
         Arc::clone(&self.0)
     }
 }
 
 #[derive(Debug, Clone)]
-struct ArgFactoryCall<F>(F);
+struct ArgsFactoryCall<F>(F);
 
 #[derive(Debug, Clone)]
-struct ArgFactoryClone<A>(A);
+struct ArgsFactoryClone<A>(A);
 
 #[derive(Debug, Clone)]
-struct ArgFactoryArc<A>(Arc<A>);
+struct ArgsFactoryArc<A>(Arc<A>);
 
 #[derive(Debug, Clone)]
 struct ChildSpecImpl<B, AF, A, M> {
     behaviour: B,
     // name: Option<String>,
     regs: Vec<Registered>,
-    arg_factory: AF,
+    args_factory: AF,
     init_timeout: Duration,
     stop_timeout: Duration,
     init_ack: bool,
@@ -117,7 +138,7 @@ struct ChildSpecImpl<B, AF, A, M> {
 
 impl<B, AF, A, M> ChildSpec for ChildSpecImpl<B, AF, A, M>
 where
-    AF: ArgFactory<A>,
+    AF: ArgsFactory<A>,
     B: for<'a> Actor<'a, A, M>,
     AF: Send + Sync + 'static,
     M: Send + Sync + Unpin + 'static,
@@ -126,11 +147,11 @@ where
 {
     type Message = M;
     type Behaviour = B;
-    type Arg = A;
+    type Args = A;
 
-    fn create(&mut self) -> (Self::Behaviour, Self::Arg) {
-        let arg = self.arg_factory.create();
-        (self.behaviour.to_owned(), arg)
+    fn create(&mut self) -> (Self::Behaviour, Self::Args) {
+        let args = self.args_factory.create();
+        (self.behaviour.to_owned(), args)
     }
 
     fn with_name(self, _name: impl Into<String>) -> Self {
@@ -196,11 +217,11 @@ mod tests {
 
         let system = System::new(Default::default());
 
-        let mut child_spec_1 = fixed::child_spec(behaviour_unit, fixed::arg_call(|| ()));
-        let mut child_spec_2 = fixed::child_spec(behaviour_unit, fixed::arg_clone(()));
-        let mut child_spec_3 = fixed::child_spec(behaviour_arc_unit, fixed::arg_arc(()));
-        let mut child_spec_4 = fixed::child_spec(behaviour_arc_unit, fixed::arg_arc(Box::new(())));
-        let mut child_spec_5 = fixed::child_spec(behaviour_arc_unit, fixed::arg_arc(Arc::new(())));
+        let mut child_spec_1 = fixed::child_spec(behaviour_unit, fixed::args_call(|| ()));
+        let mut child_spec_2 = fixed::child_spec(behaviour_unit, fixed::args_clone(()));
+        let mut child_spec_3 = fixed::child_spec(behaviour_arc_unit, fixed::args_arc(()));
+        let mut child_spec_4 = fixed::child_spec(behaviour_arc_unit, fixed::args_arc(Box::new(())));
+        let mut child_spec_5 = fixed::child_spec(behaviour_arc_unit, fixed::args_arc(Arc::new(())));
 
         let (b_1, a_1) = child_spec_1.create();
         let (b_2, a_2) = child_spec_2.create();

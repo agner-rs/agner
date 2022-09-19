@@ -71,7 +71,7 @@ async fn run() -> Result<(), BoxError> {
 
     let tcp_acceptor_spec = {
         let args = TcpAcceptorArgs { bind_addr, worker_sup: worker_sup.to_owned() };
-        fixed::child_spec(agner::sup::adapt_exit_reason(tcp_acceptor), fixed::arg_clone(args))
+        fixed::child_spec(agner::sup::adapt_exit_reason(tcp_acceptor), fixed::args_clone(args))
             .with_name("tcp-acceptor")
             .with_init_timeout(Duration::from_secs(3))
     };
@@ -83,7 +83,7 @@ async fn run() -> Result<(), BoxError> {
                 dynamic::child_spec(agner::sup::adapt_exit_reason(worker), make_worker_args);
             dynamic::SupSpec::new(child_spec)
         };
-        fixed::child_spec(dynamic::dynamic_sup, fixed::arg_call(make_sup_args))
+        fixed::child_spec(dynamic::dynamic_sup, fixed::args_call(make_sup_args))
             .with_name("worker-sup")
             .with_init_timeout(Duration::from_secs(1))
             .register(worker_sup.to_owned())

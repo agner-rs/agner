@@ -35,7 +35,7 @@ pub async fn start_child<ChB, ChA, ChM>(
     system: System,
     sup_id: ActorID,
     child_behaviour: ChB,
-    child_arg: ChA,
+    child_args: ChA,
     init_timeouts: Option<(Duration, Duration)>,
     regs: impl IntoIterator<Item = Registered>,
 ) -> Result<ActorID, StartChildError>
@@ -49,13 +49,13 @@ where
             system,
             sup_id,
             child_behaviour,
-            child_arg,
+            child_args,
             init_timeout,
             stop_timeout,
         )
         .await
     } else {
-        start_child_without_init_ack(system, sup_id, child_behaviour, child_arg).await
+        start_child_without_init_ack(system, sup_id, child_behaviour, child_args).await
     };
     let child_id = child_id_result?;
 
@@ -138,7 +138,7 @@ async fn start_child_without_init_ack<ChB, ChA, ChM>(
     system: System,
     sup_id: ActorID,
     child_behaviour: ChB,
-    child_arg: ChA,
+    child_args: ChA,
 ) -> Result<ActorID, StartChildError>
 where
     ChB: for<'a> Actor<'a, ChA, ChM>,
@@ -146,7 +146,7 @@ where
     ChM: Send + Sync + Unpin + 'static,
 {
     log::trace!(
-        "[{}] starting child without init-ack [behaviour: {}; arg: {}; message: {}]",
+        "[{}] starting child without init-ack [behaviour: {}; args: {}; message: {}]",
         sup_id,
         std::any::type_name::<ChB>(),
         std::any::type_name::<ChA>(),
@@ -154,7 +154,7 @@ where
     );
     let spawn_opts = SpawnOpts::new().with_link(sup_id);
     let child_id = system
-        .spawn(child_behaviour, child_arg, spawn_opts)
+        .spawn(child_behaviour, child_args, spawn_opts)
         .await
         .map_err(StartChildError::Spawn)?;
 
@@ -167,7 +167,7 @@ async fn start_child_with_init_ack<ChB, ChA, ChM>(
     system: System,
     sup_id: ActorID,
     child_behaviour: ChB,
-    child_arg: ChA,
+    child_args: ChA,
     init_timeout: Duration,
     stop_timeout: Duration,
 ) -> Result<ActorID, StartChildError>
@@ -177,7 +177,7 @@ where
     ChM: Send + Sync + Unpin + 'static,
 {
     log::trace!(
-        "[{}] starting child with init-ack [behaviour: {}; arg: {}; message: {}]",
+        "[{}] starting child with init-ack [behaviour: {}; args: {}; message: {}]",
         sup_id,
         std::any::type_name::<ChB>(),
         std::any::type_name::<ChA>(),
@@ -187,7 +187,7 @@ where
     let (init_ack_tx, init_ack_rx) = agner_actors::new_init_ack();
     let spawn_opts = SpawnOpts::new().with_init_ack(init_ack_tx);
     let intermediary_id = system
-        .spawn(child_behaviour, child_arg, spawn_opts)
+        .spawn(child_behaviour, child_args, spawn_opts)
         .await
         .map_err(StartChildError::Spawn)?;
     log::trace!("[{}] intermediary-id: {}", sup_id, intermediary_id);

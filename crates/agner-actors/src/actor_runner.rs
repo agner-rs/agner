@@ -39,9 +39,9 @@ impl<Message> ActorRunner<Message>
 where
     Message: Unpin,
 {
-    pub async fn run<Behaviour, Arg>(self, behaviour: Behaviour, arg: Arg)
+    pub async fn run<Behaviour, Args>(self, behaviour: Behaviour, args: Args)
     where
-        for<'a> Behaviour: Actor<'a, Arg, Message>,
+        for<'a> Behaviour: Actor<'a, Args, Message>,
     {
         let Self { actor_id, system_opt, messages_rx, sys_msg_rx, sys_msg_tx, mut spawn_opts } =
             self;
@@ -67,7 +67,7 @@ where
         );
 
         let behaviour_running = async move {
-            let exit_reason = behaviour.run(&mut context, arg).await.into_exit_reason();
+            let exit_reason = behaviour.run(&mut context, args).await.into_exit_reason();
             context.exit(exit_reason).await;
             unreachable!()
         };
@@ -89,7 +89,7 @@ where
 
                 actor_type_info: (
                     std::any::type_name::<Behaviour>(),
-                    std::any::type_name::<Arg>(),
+                    std::any::type_name::<Args>(),
                     std::any::type_name::<Message>(),
                 ),
             };
@@ -238,7 +238,7 @@ where
             actor_id: self.actor_id,
 
             behaviour: self.actor_type_info.0,
-            arg_type: self.actor_type_info.1,
+            args_type: self.actor_type_info.1,
             message_type: self.actor_type_info.2,
 
             m_queue_len: self.inbox_w.len().await,

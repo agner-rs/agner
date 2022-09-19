@@ -20,7 +20,7 @@ pub enum SysMsg {
 pub struct ActorInfo {
     pub actor_id: ActorID,
     pub behaviour: &'static str,
-    pub arg_type: &'static str,
+    pub args_type: &'static str,
     pub message_type: &'static str,
     pub m_queue_len: (usize, usize),
     pub s_queue_len: (usize, usize),

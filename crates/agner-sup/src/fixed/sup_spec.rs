@@ -47,8 +47,8 @@ mod tests {
     fn ergonomics() {
         let restart_strategy = ();
         let _sup_spec = fixed::SupSpec::new(restart_strategy)
-            .with_child(fixed::child_spec(behaviour_unit, fixed::arg_clone(())))
-            .with_child(fixed::child_spec(behaviour_arc_unit, fixed::arg_arc(())))
-            .with_child(fixed::child_spec(behaviour_unit, fixed::arg_call(|| ())));
+            .with_child(fixed::child_spec(behaviour_unit, fixed::args_clone(())))
+            .with_child(fixed::child_spec(behaviour_arc_unit, fixed::args_arc(())))
+            .with_child(fixed::child_spec(behaviour_unit, fixed::args_call(|| ())));
     }
 }

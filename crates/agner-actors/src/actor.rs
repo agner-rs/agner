@@ -9,7 +9,7 @@ pub trait Actor<'a, A, M>: Send + Sync + 'static {
     type Out: IntoExitReason;
     type Fut: Future<Output = Self::Out> + Send + Sync + 'a;
 
-    fn run(self, context: &'a mut Context<M>, arg: A) -> Self::Fut;
+    fn run(self, context: &'a mut Context<M>, args: A) -> Self::Fut;
 }
 
 pub trait IntoExitReason {
@@ -57,23 +57,7 @@ where
     type Out = Out;
     type Fut = Fut;
 
-    fn run(self, context: &'a mut Context<M>, arg: A) -> Self::Fut {
-        self(context, arg)
+    fn run(self, context: &'a mut Context<M>, args: A) -> Self::Fut {
+        self(context, args)
     }
 }
-
-// impl<'a, A, M, F, Fut, Out> Actor<'a, A, M> for F
-// where
-// 	M: 'a,
-// 	F: Fn(&'a mut Context<M>, A) -> Fut,
-// 	Fut: Future<Output = Out> + 'a,
-// 	Fut: Send + Sync,
-// 	Out: IntoExitReason,
-// {
-// 	type Out = Out;
-// 	type Fut = Fut;
-
-// 	fn run(self, context: &'a mut Context<M>, arg: A) -> Self::Fut {
-// 		self(context, arg)
-// 	}
-// }

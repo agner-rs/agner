@@ -40,7 +40,7 @@ where
     type Fut = OutputNormalized<B::Fut>;
     type Out = Exit;
 
-    fn run(self, context: &'a mut ActorContext<M>, arg: A) -> Self::Fut {
-        OutputNormalized(self.0.run(context, arg))
+    fn run(self, context: &'a mut ActorContext<M>, args: A) -> Self::Fut {
+        OutputNormalized(self.0.run(context, args))
     }
 }

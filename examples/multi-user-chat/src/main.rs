@@ -240,7 +240,7 @@ async fn run() -> Result<(), BoxError> {
         let acceptor = agner::sup::Registered::new();
 
         let room_spec =
-            fixed::child_spec(agner::sup::adapt_exit_reason(room::run), fixed::arg_clone(()))
+            fixed::child_spec(agner::sup::adapt_exit_reason(room::run), fixed::args_clone(()))
                 .register(room.to_owned());
         let conn_sup_spec = {
             let room = room.to_owned();
@@ -258,13 +258,13 @@ async fn run() -> Result<(), BoxError> {
                 dynamic::SupSpec::new(child_spec)
             };
 
-            fixed::child_spec(dynamic::dynamic_sup, fixed::arg_call(make_sup_args))
+            fixed::child_spec(dynamic::dynamic_sup, fixed::args_call(make_sup_args))
                 .register(conn_sup.to_owned())
         };
 
         let acceptor_spec = fixed::child_spec(
             agner::sup::adapt_exit_reason(acceptor::run),
-            fixed::arg_clone(acceptor::Args {
+            fixed::args_clone(acceptor::Args {
                 bind_addr: "127.0.0.1:8090".parse().unwrap(),
                 conn_sup: conn_sup.to_owned(),
             }),
