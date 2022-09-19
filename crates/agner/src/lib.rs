@@ -15,3 +15,8 @@ pub mod sup {
 pub mod helm {
     pub use agner_helm::*;
 }
+
+#[cfg(feature = "test-actor")]
+pub mod test_actor {
+    pub use agner_test_actor::*;
+}

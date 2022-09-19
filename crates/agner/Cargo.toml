@@ -13,15 +13,18 @@ description = "An actor toolkit inspired by Erlang/OTP"
 
 [features]
 default = ["sup"]
+full = ["sup", "helm", "test-actor"]
 
 serde = ["agner-actors/serde"]
 
 # Components
 sup = ["dep:agner-sup"]
 helm = ["dep:agner-helm"]
+test-actor = ["dep:agner-test-actor"]
 
 [dependencies]
 agner-utils = { path = "../agner-utils", version = "=0.2.9" }
 agner-actors = { path = "../agner-actors", version = "=0.2.9" }
 agner-sup = { path = "../agner-sup", version = "=0.2.9", optional = true }
 agner-helm = { path = "../agner-helm", version = "0.2.9", optional = true }
+agner-test-actor = { path = "../agner-test-actor", version = "0.2.9", optional = true }

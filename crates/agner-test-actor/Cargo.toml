@@ -1,0 +1,11 @@
+[package]
+name = "agner-test-actor"
+version = "0.2.9"
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+agner-actors = { path = "../agner-actors", version = "=0.2.9" }
+futures = "^0.3"
+tokio = { version = "^1", features = ["sync", "rt-multi-thread", "macros"] }
