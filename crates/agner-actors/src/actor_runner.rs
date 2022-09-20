@@ -101,14 +101,14 @@ where
         let actor_backend_running = actor_backend.run_actor_backend();
 
         log::trace!("[{}] running", self.actor_id);
-        tokio::select! {
+        let exit_reason = tokio::select! {
             _ = behaviour_running => unreachable!("Future<Output = Infallible> as returned"),
-            () = actor_backend_running => (),
-        }
+            exit_reason = actor_backend_running => exit_reason,
+        };
 
         if let Some(system) = system_opt.rc_upgrade() {
             log::trace!("[{}] cleaning up actor-entry...", self.actor_id);
-            system.actor_entry_remove(actor_id).await;
+            system.actor_entry_terminate(actor_id, exit_reason).await;
         }
     }
 }
@@ -132,7 +132,7 @@ impl<Message> Backend<Message>
 where
     Message: Unpin,
 {
-    async fn run_actor_backend(mut self) {
+    async fn run_actor_backend(mut self) -> Exit {
         log::trace!("[{}] running actor-backend", self.actor_id);
 
         let exit_reason = loop {
@@ -169,7 +169,9 @@ where
             self.handle_sys_msg_on_shutdown(sys_msg, exit_reason.to_owned()).await
         }
 
-        log::trace!("[{}] exited", self.actor_id)
+        log::trace!("[{}] exited", self.actor_id);
+
+        exit_reason
     }
 
     async fn handle_sys_msg(&mut self, sys_msg_recv: Option<SysMsg>) -> Result<(), Exit> {

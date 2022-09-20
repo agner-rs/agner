@@ -14,6 +14,7 @@ use crate::system_config::SystemConfig;
 use crate::{ActorInfo, Exit};
 
 mod actor_entry;
+mod sys_actor_entry;
 use actor_entry::ActorEntry;
 
 mod actor_id_pool;
@@ -47,7 +48,8 @@ impl System {
         let system_id = NEXT_SYSTEM_ID.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
 
         let actor_id_pool = ActorIDPool::new(system_id, config.max_actors);
-        let actor_entries = (0..config.max_actors).map(|_| RwLock::new(None)).collect();
+        let actor_entries =
+            (0..config.max_actors).map(|_| RwLock::new(Default::default())).collect();
 
         let inner = Inner { config, system_id, actor_id_pool, actor_entries };
         Self(Arc::new(inner))
@@ -109,7 +111,9 @@ impl System {
         };
         tokio::spawn(actor.run(behaviour, args));
 
-        let entry = ActorEntry { actor_id_lease, messages_tx: Box::new(messages_tx), sys_msg_tx };
+        let entry = ActorEntry::new(actor_id_lease, messages_tx, sys_msg_tx);
+        // let entry = ActorEntryOld { actor_id_lease, messages_tx: Box::new(messages_tx),
+        // sys_msg_tx };
 
         self.actor_entry_put(entry).await;
 
@@ -129,11 +133,12 @@ impl System {
         let wait_fut = async move {
             let (tx, rx) = oneshot::channel();
 
-            if sys.send_sys_msg(actor_id, SysMsg::Wait(tx)).await {
-                rx.await.unwrap_or_else(|_| Exit::no_actor())
+            if let Some(mut entry) = sys.actor_entry_write(actor_id).await {
+                entry.add_watch(tx);
             } else {
-                Exit::no_actor()
+                log::warn!("attempt to install a watch before the ActorEntry is initialized [actor_id: {}]", actor_id);
             }
+            rx.await.unwrap_or(Exit::no_actor())
         };
         wait_fut
     }
@@ -144,43 +149,41 @@ impl System {
     /// - the underlying mpsc-channel accepted the message (i.e. was not closed before this message
     ///   is sent).
     pub(crate) async fn send_sys_msg(&self, to: ActorID, sys_msg: SysMsg) -> bool {
-        self.actor_entry_read(to, |entry| entry.sys_msg_tx.send(sys_msg).ok())
-            .await
-            .flatten()
-            .is_some()
+        if let Some(entry) = self.actor_entry_read(to).await {
+            if entry.running_actor_id() == Some(to) {
+                if let Some(tx) = entry.sys_msg_tx() {
+                    return tx.send(sys_msg).is_ok()
+                }
+            }
+        }
+        return false
     }
 
     /// Send a single message to the specified actor.
-    pub async fn send<M>(&self, actor_id: ActorID, message: M)
+    pub async fn send<M>(&self, to: ActorID, message: M)
     where
-        M: 'static,
+        M: Send + Sync + 'static,
     {
-        let _ = self
-            .actor_entry_read(actor_id, move |e| {
-                e.messages_tx
-                    .downcast_ref::<mpsc::UnboundedSender<M>>()
-                    .map(move |tx| tx.send(message))
-            })
-            .await;
+        if let Some(entry) = self.actor_entry_read(to).await {
+            if entry.running_actor_id() == Some(to) {
+                if let Some(tx) = entry.messages_tx::<M>() {
+                    let _ = tx.send(message);
+                }
+            }
+        }
     }
 
     /// Open a channel to the specified actor.
-    pub async fn channel<M>(
-        &self,
-        actor_id: ActorID,
-    ) -> Result<mpsc::UnboundedSender<M>, SysChannelError>
+    pub async fn channel<M>(&self, to: ActorID) -> Result<mpsc::UnboundedSender<M>, SysChannelError>
     where
-        M: 'static,
+        M: Send + Sync + 'static,
     {
-        let chan = self
-            .actor_entry_read(actor_id, |e| {
-                e.messages_tx.downcast_ref::<mpsc::UnboundedSender<M>>().map(ToOwned::to_owned)
-            })
+        self.actor_entry_read(to)
             .await
             .ok_or(SysChannelError::NoActor)?
-            .ok_or(SysChannelError::InvalidMessageType)?;
-
-        Ok(chan)
+            .messages_tx()
+            .cloned()
+            .ok_or(SysChannelError::InvalidMessageType)
     }
 
     /// Link two actors
@@ -197,10 +200,8 @@ impl System {
     }
 
     pub fn all_actors<'a>(&'a self) -> impl Stream<Item = ActorID> + 'a {
-        stream::iter(&self.0.actor_entries[..]).filter_map(|slot| async move {
-            let locked = slot.read().await;
-            locked.as_ref().map(|entry| *entry.actor_id_lease)
-        })
+        stream::iter(&self.0.actor_entries[..])
+            .filter_map(|slot| async move { slot.read().await.running_actor_id() })
     }
 
     pub async fn actor_info(&self, actor_id: ActorID) -> Option<ActorInfo> {
@@ -215,5 +216,5 @@ struct Inner {
     config: SystemConfig,
     system_id: usize,
     actor_id_pool: ActorIDPool,
-    actor_entries: Box<[RwLock<Option<ActorEntry>>]>,
+    actor_entries: Box<[RwLock<ActorEntry>]>,
 }
