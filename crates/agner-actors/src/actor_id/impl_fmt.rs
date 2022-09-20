@@ -3,9 +3,11 @@ use std::str::FromStr;
 
 use super::ActorID;
 
+const FMT_SEPARATOR: char = '.';
+
 impl fmt::Display for ActorID {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "{}.{}.{}", self.system(), self.actor(), self.seq())
+        write!(f, "{}{FMT_SEPARATOR}{}{FMT_SEPARATOR}{}", self.system(), self.actor(), self.seq())
     }
 }
 
@@ -15,7 +17,7 @@ impl FromStr for ActorID {
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         let mut acc = Option::<(usize, Option<(usize, Option<usize>)>)>::None;
 
-        let mut parts = s.split(".");
+        let mut parts = s.split(FMT_SEPARATOR);
         let mut next_part = move || {
             parts
                 .next()
