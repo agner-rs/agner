@@ -113,6 +113,7 @@ fn small_ring() {
 }
 
 #[test]
+#[ignore]
 fn large_ring() {
     common::run(actor_ring(1_000_000));
 }
