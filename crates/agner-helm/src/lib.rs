@@ -14,6 +14,7 @@ pub async fn run(system: System, bind_addr: SocketAddr) -> Result<(), BoxError> 
 
     let router = router.layer(Extension(system));
 
-    let () = Server::bind(&bind_addr).serve(router.into_make_service()).await?;
+    Server::bind(&bind_addr).serve(router.into_make_service()).await?;
+    
     Ok(())
 }
