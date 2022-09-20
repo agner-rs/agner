@@ -41,6 +41,7 @@ impl<M> Context<M> {
         self.system.rc_upgrade().expect("System gone")
     }
 
+    /// Receive next event (message or signal)
     pub async fn next_event(&mut self) -> Event<M>
     where
         M: Unpin,
@@ -53,6 +54,19 @@ impl<M> Context<M> {
             message = self.messages.recv() =>
                 Event::Message(message),
         }
+    }
+
+    /// Receive next message.
+    pub async fn next_message(&mut self) -> M
+    where
+        M: Unpin,
+    {
+        self.messages.recv().await
+    }
+
+    /// Receive next signal.
+    pub async fn next_signal(&mut self) -> Signal {
+        self.signals.recv().await
     }
 }
 
