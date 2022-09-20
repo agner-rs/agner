@@ -59,15 +59,16 @@ impl GenericError {
     }
 }
 
-impl Into<Exit> for ExitSerde {
-    fn into(self) -> Exit {
-        match self {
-            Self::Backend(ge) => Exit::Custom(BoxError::from(ge).into()),
-            Self::Custom(ge) => Exit::Custom(BoxError::from(ge).into()),
-            Self::Standard(se) => Exit::Standard(se.into()),
+impl From<ExitSerde> for Exit {
+    fn from(from: ExitSerde) -> Self {
+        match from {
+            ExitSerde::Backend(ge) => Self::Custom(BoxError::from(ge).into()),
+            ExitSerde::Custom(ge) => Self::Custom(BoxError::from(ge).into()),
+            ExitSerde::Standard(se) => Self::Standard(se.into()),
         }
     }
 }
+
 impl From<Exit> for ExitSerde {
     fn from(exit: Exit) -> Self {
         match exit {
