@@ -1,6 +1,6 @@
 [package]
 name = "agner"
-version = "0.2.9"
+version = "0.2.10"
 edition = "2021"
 
 authors = ["Raman Hafiyatulin <r.gafiyatullin@me.com>"]
@@ -23,11 +23,11 @@ helm = ["dep:agner-helm"]
 test-actor = ["dep:agner-test-actor"]
 
 [dependencies]
-agner-utils = { path = "../agner-utils", version = "=0.2.9" }
-agner-actors = { path = "../agner-actors", version = "=0.2.9" }
-agner-sup = { path = "../agner-sup", version = "=0.2.9", optional = true }
-agner-helm = { path = "../agner-helm", version = "0.2.9", optional = true }
-agner-test-actor = { path = "../agner-test-actor", version = "0.2.9", optional = true }
+agner-utils = { path = "../agner-utils", version = "=0.2.10" }
+agner-actors = { path = "../agner-actors", version = "=0.2.10" }
+agner-sup = { path = "../agner-sup", version = "=0.2.10", optional = true }
+agner-helm = { path = "../agner-helm", version = "0.2.10", optional = true }
+agner-test-actor = { path = "../agner-test-actor", version = "0.2.10", optional = true }
 
 [dev-dependencies]
 dotenv = "^0.15"
