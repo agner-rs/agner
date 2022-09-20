@@ -65,6 +65,16 @@ impl Exit {
     pub fn is_kill(&self) -> bool {
         matches!(self, Self::Standard(ExitStandard::Kill))
     }
+    pub fn is_exited(&self) -> bool {
+        matches!(self, Self::Standard(ExitStandard::Exited(_, _)))
+    }
+    pub fn is_no_actor(&self) -> bool {
+        matches!(self, Self::Standard(ExitStandard::NoActor))
+    }
+    pub fn is_shutdown(&self) -> bool {
+        matches!(self, Self::Standard(ExitStandard::Shutdown(_)))
+    }
+
     pub fn normal() -> Self {
         ExitStandard::Normal.into()
     }
