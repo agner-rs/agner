@@ -2,9 +2,9 @@ name: Rust
 
 on:
   push:
-    branches: [ "main" ]
+    branches: [ "main", "dev" ]
   pull_request:
-    branches: [ "main" ]
+    branches: [ "main", "dev" ]
 
 env:
   CARGO_TERM_COLOR: always
@@ -17,9 +17,9 @@ jobs:
     steps:
     - uses: actions/checkout@v3
     - name: Build
-      run: cargo build --verbose --all-features
+      run: cargo build --all-features
     - name: Run tests
-      run: cargo test --verbose --all-features
+      run: cargo test --all-features
   build-release:
 
     runs-on: ubuntu-latest
@@ -27,8 +27,8 @@ jobs:
     steps:
     - uses: actions/checkout@v3
     - name: Build
-      run: cargo build --release --verbose --all-features
+      run: cargo build --release --all-features
     - name: Run tests
-      run: cargo test --release --verbose --all-features
+      run: cargo test --release --all-features
 
 
