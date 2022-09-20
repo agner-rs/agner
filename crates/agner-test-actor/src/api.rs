@@ -20,21 +20,30 @@ impl<M> TestActor<M> {
         registry: TestActorRegistry,
         system: System,
         spawn_opts: SpawnOpts,
-    ) -> Result<ActorID, SysSpawnError>
+    ) -> Result<Self, SysSpawnError>
     where
         M: Send + Sync + Unpin + 'static,
     {
-        let (ack_tx, ack_rx) = oneshot::channel();
+        let (init_ack_tx, init_ack_rx) = oneshot::channel();
         let (ctl_tx, ctl_rx) = mpsc::unbounded_channel();
         let actor_id = system
             .spawn(
                 crate::behaviour::run::<M>,
-                crate::behaviour::Args { ack_tx, ctl_rx, ctl_tx: ctl_tx.to_owned(), registry },
+                crate::behaviour::Args {
+                    init_ack_tx,
+                    ctl_rx,
+                    ctl_tx: ctl_tx.to_owned(),
+                    registry: registry.to_owned(),
+                },
                 spawn_opts,
             )
             .await?;
-        let _ = ack_rx.await;
-        Ok(actor_id)
+        let _ = init_ack_rx.await;
+
+        Ok(registry
+            .lookup(actor_id)
+            .await
+            .expect("Failed to lookup the actor in the registry"))
     }
 
     pub async fn wait(&self) -> Exit {

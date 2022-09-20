@@ -28,3 +28,7 @@ agner-actors = { path = "../agner-actors", version = "=0.2.9" }
 agner-sup = { path = "../agner-sup", version = "=0.2.9", optional = true }
 agner-helm = { path = "../agner-helm", version = "0.2.9", optional = true }
 agner-test-actor = { path = "../agner-test-actor", version = "0.2.9", optional = true }
+
+[dev-dependencies]
+futures = "^0.3"
+tokio = {version = "^1", features = ["full"]}

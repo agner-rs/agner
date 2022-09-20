@@ -12,7 +12,7 @@ use crate::TestActorRegistry;
 
 pub struct Args<M> {
     pub registry: TestActorRegistry,
-    pub ack_tx: oneshot::Sender<Infallible>,
+    pub init_ack_tx: oneshot::Sender<Infallible>,
     pub ctl_rx: mpsc::UnboundedReceiver<Query<M>>,
     pub ctl_tx: mpsc::UnboundedSender<Query<M>>,
 }
@@ -21,21 +21,18 @@ pub async fn run<M>(context: &mut Context<M>, args: Args<M>)
 where
     M: Send + Sync + Unpin + 'static,
 {
-    let Args { ack_tx, mut ctl_rx, ctl_tx, registry } = args;
-    std::mem::drop(ack_tx);
+    let Args { init_ack_tx, mut ctl_rx, ctl_tx, registry } = args;
 
-    let exited = tokio::spawn({
-        let system = context.system();
-        let actor_id = context.actor_id();
-        async move { system.wait(actor_id).await }
-    });
+    let exited = context.system().wait(context.actor_id());
 
     let entry = TestActorEntry {
         system: context.system(),
         ctl_tx: Box::new(ctl_tx),
-        exited: Arc::new(Mutex::new(Exited::Wait(exited))),
+        exited: Arc::new(Mutex::new(Exited::Waiting(Box::pin(exited)))),
     };
     registry.0.write().await.insert(context.actor_id(), entry);
+
+    std::mem::drop(init_ack_tx);
 
     while let Some(query) = ctl_rx.recv().await {
         match query {

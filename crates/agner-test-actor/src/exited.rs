@@ -1,10 +1,13 @@
-use agner_actors::Exit;
-use tokio::sync::Mutex;
-use tokio::task::JoinHandle;
+use std::fmt;
+use std::future::Future;
+use std::pin::Pin;
 
-#[derive(Debug)]
+use agner_actors::Exit;
+use agner_utils::std_error_pp::StdErrorPP;
+use tokio::sync::Mutex;
+
 pub enum Exited {
-    Wait(JoinHandle<Exit>),
+    Waiting(Pin<Box<dyn Future<Output = Exit> + Send + Sync + 'static>>),
     Ready(Exit),
 }
 
@@ -13,10 +16,19 @@ pub async fn wait(mutex: &Mutex<Exited>) -> Exit {
     let exited = &mut *locked;
     match exited {
         Exited::Ready(reason) => reason.to_owned(),
-        Exited::Wait(join_handle) => {
-            let reason = join_handle.await.expect("Join failure");
+        Exited::Waiting(join_handle) => {
+            let reason = join_handle.await;
             *exited = Exited::Ready(reason.to_owned());
             reason
         },
+    }
+}
+
+impl fmt::Debug for Exited {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Self::Ready(reason) => write!(f, "Exited: {}", reason.pp()),
+            Self::Waiting { .. } => write!(f, "Waiting"),
+        }
     }
 }
