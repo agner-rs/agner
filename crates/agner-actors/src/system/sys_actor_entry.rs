@@ -19,7 +19,7 @@ impl System {
         assert!(should_be_none.running_actor_id().is_none());
     }
 
-    pub(crate) fn actor_entry_slot<'a>(&'a self, actor_id: ActorID) -> &'a RwLock<ActorEntry> {
+    pub(crate) fn actor_entry_slot(&self, actor_id: ActorID) -> &RwLock<ActorEntry> {
         if actor_id.system() != self.0.system_id {
             panic!(
                 "attempt to terminate an entry with a foreign actor-id [this-system-id: {}; entry-system-id: {}]",
