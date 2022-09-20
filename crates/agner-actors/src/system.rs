@@ -162,7 +162,7 @@ impl System {
                 }
             }
         }
-        return false
+        false
     }
 
     /// Send a single message to the specified actor.
