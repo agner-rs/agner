@@ -33,10 +33,10 @@ impl System {
         &self.0.actor_entries[slot_idx]
     }
 
-    pub(crate) async fn actor_entry_read<'a>(
-        &'a self,
+    pub(crate) async fn actor_entry_read(
+        &self,
         actor_id: ActorID,
-    ) -> Option<impl Deref<Target = ActorEntry> + 'a> {
+    ) -> Option<impl Deref<Target = ActorEntry> + '_> {
         let locked = self.actor_entry_slot(actor_id).read().await;
         if locked.running_or_terminated_actor_id() == Some(actor_id) {
             Some(locked)
