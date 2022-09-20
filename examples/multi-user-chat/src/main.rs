@@ -266,7 +266,7 @@ async fn run() -> Result<(), BoxError> {
             agner::sup::adapt_exit_reason(acceptor::run),
             fixed::args_clone(acceptor::Args {
                 bind_addr: "127.0.0.1:8090".parse().unwrap(),
-                conn_sup: conn_sup.to_owned(),
+                conn_sup,
             }),
         )
         .register(acceptor);
