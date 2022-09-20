@@ -149,6 +149,13 @@ impl System {
     /// - the underlying mpsc-channel accepted the message (i.e. was not closed before this message
     ///   is sent).
     pub(crate) async fn send_sys_msg(&self, to: ActorID, sys_msg: SysMsg) -> bool {
+        log::trace!(
+            "[sys:{}] trying to send sys-msg [to: {}, sys-msg: {:?}]",
+            self.0.system_id,
+            to,
+            sys_msg
+        );
+
         if let Some(entry) = self.actor_entry_read(to).await {
             if entry.running_actor_id() == Some(to) {
                 if let Some(tx) = entry.sys_msg_tx() {
@@ -164,6 +171,12 @@ impl System {
     where
         M: Send + Sync + 'static,
     {
+        log::trace!(
+            "[sys:{}] trying to send message [to: {}, msg-type: {}]",
+            self.0.system_id,
+            to,
+            std::any::type_name::<M>()
+        );
         if let Some(entry) = self.actor_entry_read(to).await {
             if entry.running_actor_id() == Some(to) {
                 if let Some(tx) = entry.messages_tx::<M>() {
