@@ -22,18 +22,14 @@ impl TestActorRegistry {
         M: Send + Sync + 'static,
     {
         self.0.read().await.get(&actor_id).and_then(|entry| {
-            if let Some(ctl_tx) =
-                entry.ctl_tx.downcast_ref::<mpsc::UnboundedSender<Query<M>>>().cloned()
-            {
-                Some(TestActor {
-                    system: entry.system.to_owned(),
-                    actor_id,
-                    exited: entry.exited.to_owned(),
-                    ctl_tx,
-                })
-            } else {
-                None
-            }
+            let ctl_tx = entry.ctl_tx.downcast_ref::<mpsc::UnboundedSender<Query<M>>>().cloned()?;
+            let test_actor = TestActor {
+                system: entry.system.to_owned(),
+                actor_id,
+                exited: entry.exited.to_owned(),
+                ctl_tx,
+            };
+            Some(test_actor)
         })
     }
 }
