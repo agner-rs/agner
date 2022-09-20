@@ -199,7 +199,7 @@ impl System {
         }
     }
 
-    pub fn all_actors<'a>(&'a self) -> impl Stream<Item = ActorID> + 'a {
+    pub fn all_actors(&self) -> impl Stream<Item = ActorID> + '_ {
         stream::iter(&self.0.actor_entries[..])
             .filter_map(|slot| async move { slot.read().await.running_actor_id() })
     }
