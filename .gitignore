@@ -3,3 +3,4 @@
 /.vscode
 /archive
 *.beam
+.env
