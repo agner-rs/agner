@@ -54,7 +54,6 @@ impl Decider for OneForOneDecider {
                 actor_id,
                 exit_reason.pp()
             );
-            return
         } else if let Some(idx) = self
             .children
             .iter()
