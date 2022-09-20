@@ -69,17 +69,17 @@ impl System {
     /// use agner_actors::{System, Context, Event};
     ///
     /// async fn actor_behaviour(context: &mut Context<&'static str>, actor_name: &'static str) {
-    /// 	loop {
-    /// 		if let Event::Message(message) = context.next_event().await {
-    /// 			eprintln!("[{}] received: {}", actor_name, message);
-    /// 		}
-    /// 	}
+    ///     loop {
+    ///         if let Event::Message(message) = context.next_event().await {
+    ///             eprintln!("[{}] received: {}", actor_name, message);
+    ///         }
+    ///     }
     /// }
     /// let _ = async {
-    /// 	let system = System::new(Default::default());
+    ///     let system = System::new(Default::default());
     ///
-    /// 	let alice = system.spawn(actor_behaviour, "Alice", Default::default()).await.expect("Failed to spawn an actor");
-    /// 	let bob = system.spawn(actor_behaviour, "Bob", Default::default()).await.expect("Failed to spawn an actor");
+    ///     let alice = system.spawn(actor_behaviour, "Alice", Default::default()).await.expect("Failed to spawn an actor");
+    ///     let bob = system.spawn(actor_behaviour, "Bob", Default::default()).await.expect("Failed to spawn an actor");
     /// };
     /// ```
     pub async fn spawn<Behaviour, Args, Message>(
