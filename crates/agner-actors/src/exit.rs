@@ -24,7 +24,7 @@ pub enum ExitStandard {
     Kill,
 
     #[error("Exited: {}", _0)]
-    Exited(ActorID, #[source] Box<Exit>),
+    Linked(ActorID, #[source] Box<Exit>),
 
     #[error("No Actor")]
     NoActor,
@@ -65,8 +65,8 @@ impl Exit {
     pub fn is_kill(&self) -> bool {
         matches!(self, Self::Standard(ExitStandard::Kill))
     }
-    pub fn is_exited(&self) -> bool {
-        matches!(self, Self::Standard(ExitStandard::Exited(_, _)))
+    pub fn is_linked(&self) -> bool {
+        matches!(self, Self::Standard(ExitStandard::Linked(_, _)))
     }
     pub fn is_no_actor(&self) -> bool {
         matches!(self, Self::Standard(ExitStandard::NoActor))
@@ -81,8 +81,8 @@ impl Exit {
     pub fn kill() -> Self {
         ExitStandard::Kill.into()
     }
-    pub fn exited(who: ActorID, reason: impl Into<Box<Self>>) -> Self {
-        ExitStandard::Exited(who, reason.into()).into()
+    pub fn linked(who: ActorID, reason: impl Into<Box<Self>>) -> Self {
+        ExitStandard::Linked(who, reason.into()).into()
     }
     pub fn no_actor() -> Self {
         ExitStandard::NoActor.into()

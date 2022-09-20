@@ -98,9 +98,9 @@ where
                         );
                     };
 
-                    let sup_exit_reason = Exit::exited(terminated, exit_reason);
+                    let sup_exit_reason = Exit::linked(terminated, exit_reason);
                     let child_exit_reason =
-                        Exit::exited(context.actor_id(), sup_exit_reason.to_owned());
+                        Exit::linked(context.actor_id(), sup_exit_reason.to_owned());
 
                     log::trace!(
                         "[{}] shutting down {} children",
