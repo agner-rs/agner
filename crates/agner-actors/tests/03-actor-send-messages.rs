@@ -70,7 +70,7 @@ fn echo_actor_via_send() {
             .await
             .expect("Failed to start an actor");
 
-        for i in 0usize..1_000_000 {
+        for i in 0usize..1_000 {
             let (tx, rx) = oneshot::channel::<usize>();
             system.send(echo_actor, (i, tx)).await;
             assert_eq!(i, rx.await.expect("oneshot rx error"));
@@ -99,7 +99,7 @@ fn echo_actor_via_chan() {
             .await
             .expect("Failed to obtain actor's tx-chan");
 
-        for i in 0usize..1_000_000 {
+        for i in 0usize..1_000 {
             let (tx, rx) = oneshot::channel::<usize>();
             echo_actor_tx.send((i, tx)).expect("mpsc tx failure");
             assert_eq!(i, rx.await.expect("oneshot rx error"));
