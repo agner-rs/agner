@@ -1,7 +1,5 @@
 use std::collections::HashSet;
 
-use tokio::sync::oneshot;
-
 use crate::actor_id::ActorID;
 
 use super::*;
@@ -10,7 +8,6 @@ use super::*;
 pub(crate) struct Watches {
     pub trap_exit: bool,
     pub links: HashSet<ActorID>,
-    pub waits: Vec<oneshot::Sender<Exit>>,
 }
 
 impl<M> Backend<M> {
@@ -23,16 +20,6 @@ impl<M> Backend<M> {
                 self.send_sys_msg(linked, SysMsg::SigExit(self.actor_id, exit_reason.to_owned()))
                     .await;
             }
-        }
-    }
-    pub(super) fn notify_waiting_chans(&mut self, exit_reason: Exit) {
-        for (idx, report_to) in std::mem::replace(&mut self.watches.waits, Default::default())
-            .into_iter()
-            .enumerate()
-            .filter(|(_idx, c)| !c.is_closed())
-        {
-            log::trace!("[{}] notifying waiting chan #{}", self.actor_id, idx);
-            let _ = report_to.send(exit_reason.to_owned());
         }
     }
 
@@ -109,22 +96,6 @@ impl<M> Backend<M> {
     }
     pub(super) async fn handle_sys_msg_unlink(&mut self, unlink_from: ActorID) -> Result<(), Exit> {
         self.watches.links.remove(&unlink_from);
-        Ok(())
-    }
-
-    pub(super) fn handle_sys_msg_wait(
-        &mut self,
-        report_to: oneshot::Sender<Exit>,
-    ) -> Result<(), Exit> {
-        if let Some((idx, to_replace)) =
-            self.watches.waits.iter_mut().enumerate().find(|(_idx, tx)| tx.is_closed())
-        {
-            log::trace!("[{}] adding 'wait' [replace #{}]", self.actor_id, idx);
-            *to_replace = report_to;
-        } else {
-            log::trace!("[{}] adding 'wait' [append #{}]", self.actor_id, self.watches.waits.len());
-            self.watches.waits.push(report_to);
-        }
         Ok(())
     }
 }

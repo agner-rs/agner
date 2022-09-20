@@ -34,6 +34,7 @@ type Vacant = Either<Terminated, Vec<oneshot::Sender<Exit>>>;
 struct Terminated {
     actor_id: ActorID,
     exit: Exit,
+    #[allow(unused)]
     at: Instant,
 }
 
@@ -102,10 +103,15 @@ impl ActorEntry {
             }
         }
         match &mut self.0 {
-            Entry::Vacant(Either::Right(_wathces)) => unimplemented!(
-                "There is no way the control gets here before the entry is initialized"
-            ),
-            Entry::Vacant(Either::Left(Terminated { exit, .. })) => {
+            Entry::Vacant(Either::Right(_wathces)) => {
+                log::error!("How did the control flow get here?");
+                panic!("There is no way the control gets here before the entry is initialized");
+            },
+            Entry::Vacant(Either::Left(Terminated { actor_id, exit, .. })) => {
+                log::trace!(
+                    "[{}|TERMINATED] replying immediately upon attempt to install a watch",
+                    actor_id
+                );
                 let _ = watch.send(exit.to_owned());
             },
             Entry::Occupied(occupied) => {
@@ -132,8 +138,9 @@ impl ActorEntry {
             })),
         );
 
-        if let Entry::Occupied(Occupied { mut watches, .. }) = to_terminate {
-            watches.drain(..).for_each(|tx| {
+        if let Entry::Occupied(Occupied { actor_id_lease, mut watches, .. }) = to_terminate {
+            watches.drain(..).enumerate().for_each(|(idx, tx)| {
+                log::trace!("[{}] notifying waiting chan #{}", *actor_id_lease, idx);
                 let _ = tx.send(exit_reason.to_owned());
             });
         }
