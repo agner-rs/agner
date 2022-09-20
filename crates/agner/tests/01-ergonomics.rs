@@ -1,6 +1,5 @@
 use agner_actors::{Context, Exit, SpawnOpts};
 use futures::future;
-use std::time::Duration;
 use tokio::sync::oneshot;
 
 #[macro_use]
