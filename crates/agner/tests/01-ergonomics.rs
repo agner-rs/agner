@@ -38,14 +38,8 @@ agner_test!(ergonomics, async move {
     rx.await.expect("oneshot-rx failure");
 
     let exit_requested = system.send(a1, Message::Exit(Exit::shutdown()));
-    let a1_exited = tokio::spawn({
-        let system = system.to_owned();
-        async move { system.wait(a1).await }
-    });
-
-    tokio::time::sleep(Duration::from_secs(1)).await;
+    let a1_exited = system.wait(a1);
 
     let (_, a1_exit_reason) = future::join(exit_requested, a1_exited).await;
-    let a1_exit_reason = a1_exit_reason.unwrap();
     assert!(a1_exit_reason.is_shutdown(), "{}", a1_exit_reason);
 });
