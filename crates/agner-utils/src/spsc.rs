@@ -89,7 +89,9 @@ where
 
         match (locked.queue.pop_front(), this.should_block) {
             (Some(item), _) => {
-                locked.sender_waker.take().map(Waker::wake);
+                if let Some(waker) = locked.sender_waker.take() {
+                    waker.wake();
+                }
                 Poll::Ready(Some(item))
             },
             (None, false) => Poll::Ready(None),
