@@ -1,10 +1,11 @@
 use std::sync::Arc;
+use std::time::Duration;
 
-use agner_actors::{ActorID, Exit, SpawnOpts, SysSpawnError, System};
+use agner_actors::{ActorID, Event, Exit, SpawnOpts, SysSpawnError, System};
 use tokio::sync::{mpsc, oneshot, Mutex};
 
 use crate::exited::Exited;
-use crate::query::{ExitRq, Query};
+use crate::query::{ExitRq, NextEventRq, Query, SetTrapExitRq};
 use crate::TestActorRegistry;
 
 #[derive(Debug, Clone)]
@@ -60,9 +61,28 @@ impl<M> TestActor<M> {
 }
 
 impl<M> TestActor<M> {
+    pub async fn post_message(&self, message: M)
+    where
+        M: Send + Sync + Unpin + 'static,
+    {
+        self.system.send(self.actor_id, message).await
+    }
+
     pub async fn exit(&self, reason: Exit) {
         let (reply_on_drop, done) = oneshot::channel();
         assert!(self.ctl_tx.send(ExitRq { reason, reply_on_drop }.into()).is_ok());
         let _ = done.await;
+    }
+
+    pub async fn set_trap_exit(&self, set_to: bool) {
+        let (reply_on_drop, done) = oneshot::channel();
+        assert!(self.ctl_tx.send(SetTrapExitRq { set_to, reply_on_drop }.into()).is_ok());
+        let _ = done.await;
+    }
+
+    pub async fn next_event(&self, timeout: Duration) -> Option<Event<M>> {
+        let (reply_to, done) = oneshot::channel();
+        assert!(self.ctl_tx.send(NextEventRq { timeout, reply_to }.into()).is_ok());
+        done.await.ok()
     }
 }

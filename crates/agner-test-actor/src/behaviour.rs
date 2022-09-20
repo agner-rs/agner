@@ -45,7 +45,13 @@ where
                 context.trap_exit(set_to).await;
             },
             Query::NextEvent(NextEventRq { timeout, reply_to }) => {
+                log::trace!(
+                    "[{}] fetching next-event (timeout: {:?})",
+                    context.actor_id(),
+                    timeout
+                );
                 if let Ok(event) = context.next_event().timeout(timeout).await {
+                    log::trace!("[{}] received next-event", context.actor_id());
                     let _ = reply_to.send(event);
                 }
             },
