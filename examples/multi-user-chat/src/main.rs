@@ -243,8 +243,6 @@ async fn run() -> Result<(), BoxError> {
             fixed::child_spec(agner::sup::adapt_exit_reason(room::run), fixed::args_clone(()))
                 .register(room.to_owned());
         let conn_sup_spec = {
-            let room = room.to_owned();
-
             let make_conn_args = move |(tcp_stream, peer_addr)| conn::Args {
                 room: room.to_owned(),
                 tcp_stream,
