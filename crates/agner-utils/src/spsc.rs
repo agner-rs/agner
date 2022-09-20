@@ -40,11 +40,11 @@ impl<T> Sender<T>
 where
     T: Unpin,
 {
-    pub fn send<'a>(
-        &'a mut self,
+    pub fn send(
+        &mut self,
         item: T,
         should_block: bool,
-    ) -> impl Future<Output = Result<(), T>> + 'a {
+    ) -> impl Future<Output = Result<(), T>> + '_ {
         Send { lock: &self.0, should_block, item: Some(item) }
     }
 
