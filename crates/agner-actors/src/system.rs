@@ -130,7 +130,7 @@ impl System {
     /// [`ExitReason::NoProcess`] right away.
     pub fn wait(&self, actor_id: ActorID) -> impl Future<Output = Exit> {
         let sys = self.clone();
-        let wait_fut = async move {
+        async move {
             let (tx, rx) = oneshot::channel();
 
             if let Some(mut entry) = sys.actor_entry_write(actor_id).await {
@@ -138,9 +138,8 @@ impl System {
             } else {
                 log::warn!("attempt to install a watch before the ActorEntry is initialized [actor_id: {}]", actor_id);
             }
-            rx.await.unwrap_or(Exit::no_actor())
-        };
-        wait_fut
+            rx.await.unwrap_or_else(|_| Exit::no_actor())
+        }
     }
 
     /// Send a [`SysMsg`] to the specified process.
@@ -163,7 +162,7 @@ impl System {
                 }
             }
         }
-        return false
+        false
     }
 
     /// Send a single message to the specified actor.

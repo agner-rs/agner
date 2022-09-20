@@ -2,7 +2,6 @@ use std::any::Any;
 use std::error::Error as StdError;
 use std::time::Instant;
 
-use futures::future::Either;
 use tokio::sync::{mpsc, oneshot};
 
 use crate::actor_id::ActorID;
@@ -28,7 +27,7 @@ struct Occupied {
     watches: Vec<oneshot::Sender<Exit>>,
 }
 
-type Vacant = Either<Terminated, Vec<oneshot::Sender<Exit>>>;
+type Vacant = Option<Terminated>;
 
 #[derive(Debug)]
 struct Terminated {
@@ -40,7 +39,7 @@ struct Terminated {
 
 impl Default for ActorEntry {
     fn default() -> Self {
-        Self(Entry::Vacant(Either::Right(Default::default())))
+        Self(Entry::Vacant(Default::default()))
     }
 }
 
@@ -52,8 +51,8 @@ impl ActorEntry {
     pub fn running_or_terminated_actor_id(&self) -> Option<ActorID> {
         match &self.0 {
             Entry::Occupied(occupied) => Some(*occupied.actor_id_lease),
-            Entry::Vacant(Either::Left(terminated)) => Some(terminated.actor_id),
-            Entry::Vacant(Either::Right(_)) => None,
+            Entry::Vacant(Some(terminated)) => Some(terminated.actor_id),
+            Entry::Vacant(None) => None,
         }
     }
 
@@ -103,11 +102,11 @@ impl ActorEntry {
             }
         }
         match &mut self.0 {
-            Entry::Vacant(Either::Right(_wathces)) => {
+            Entry::Vacant(None) => {
                 log::error!("How did the control flow get here?");
                 panic!("There is no way the control gets here before the entry is initialized");
             },
-            Entry::Vacant(Either::Left(Terminated { actor_id, exit, .. })) => {
+            Entry::Vacant(Some(Terminated { actor_id, exit, .. })) => {
                 log::trace!(
                     "[{}|TERMINATED] replying immediately upon attempt to install a watch",
                     actor_id
@@ -131,7 +130,7 @@ impl ActorEntry {
 
         let to_terminate = std::mem::replace(
             &mut self.0,
-            Entry::Vacant(Either::Left(Terminated {
+            Entry::Vacant(Some(Terminated {
                 actor_id,
                 exit: exit_reason.to_owned(),
                 at: Instant::now(),

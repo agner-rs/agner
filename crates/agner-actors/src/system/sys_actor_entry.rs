@@ -19,7 +19,7 @@ impl System {
         assert!(should_be_none.running_actor_id().is_none());
     }
 
-    pub(crate) fn actor_entry_slot<'a>(&'a self, actor_id: ActorID) -> &'a RwLock<ActorEntry> {
+    pub(crate) fn actor_entry_slot(&self, actor_id: ActorID) -> &RwLock<ActorEntry> {
         if actor_id.system() != self.0.system_id {
             panic!(
                 "attempt to terminate an entry with a foreign actor-id [this-system-id: {}; entry-system-id: {}]",
@@ -33,10 +33,10 @@ impl System {
         &self.0.actor_entries[slot_idx]
     }
 
-    pub(crate) async fn actor_entry_read<'a>(
-        &'a self,
+    pub(crate) async fn actor_entry_read(
+        &self,
         actor_id: ActorID,
-    ) -> Option<impl Deref<Target = ActorEntry> + 'a> {
+    ) -> Option<impl Deref<Target = ActorEntry> + '_> {
         let locked = self.actor_entry_slot(actor_id).read().await;
         if locked.running_or_terminated_actor_id() == Some(actor_id) {
             Some(locked)
@@ -44,10 +44,10 @@ impl System {
             None
         }
     }
-    pub(crate) async fn actor_entry_write<'a>(
-        &'a self,
+    pub(crate) async fn actor_entry_write(
+        &self,
         actor_id: ActorID,
-    ) -> Option<impl DerefMut<Target = ActorEntry> + 'a> {
+    ) -> Option<impl DerefMut<Target = ActorEntry> + '_> {
         let locked = self.actor_entry_slot(actor_id).write().await;
         if locked.running_or_terminated_actor_id() == Some(actor_id) {
             Some(locked)
