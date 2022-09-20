@@ -10,9 +10,16 @@ pub type Tx<T> = oneshot::Sender<T>;
 pub enum Query<M> {
     Exit(ExitRq),
 
+    InitAck(InitAckRq),
     SetLink(SetLinkRq),
     SetTrapExit(SetTrapExitRq),
     NextEvent(NextEventRq<M>),
+}
+
+#[derive(Debug)]
+pub struct InitAckRq {
+    pub value: Option<ActorID>,
+    pub reply_on_drop: Tx<Infallible>,
 }
 
 #[derive(Debug)]
