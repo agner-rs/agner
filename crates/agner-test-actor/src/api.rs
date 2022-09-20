@@ -5,7 +5,7 @@ use agner_actors::{ActorID, Event, Exit, SpawnOpts, SysSpawnError, System};
 use tokio::sync::{mpsc, oneshot, Mutex};
 
 use crate::exited::Exited;
-use crate::query::{ExitRq, NextEventRq, Query, SetTrapExitRq};
+use crate::query::{ExitRq, NextEventRq, Query, SetLinkRq, SetTrapExitRq};
 use crate::TestActorRegistry;
 
 #[derive(Debug, Clone)]
@@ -84,5 +84,11 @@ impl<M> TestActor<M> {
         let (reply_to, done) = oneshot::channel();
         assert!(self.ctl_tx.send(NextEventRq { timeout, reply_to }.into()).is_ok());
         done.await.ok()
+    }
+
+    pub async fn set_link(&self, actor: ActorID, link: bool) {
+        let (reply_on_drop, done) = oneshot::channel();
+        assert!(self.ctl_tx.send(SetLinkRq { actor, link, reply_on_drop }.into()).is_ok());
+        let _ = done.await;
     }
 }
