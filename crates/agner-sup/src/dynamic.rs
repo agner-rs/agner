@@ -125,19 +125,18 @@ where
                                 };
 
                             let system = context.system();
-                            let sure_shutdown =
-                                async move {
-                                    let graceful_shutdown_or_timeout = graceful_shutdown.timeout(child_stop_timeout);
-                                    match graceful_shutdown_or_timeout.await {
-                                        Ok(exit_reason) => log::trace!("[{}] child {} has gracefully exited: {}", sup_id, child_id, exit_reason),
-                                        Err(_) => {
-                                            log::warn!("[{}] child {} hasn't shut down gracefully on time. Killing it", sup_id, child_id);
-                                            system.exit(child_id, Exit::kill()).await;
-                                            system.wait(child_id).await;
-                                        }
+
+                            async move {
+                                let graceful_shutdown_or_timeout = graceful_shutdown.timeout(child_stop_timeout);
+                                match graceful_shutdown_or_timeout.await {
+                                    Ok(exit_reason) => log::trace!("[{}] child {} has gracefully exited: {}", sup_id, child_id, exit_reason),
+                                    Err(_) => {
+                                        log::warn!("[{}] child {} hasn't shut down gracefully on time. Killing it", sup_id, child_id);
+                                        system.exit(child_id, Exit::kill()).await;
+                                        system.wait(child_id).await;
                                     }
-                                };
-                            sure_shutdown
+                                }
+                            }
                         });
                     let children_count = stream::iter(children_shutdown_futures)
                         .buffer_unordered(SHUTDOWN_MAX_PARALLELISM)
