@@ -138,7 +138,7 @@ impl System {
             } else {
                 log::warn!("attempt to install a watch before the ActorEntry is initialized [actor_id: {}]", actor_id);
             }
-            rx.await.unwrap_or(Exit::no_actor())
+            rx.await.unwrap_or_else(|_| Exit::no_actor())
         }
     }
 
