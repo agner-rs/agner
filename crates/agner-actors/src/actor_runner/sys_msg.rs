@@ -10,6 +10,8 @@ pub enum SysMsg {
     Link(ActorID),
     Unlink(ActorID),
     SigExit(ActorID, Exit),
+
+    #[deprecated()]
     Wait(oneshot::Sender<Exit>),
 
     GetInfo(oneshot::Sender<ActorInfo>),

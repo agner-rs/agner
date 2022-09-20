@@ -133,11 +133,12 @@ impl System {
         let wait_fut = async move {
             let (tx, rx) = oneshot::channel();
 
-            if sys.send_sys_msg(actor_id, SysMsg::Wait(tx)).await {
-                rx.await.unwrap_or_else(|_| Exit::no_actor())
+            if let Some(mut entry) = sys.actor_entry_write(actor_id).await {
+                entry.add_watch(tx);
             } else {
-                Exit::no_actor()
+                log::warn!("attempt to install a watch before the ActorEntry is initialized [actor_id: {}]", actor_id);
             }
+            rx.await.unwrap_or(Exit::no_actor())
         };
         wait_fut
     }
@@ -166,23 +167,23 @@ impl System {
         if let Some(entry) = self.actor_entry_read(to).await {
             if entry.running_actor_id() == Some(to) {
                 if let Some(tx) = entry.messages_tx::<M>() {
-                    tx.send(message);
+                    let _ = tx.send(message);
                 }
             }
         }
     }
 
     /// Open a channel to the specified actor.
-    pub async fn channel<M>(
-        &self,
-        to: ActorID,
-    ) -> Result<mpsc::UnboundedSender<M>, SysChannelError>
+    pub async fn channel<M>(&self, to: ActorID) -> Result<mpsc::UnboundedSender<M>, SysChannelError>
     where
         M: Send + Sync + 'static,
     {
-        self.actor_entry_read(to).await
+        self.actor_entry_read(to)
+            .await
             .ok_or(SysChannelError::NoActor)?
-            .messages_tx().cloned().ok_or(SysChannelError::InvalidMessageType)
+            .messages_tx()
+            .cloned()
+            .ok_or(SysChannelError::InvalidMessageType)
     }
 
     /// Link two actors
