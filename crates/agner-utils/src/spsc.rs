@@ -26,7 +26,7 @@ impl<T> Receiver<T>
 where
     T: Unpin,
 {
-    pub fn recv<'a>(&'a mut self, should_block: bool) -> impl Future<Output = Option<T>> + 'a {
+    pub fn recv(&mut self, should_block: bool) -> impl Future<Output = Option<T>> + '_ {
         Receive { lock: &self.0, should_block }
     }
 
