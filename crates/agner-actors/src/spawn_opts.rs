@@ -36,7 +36,7 @@ impl SpawnOpts {
         self.links.insert(with);
         self
     }
-    pub fn links<'a>(&'a self) -> impl Iterator<Item = ActorID> + 'a {
+    pub fn links(&self) -> impl Iterator<Item = ActorID> + '_ {
         self.links.iter().copied()
     }
 }
