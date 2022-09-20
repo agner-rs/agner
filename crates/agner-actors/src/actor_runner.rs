@@ -102,8 +102,10 @@ where
 
         log::trace!("[{}] running", self.actor_id);
         let exit_reason = tokio::select! {
-            _ = behaviour_running => unreachable!("Future<Output = Infallible> as returned"),
+            biased;
+
             exit_reason = actor_backend_running => exit_reason,
+            _ = behaviour_running => unreachable!("Future<Output = Infallible> as returned"),
         };
 
         if let Some(system) = system_opt.rc_upgrade() {
@@ -145,6 +147,8 @@ where
             };
 
             if let Err(exit_reason) = tokio::select! {
+                biased;
+
                 sys_msg_recv = self.sys_msg_rx.recv() =>
                     self.handle_sys_msg(sys_msg_recv).await,
                 call_msg = self.calls_r.recv() =>

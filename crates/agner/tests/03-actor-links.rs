@@ -1,10 +1,9 @@
 #![cfg(feature = "test-actor")]
 
-use agner::actors::{Exit, SpawnOpts};
+use agner::actors::{Event, Exit, SpawnOpts};
 use agner::test_actor::{TestActor, TestActorRegistry};
 use agner::utils::future_timeout_ext::FutureTimeoutExt;
 use std::collections::HashSet;
-use std::convert::Infallible;
 
 #[macro_use]
 mod common;
@@ -15,11 +14,10 @@ agner_test!(actor_link_with_spawn_opts, async {
     let registry = TestActorRegistry::new();
     let system = common::system(common::SMALL_SYSTEM_SIZE);
 
-    let a1 =
-        TestActor::<Infallible>::start(registry.to_owned(), system.to_owned(), Default::default())
-            .await
-            .unwrap();
-    let a2 = TestActor::<Infallible>::start(
+    let a1 = TestActor::<()>::start(registry.to_owned(), system.to_owned(), Default::default())
+        .await
+        .unwrap();
+    let a2 = TestActor::<()>::start(
         registry.to_owned(),
         system.to_owned(),
         SpawnOpts::new().with_link(a1.actor_id()),
@@ -40,14 +38,12 @@ agner_test!(actor_link_with_context_link, async {
     let registry = TestActorRegistry::new();
     let system = common::system(common::SMALL_SYSTEM_SIZE);
 
-    let a1 =
-        TestActor::<Infallible>::start(registry.to_owned(), system.to_owned(), Default::default())
-            .await
-            .unwrap();
-    let a2 =
-        TestActor::<Infallible>::start(registry.to_owned(), system.to_owned(), Default::default())
-            .await
-            .unwrap();
+    let a1 = TestActor::<()>::start(registry.to_owned(), system.to_owned(), Default::default())
+        .await
+        .unwrap();
+    let a2 = TestActor::<()>::start(registry.to_owned(), system.to_owned(), Default::default())
+        .await
+        .unwrap();
 
     let a1_info = system.actor_info(a1.actor_id()).await.unwrap();
     let a2_info = system.actor_info(a2.actor_id()).await.unwrap();
@@ -55,6 +51,10 @@ agner_test!(actor_link_with_context_link, async {
     assert_eq!(a2_info.links.as_ref(), &[]);
 
     a1.set_link(a2.actor_id(), true).await;
+    a1.post_message(()).await;
+    a2.post_message(()).await;
+    assert!(matches!(a1.next_event(common::SMALL_TIMEOUT).await.unwrap(), Event::Message(())));
+    assert!(matches!(a2.next_event(common::SMALL_TIMEOUT).await.unwrap(), Event::Message(())));
 
     let a1_info = system.actor_info(a1.actor_id()).await.unwrap();
     let a2_info = system.actor_info(a2.actor_id()).await.unwrap();
@@ -69,18 +69,17 @@ agner_test!(linked_actors_terminates_together, async {
     let registry = TestActorRegistry::new();
     let system = common::system(common::SMALL_SYSTEM_SIZE);
 
-    let a1 =
-        TestActor::<Infallible>::start(registry.to_owned(), system.to_owned(), Default::default())
-            .await
-            .unwrap();
-    let a2 = TestActor::<Infallible>::start(
+    let a1 = TestActor::<()>::start(registry.to_owned(), system.to_owned(), Default::default())
+        .await
+        .unwrap();
+    let a2 = TestActor::<()>::start(
         registry.to_owned(),
         system.to_owned(),
         SpawnOpts::new().with_link(a1.actor_id()),
     )
     .await
     .unwrap();
-    let a3 = TestActor::<Infallible>::start(
+    let a3 = TestActor::<()>::start(
         registry.to_owned(),
         system.to_owned(),
         SpawnOpts::new().with_link(a2.actor_id()),
@@ -116,18 +115,17 @@ agner_test!(link_does_not_trigger_on_exit_normal, async {
     let registry = TestActorRegistry::new();
     let system = common::system(common::SMALL_SYSTEM_SIZE);
 
-    let a1 =
-        TestActor::<Infallible>::start(registry.to_owned(), system.to_owned(), Default::default())
-            .await
-            .unwrap();
-    let a2 = TestActor::<Infallible>::start(
+    let a1 = TestActor::<()>::start(registry.to_owned(), system.to_owned(), Default::default())
+        .await
+        .unwrap();
+    let a2 = TestActor::<()>::start(
         registry.to_owned(),
         system.to_owned(),
         SpawnOpts::new().with_link(a1.actor_id()),
     )
     .await
     .unwrap();
-    let a3 = TestActor::<Infallible>::start(
+    let a3 = TestActor::<()>::start(
         registry.to_owned(),
         system.to_owned(),
         SpawnOpts::new().with_link(a2.actor_id()),
@@ -163,18 +161,17 @@ agner_test!(unlink_works, async {
     let registry = TestActorRegistry::new();
     let system = common::system(common::SMALL_SYSTEM_SIZE);
 
-    let a1 =
-        TestActor::<Infallible>::start(registry.to_owned(), system.to_owned(), Default::default())
-            .await
-            .unwrap();
-    let a2 = TestActor::<Infallible>::start(
+    let a1 = TestActor::<()>::start(registry.to_owned(), system.to_owned(), Default::default())
+        .await
+        .unwrap();
+    let a2 = TestActor::<()>::start(
         registry.to_owned(),
         system.to_owned(),
         SpawnOpts::new().with_link(a1.actor_id()),
     )
     .await
     .unwrap();
-    let a3 = TestActor::<Infallible>::start(
+    let a3 = TestActor::<()>::start(
         registry.to_owned(),
         system.to_owned(),
         SpawnOpts::new().with_link(a2.actor_id()),
@@ -198,6 +195,10 @@ agner_test!(unlink_works, async {
     assert_eq!(system.actor_info(a3.actor_id()).await.unwrap().links.as_ref(), &[a2.actor_id()]);
 
     a3.set_link(a2.actor_id(), false).await;
+    a3.post_message(()).await;
+    a2.post_message(()).await;
+    assert!(matches!(a3.next_event(common::SMALL_TIMEOUT).await.unwrap(), Event::Message(())));
+    assert!(matches!(a2.next_event(common::SMALL_TIMEOUT).await.unwrap(), Event::Message(())));
 
     a1.exit(Exit::shutdown()).await;
 
