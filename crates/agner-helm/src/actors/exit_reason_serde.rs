@@ -78,19 +78,20 @@ impl From<Exit> for ExitSerde {
     }
 }
 
-impl Into<ExitStandard> for ExitStandardSerde {
-    fn into(self) -> ExitStandard {
-        match self {
-            Self::Normal => ExitStandard::Normal,
-            Self::Kill => ExitStandard::Kill,
-            Self::Exited(actor_id, reason) =>
-                ExitStandard::Exited(actor_id, Box::new((*reason).into())),
-            Self::NoActor => ExitStandard::NoActor,
-            Self::Shutdown(source) =>
-                ExitStandard::Shutdown(source.map(BoxError::from).map(Into::into)),
+impl From<ExitStandardSerde> for ExitStandard {
+    fn from(from: ExitStandardSerde) -> Self {
+        match from {
+            ExitStandardSerde::Normal => Self::Normal,
+            ExitStandardSerde::Kill => Self::Kill,
+            ExitStandardSerde::Exited(actor_id, reason) =>
+                Self::Exited(actor_id, Box::new((*reason).into())),
+            ExitStandardSerde::NoActor => Self::NoActor,
+            ExitStandardSerde::Shutdown(source) =>
+                Self::Shutdown(source.map(BoxError::from).map(Into::into)),
         }
     }
 }
+
 impl From<ExitStandard> for ExitStandardSerde {
     fn from(exit_standard: ExitStandard) -> Self {
         match exit_standard {
