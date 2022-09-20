@@ -1,3 +1,4 @@
+use std::future::Future;
 use std::sync::atomic::AtomicUsize;
 use std::sync::{Arc, Weak};
 
@@ -123,13 +124,18 @@ impl System {
     /// Wait for the specified actor to terminate, and return upon its termination the
     /// [`ExitReason`]. In case the actor with the specified `actor_id` does not exist — return
     /// [`ExitReason::NoProcess`] right away.
-    pub async fn wait(&self, actor_id: ActorID) -> Exit {
-        let (tx, rx) = oneshot::channel();
-        if self.send_sys_msg(actor_id, SysMsg::Wait(tx)).await {
-            rx.await.unwrap_or_else(|_| Exit::no_actor())
-        } else {
-            Exit::no_actor()
-        }
+    pub fn wait(&self, actor_id: ActorID) -> impl Future<Output = Exit> {
+        let sys = self.clone();
+        let wait_fut = async move {
+            let (tx, rx) = oneshot::channel();
+
+            if sys.send_sys_msg(actor_id, SysMsg::Wait(tx)).await {
+                rx.await.unwrap_or_else(|_| Exit::no_actor())
+            } else {
+                Exit::no_actor()
+            }
+        };
+        wait_fut
     }
 
     /// Send a [`SysMsg`] to the specified process.
