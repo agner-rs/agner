@@ -118,7 +118,9 @@ where
             (true, _) => {
                 let item = this.item.take().expect("Item empty");
                 locked.queue.push_back(item);
-                locked.receiver_waker.take().map(Waker::wake);
+                if let Some(waker) = locked.receiver_waker.take() {
+                    waker.wake();
+                }
                 Poll::Ready(Ok(()))
             },
             (false, false) => {
