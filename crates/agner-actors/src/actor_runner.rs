@@ -220,7 +220,7 @@ where
     }
 
     async fn handle_message_recv(&mut self, message_recv: Option<Message>) -> Result<(), Exit> {
-        let message = message_recv.ok_or_else(|| BackendFailure::RxClosed("messages"))?;
+        let message = message_recv.ok_or(BackendFailure::RxClosed("messages"))?;
         self.inbox_w
             .send(message)
             .await
