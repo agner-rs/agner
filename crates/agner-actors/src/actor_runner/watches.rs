@@ -75,7 +75,7 @@ impl<M> Backend<M> {
                 (_, true, true) => Err(Exit::kill()),
 
                 (false, true, _) => Err(exit_reason),
-                (false, false, _) => Err(Exit::exited(receiver_id, exit_reason)),
+                (false, false, _) => Err(Exit::linked(receiver_id, exit_reason)),
 
                 (true, _, _) => {
                     let signal = Signal::Exit(receiver_id, exit_reason);

@@ -77,7 +77,7 @@ impl Decider for AllForOneDecider {
                     exit_reason.pp()
                 );
 
-                self.initiate_shutdown(Exit::exited(actor_id, exit_reason))
+                self.initiate_shutdown(Exit::linked(actor_id, exit_reason))
             }
         }
     }

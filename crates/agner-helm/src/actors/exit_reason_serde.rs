@@ -24,8 +24,8 @@ pub enum ExitStandardSerde {
     #[serde(rename = "kill")]
     Kill,
 
-    #[serde(rename = "exited")]
-    Exited(ActorID, Box<ExitSerde>),
+    #[serde(rename = "linked")]
+    Linked(ActorID, Box<ExitSerde>),
 
     #[serde(rename = "no_actor")]
     NoActor,
@@ -84,8 +84,8 @@ impl From<ExitStandardSerde> for ExitStandard {
         match from {
             ExitStandardSerde::Normal => Self::Normal,
             ExitStandardSerde::Kill => Self::Kill,
-            ExitStandardSerde::Exited(actor_id, reason) =>
-                Self::Exited(actor_id, Box::new((*reason).into())),
+            ExitStandardSerde::Linked(actor_id, reason) =>
+                Self::Linked(actor_id, Box::new((*reason).into())),
             ExitStandardSerde::NoActor => Self::NoActor,
             ExitStandardSerde::Shutdown(source) =>
                 Self::Shutdown(source.map(BoxError::from).map(Into::into)),
@@ -98,8 +98,8 @@ impl From<ExitStandard> for ExitStandardSerde {
         match exit_standard {
             ExitStandard::Normal => Self::Normal,
             ExitStandard::Kill => Self::Kill,
-            ExitStandard::Exited(actor_id, reason) =>
-                Self::Exited(actor_id, Box::new((*reason).into())),
+            ExitStandard::Linked(actor_id, reason) =>
+                Self::Linked(actor_id, Box::new((*reason).into())),
             ExitStandard::NoActor => Self::NoActor,
             ExitStandard::Shutdown(reason) => Self::Shutdown(
                 reason.as_ref().map(AsRef::as_ref).map(GenericError::from_std_error_send_sync),
