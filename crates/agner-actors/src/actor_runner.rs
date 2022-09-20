@@ -174,17 +174,20 @@ where
     }
 
     async fn handle_sys_msg(&mut self, sys_msg_recv: Option<SysMsg>) -> Result<(), Exit> {
-        match sys_msg_recv {
-            None => Err(BackendFailure::RxClosed("sys-msg").into()),
-            Some(SysMsg::SigExit(terminated, exit_reason)) =>
+        let sys_msg = sys_msg_recv.ok_or(BackendFailure::RxClosed("sys-msg"))?;
+        log::trace!("[{}] received sys-msg: {:?}", self.actor_id, sys_msg);
+
+        match sys_msg {
+            SysMsg::SigExit(terminated, exit_reason) =>
                 self.handle_sys_msg_sig_exit(terminated, exit_reason).await,
-            Some(SysMsg::Link(link_to)) => self.handle_sys_msg_link(link_to).await,
-            Some(SysMsg::Unlink(unlink_from)) => self.handle_sys_msg_unlink(unlink_from).await,
-            Some(SysMsg::GetInfo(report_to)) => self.handle_sys_msg_get_info(report_to).await,
+            SysMsg::Link(link_to) => self.handle_sys_msg_link(link_to).await,
+            SysMsg::Unlink(unlink_from) => self.handle_sys_msg_unlink(unlink_from).await,
+            SysMsg::GetInfo(report_to) => self.handle_sys_msg_get_info(report_to).await,
         }
     }
 
     async fn handle_sys_msg_on_shutdown(&mut self, sys_msg: SysMsg, exit_reason: Exit) {
+        log::trace!("[{}] received sys-msg when shutting down: {:?}", self.actor_id, sys_msg);
         match sys_msg {
             SysMsg::Link(linked) =>
                 if exit_reason.is_normal() {
