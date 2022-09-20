@@ -44,10 +44,10 @@ impl System {
             None
         }
     }
-    pub(crate) async fn actor_entry_write<'a>(
-        &'a self,
+    pub(crate) async fn actor_entry_write(
+        &self,
         actor_id: ActorID,
-    ) -> Option<impl DerefMut<Target = ActorEntry> + 'a> {
+    ) -> Option<impl DerefMut<Target = ActorEntry> + '_> {
         let locked = self.actor_entry_slot(actor_id).write().await;
         if locked.running_or_terminated_actor_id() == Some(actor_id) {
             Some(locked)
