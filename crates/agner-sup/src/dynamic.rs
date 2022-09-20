@@ -77,11 +77,7 @@ where
     loop {
         match context.next_event().await {
             Event::Message(Message::StartChild(args, reply_to)) => {
-                let response =
-                    match do_start_child(context, &mut sup_spec, args, &mut children).await {
-                        Ok(child_id) => Ok(child_id),
-                        Err(reason) => Err(reason),
-                    };
+                let response = do_start_child(context, &mut sup_spec, args, &mut children).await;
 
                 let _ = reply_to.send(response);
             },
