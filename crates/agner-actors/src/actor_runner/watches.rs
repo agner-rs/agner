@@ -12,7 +12,7 @@ pub(crate) struct Watches {
 
 impl<M> Backend<M> {
     pub(super) async fn notify_linked_actors(&mut self, exit_reason: Exit) {
-        for linked in std::mem::replace(&mut self.watches.links, Default::default()).drain() {
+        for linked in std::mem::take(&mut self.watches.links).drain() {
             if exit_reason.is_normal() {
                 self.send_sys_msg(linked, SysMsg::Unlink(self.actor_id)).await;
             } else {
