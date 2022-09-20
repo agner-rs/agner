@@ -1,6 +1,15 @@
 use std::future::Future;
+use std::time::Duration;
 
 use agner_actors::{System, SystemConfig};
+
+#[allow(unused)]
+pub const SMALL_SYSTEM_SIZE: usize = 10;
+
+#[allow(unused)]
+pub const SMALL_TIMEOUT: Duration = Duration::from_millis(300);
+#[allow(unused)]
+pub const EXIT_TIMEOUT: Duration = Duration::from_secs(1);
 
 #[allow(unused)]
 macro_rules! agner_test {
