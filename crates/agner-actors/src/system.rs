@@ -1,3 +1,4 @@
+use std::any::Any;
 use std::future::Future;
 use std::sync::atomic::AtomicUsize;
 use std::sync::{Arc, Weak};
@@ -208,6 +209,15 @@ impl System {
         }
         if !left_accepted_sys_msg {
             self.send_sys_msg(right, SysMsg::SigExit(left, Exit::no_actor())).await;
+        }
+    }
+
+    /// Associate arbitrary data with the specified actor.
+    /// Upon actor termination that data will be dropped.
+    /// If no actor with the specified id exists, the data will be dropped right away.
+    pub async fn add_data<D: Any + Send + Sync + 'static>(&self, actor_id: ActorID, data: D) {
+        if let Some(mut actor_entry) = self.actor_entry_write(actor_id).await {
+            actor_entry.add_data(data);
         }
     }
 

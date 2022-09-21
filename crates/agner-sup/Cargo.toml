@@ -22,6 +22,7 @@ thiserror = "^1"
 tokio = {version = "^1", features = ["sync", "time"]}
 
 [dev-dependencies]
+agner-test-actor = { path = "../agner-test-actor", version = "=0.2.10" }
 dotenv = "^0.15"
 pretty_env_logger = "^0.4"
 tokio = {version = "^1", features = ["macros", "rt-multi-thread", "sync", "time", "net"]}

@@ -10,6 +10,8 @@ use crate::exit::Exit;
 
 use super::actor_id_pool::ActorIDLease;
 
+pub type Data = Box<dyn Any + Send + Sync + 'static>;
+
 #[derive(Debug)]
 pub struct ActorEntry(Entry);
 
@@ -25,6 +27,7 @@ struct Occupied {
     messages_tx: Box<dyn Any + Send + Sync + 'static>,
     sys_msg_tx: mpsc::UnboundedSender<SysMsg>,
     watches: Vec<oneshot::Sender<Exit>>,
+    data: Vec<Data>,
 }
 
 type Vacant = Option<Terminated>;
@@ -81,9 +84,16 @@ impl ActorEntry {
             messages_tx: Box::new(messages_tx),
             sys_msg_tx,
             watches: Default::default(),
+            data: Default::default(),
         };
         let entry = Entry::Occupied(occupied);
         Self(entry)
+    }
+
+    pub fn add_data<D: Any + Send + Sync + 'static>(&mut self, data: D) {
+        if let Entry::Occupied(occupied) = &mut self.0 {
+            occupied.data.push(Box::new(data));
+        }
     }
 
     pub fn add_watch(&mut self, watch: oneshot::Sender<Exit>) {
