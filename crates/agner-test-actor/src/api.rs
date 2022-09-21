@@ -20,14 +20,12 @@ pub struct TestActor<M> {
 impl<M> TestActor<M> {
     pub fn prepare_args(
         registry: TestActorRegistry,
-    ) -> (crate::behaviour::Args<M>, impl Future<Output = ()>) {
+    ) -> (crate::behaviour::Args<M>, impl Future<Output = Option<ActorID>>) {
         let (init_ack_tx, init_ack_rx) = oneshot::channel();
         let (ctl_tx, ctl_rx) = mpsc::unbounded_channel();
         let args = crate::behaviour::Args::<M> { init_ack_tx, ctl_rx, ctl_tx, registry };
 
-        (args, async move {
-            let _ = init_ack_rx.await;
-        })
+        (args, async move { init_ack_rx.await.ok() })
     }
 
     pub async fn start(

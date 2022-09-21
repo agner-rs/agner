@@ -3,6 +3,7 @@ use std::future::Future;
 use std::marker::PhantomData;
 use std::pin::Pin;
 use std::process::Output;
+use std::sync::Arc;
 use std::time::Duration;
 
 use agner_actors::{Actor, ActorID, Exit, SpawnOpts, SysSpawnError, System};
@@ -18,16 +19,16 @@ mod tests;
 
 pub type BoxedFuture<T> = Pin<Box<dyn Future<Output = T> + Send + Sync + 'static>>;
 
-#[derive(Debug, thiserror::Error)]
+#[derive(Debug, Clone, thiserror::Error)]
 pub enum StartChildError {
     #[error("System failed to spawn child")]
-    SysSpawnError(#[source] SysSpawnError),
+    SysSpawnError(#[source] Arc<SysSpawnError>),
 
     #[error("Init-ack failure")]
     InitAckFailure,
 
     #[error("Timeout")]
-    Timeout(tokio::time::error::Elapsed),
+    Timeout(#[source] Arc<tokio::time::error::Elapsed>),
 }
 
 pub trait StartChild<A>: fmt::Debug + Send + Sync + 'static {
@@ -44,7 +45,7 @@ pub enum InitType {
     WithAck { init_timeout: Duration, stop_timeout: Duration },
 }
 
-pub fn without_ack<B, A, M, PS>(
+pub fn new<B, A, M, PS>(
     sup_id: ActorID,
     actor_behaviour: B,
     actor_args: A,
@@ -201,7 +202,10 @@ where
                 if let Err(cancel_error) = util::try_exit(
                     system,
                     intermediary_id,
-                    [(Exit::shutdown(), cancel_timeout), (Exit::kill(), cancel_timeout)],
+                    [
+                        (Exit::shutdown_with_source(Arc::new(reason.to_owned())), cancel_timeout),
+                        (Exit::kill(), cancel_timeout),
+                    ],
                 )
                 .await
                 {
@@ -216,11 +220,11 @@ where
 
 impl From<SysSpawnError> for StartChildError {
     fn from(e: SysSpawnError) -> Self {
-        Self::SysSpawnError(e)
+        Self::SysSpawnError(Arc::new(e))
     }
 }
 impl From<tokio::time::error::Elapsed> for StartChildError {
     fn from(e: tokio::time::error::Elapsed) -> Self {
-        Self::Timeout(e)
+        Self::Timeout(Arc::new(e))
     }
 }

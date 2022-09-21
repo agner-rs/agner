@@ -1,7 +1,6 @@
-use std::convert::Infallible;
 use std::sync::Arc;
 
-use agner_actors::Context;
+use agner_actors::{ActorID, Context};
 use agner_utils::future_timeout_ext::FutureTimeoutExt;
 use tokio::sync::{mpsc, oneshot, Mutex};
 
@@ -12,7 +11,7 @@ use crate::TestActorRegistry;
 
 pub struct Args<M> {
     pub registry: TestActorRegistry,
-    pub init_ack_tx: oneshot::Sender<Infallible>,
+    pub init_ack_tx: oneshot::Sender<ActorID>,
     pub ctl_rx: mpsc::UnboundedReceiver<Query<M>>,
     pub ctl_tx: mpsc::UnboundedSender<Query<M>>,
 }
@@ -32,7 +31,7 @@ where
     };
     registry.0.write().await.insert(context.actor_id(), entry);
 
-    std::mem::drop(init_ack_tx);
+    let _ = init_ack_tx.send(context.actor_id());
 
     while let Some(query) = ctl_rx.recv().await {
         match query {
