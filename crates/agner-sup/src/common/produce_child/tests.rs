@@ -1,2 +1,1 @@
-#[tokio::test]
-async fn ergonomics() {}
+mod ergonomics;

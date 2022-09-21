@@ -43,6 +43,19 @@ pub struct Call<F, In, Out>(F, PhantomData<(In, Out)>);
 #[derive(Debug)]
 pub struct Lazy<F, Out>(F, PhantomData<Out>);
 
+impl<In, Out> ArgsFactory for Box<dyn ArgsFactory<Input = In, Output = Out>>
+where
+    In: Send + Sync + 'static,
+    Out: Send + Sync + 'static,
+{
+    type Input = In;
+    type Output = Out;
+
+    fn make_args(&mut self, args: Self::Input) -> Self::Output {
+        self.as_mut().make_args(args)
+    }
+}
+
 impl<T> ArgsFactory for CloneValue<T>
 where
     T: Clone + Send + Sync + 'static,

@@ -16,6 +16,7 @@ pub fn new<B, AF, M>(
     actor_args_factory: AF,
 
     init_type: InitType,
+    provided_services: impl Into<Arc<[Service]>>,
 ) -> Box<dyn ProduceChild<AF::Input>>
 where
     AF: ArgsFactory,
@@ -27,7 +28,7 @@ where
         actor_behaviour,
         actor_args_factory,
         actor_message: PhantomData::<M>,
-        provided_services: Arc::new([]),
+        provided_services: provided_services.into(),
         init_type,
     };
     Box::new(produce_child)
@@ -45,6 +46,15 @@ struct ProduceChildImpl<B, AF, M> {
     init_type: InitType,
 }
 
+impl<Args> ProduceChild<Args> for Box<dyn ProduceChild<Args>>
+where
+    Args: Send + Sync + 'static,
+{
+    fn produce(&mut self, sup_id: ActorID, args: Args) -> Box<dyn StartChild> {
+        self.as_mut().produce(sup_id, args)
+    }
+}
+
 impl<B, AF, M> ProduceChild<AF::Input> for ProduceChildImpl<B, AF, M>
 where
     AF: ArgsFactory,
@@ -55,7 +65,7 @@ where
 {
     fn produce(&mut self, sup_id: ActorID, args: AF::Input) -> Box<dyn StartChild> {
         let args = self.actor_args_factory.make_args(args);
-        common::new_start_child(
+        common::start_child::new(
             sup_id,
             self.actor_behaviour.to_owned(),
             args,
