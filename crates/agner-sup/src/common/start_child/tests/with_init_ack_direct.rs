@@ -5,7 +5,7 @@ use agner_actors::{Event, Exit, Signal, System};
 use agner_test_actor::{TestActor, TestActorRegistry};
 use futures::future;
 
-use crate::common::start_child::{self, InitType, StartChild};
+use crate::common::start_child::{self, InitType};
 use crate::Service;
 
 const SMALL_TIMEOUT: Duration = Duration::from_millis(100);
@@ -36,7 +36,7 @@ async fn start_child_with_ack_no_regs() {
         [],
     );
 
-    let start_child_result = start_child.start_child(system.to_owned(), ());
+    let start_child_result = start_child.start_child(system.to_owned());
 
     let child_init_acked = async {
         let child_id = init_rx.await.unwrap();
@@ -90,7 +90,7 @@ async fn start_child_with_ack_with_regs() {
         [s1.to_owned(), s2.to_owned()],
     );
 
-    let start_child_result = start_child.start_child(system.to_owned(), ());
+    let start_child_result = start_child.start_child(system.to_owned());
 
     let child_init_acked = async {
         let child_id = init_rx.await.unwrap();
@@ -144,7 +144,7 @@ async fn start_child_with_ack_timeout_shutdown() {
         [],
     );
 
-    let start_child_result = start_child.start_child(system.to_owned(), ());
+    let start_child_result = start_child.start_child(system.to_owned());
 
     let child = async {
         let child_id = init_rx.await.unwrap();
@@ -182,7 +182,7 @@ async fn start_child_with_ack_timeout_killed() {
         [],
     );
 
-    let start_child_result = start_child.start_child(system.to_owned(), ());
+    let start_child_result = start_child.start_child(system.to_owned());
 
     let child = async {
         let child_id = init_rx.await.unwrap();

@@ -4,7 +4,7 @@ use std::time::Duration;
 use agner_actors::{Event, Exit, Signal, System};
 use agner_test_actor::{TestActor, TestActorRegistry};
 
-use crate::common::start_child::{self, InitType, StartChild};
+use crate::common::start_child::{self, InitType};
 use crate::Service;
 
 const SMALL_TIMEOUT: Duration = Duration::from_millis(100);
@@ -33,7 +33,7 @@ async fn start_child_no_ack_no_regs() {
     );
 
     let child = {
-        let child_id = start_child.start_child(system.to_owned(), ()).await.unwrap();
+        let child_id = start_child.start_child(system.to_owned()).await.unwrap();
         let _ = init_rx.await;
         registry.lookup::<Infallible>(child_id).await.unwrap()
     };
@@ -84,7 +84,7 @@ async fn start_child_no_ack_with_regs() {
     assert!(s2.resolve().is_none());
 
     let child = {
-        let child_id = start_child.start_child(system.to_owned(), ()).await.unwrap();
+        let child_id = start_child.start_child(system.to_owned()).await.unwrap();
         let _ = init_rx.await;
         registry.lookup::<Infallible>(child_id).await.unwrap()
     };

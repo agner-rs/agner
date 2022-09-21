@@ -1,8 +1,5 @@
 use std::fmt;
-use std::future::Future;
 use std::marker::PhantomData;
-use std::pin::Pin;
-use std::process::Output;
 use std::sync::Arc;
 use std::time::Duration;
 
@@ -11,13 +8,11 @@ use agner_utils::future_timeout_ext::FutureTimeoutExt;
 use agner_utils::result_err_flatten::ResultErrFlattenIn;
 use agner_utils::std_error_pp::StdErrorPP;
 
-use crate::common::util;
+use crate::common::{util, StaticBoxedFuture};
 use crate::service::Service;
 
 #[cfg(test)]
 mod tests;
-
-pub type BoxedFuture<T> = Pin<Box<dyn Future<Output = T> + Send + Sync + 'static>>;
 
 #[derive(Debug, Clone, thiserror::Error)]
 pub enum StartChildError {
@@ -31,12 +26,11 @@ pub enum StartChildError {
     Timeout(#[source] Arc<tokio::time::error::Elapsed>),
 }
 
-pub trait StartChild<A>: fmt::Debug + Send + Sync + 'static {
+pub trait StartChild: fmt::Debug + Send + Sync + 'static {
     fn start_child(
         self: Box<Self>,
         system: System,
-        input_arg: A,
-    ) -> BoxedFuture<Result<ActorID, StartChildError>>;
+    ) -> StaticBoxedFuture<Result<ActorID, StartChildError>>;
 }
 
 #[derive(Debug, Clone, Copy)]
@@ -51,7 +45,7 @@ pub fn new<B, A, M, PS>(
     actor_args: A,
     init_type: InitType,
     provided_services: PS,
-) -> Box<dyn StartChild<()>>
+) -> Box<dyn StartChild>
 where
     PS: IntoIterator<Item = Service>,
     B: for<'a> Actor<'a, A, M>,
@@ -80,7 +74,7 @@ struct StartChildImpl<B, A, M, PS> {
     init_type: InitType,
 }
 
-impl<B, A, M, PS> StartChild<()> for StartChildImpl<B, A, M, PS>
+impl<B, A, M, PS> StartChild for StartChildImpl<B, A, M, PS>
 where
     PS: IntoIterator<Item = Service>,
     B: for<'a> Actor<'a, A, M>,
@@ -92,8 +86,7 @@ where
     fn start_child(
         self: Box<Self>,
         system: System,
-        input_arg: (),
-    ) -> BoxedFuture<Result<ActorID, StartChildError>> {
+    ) -> StaticBoxedFuture<Result<ActorID, StartChildError>> {
         Box::pin(self.do_start_child(system))
     }
 }
