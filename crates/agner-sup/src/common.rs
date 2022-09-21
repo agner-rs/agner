@@ -9,7 +9,7 @@ mod util;
 mod start_child;
 pub use start_child::{new as new_start_child, InitType, StartChild, StartChildError};
 
-mod args_factory;
+pub mod args_factory;
 pub use args_factory::ArgsFactory;
 
 mod stop_child;

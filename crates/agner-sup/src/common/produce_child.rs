@@ -8,6 +8,9 @@ use crate::common;
 use crate::common::{ArgsFactory, InitType, StartChild};
 use crate::service::Service;
 
+#[cfg(test)]
+mod tests;
+
 pub fn new<B, AF, M>(
     actor_behaviour: B,
     actor_args_factory: AF,
