@@ -14,5 +14,5 @@ pub use args_factory::ArgsFactory;
 
 mod stop_child;
 
-mod produce_chlid;
-pub use produce_chlid::ProduceChild;
+mod produce_child;
+pub use produce_child::{new as new_produce_child, ProduceChild};

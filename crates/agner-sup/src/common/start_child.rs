@@ -14,6 +14,32 @@ use crate::service::Service;
 #[cfg(test)]
 mod tests;
 
+pub fn new<B, A, M, PS>(
+    sup_id: ActorID,
+    actor_behaviour: B,
+    actor_args: A,
+    init_type: InitType,
+    provided_services: PS,
+) -> Box<dyn StartChild>
+where
+    PS: AsRef<[Service]>,
+    B: for<'a> Actor<'a, A, M>,
+    PS: Send + Sync + 'static,
+    B: Send + Sync + 'static,
+    A: Send + Sync + 'static,
+    M: Send + Sync + Unpin + 'static,
+{
+    let start_child = StartChildImpl {
+        sup_id,
+        actor_behaviour,
+        actor_args,
+        actor_message: PhantomData::<M>,
+        provided_services,
+        init_type,
+    };
+    Box::new(start_child)
+}
+
 #[derive(Debug, Clone, thiserror::Error)]
 pub enum StartChildError {
     #[error("System failed to spawn child")]
@@ -39,32 +65,6 @@ pub enum InitType {
     WithAck { init_timeout: Duration, stop_timeout: Duration },
 }
 
-pub fn new<B, A, M, PS>(
-    sup_id: ActorID,
-    actor_behaviour: B,
-    actor_args: A,
-    init_type: InitType,
-    provided_services: PS,
-) -> Box<dyn StartChild>
-where
-    PS: IntoIterator<Item = Service>,
-    B: for<'a> Actor<'a, A, M>,
-    PS: Send + Sync + 'static,
-    B: Send + Sync + 'static,
-    A: Send + Sync + 'static,
-    M: Send + Sync + Unpin + 'static,
-{
-    let start_child = StartChildImpl {
-        sup_id,
-        actor_behaviour,
-        actor_args,
-        actor_message: PhantomData::<M>,
-        provided_services,
-        init_type,
-    };
-    Box::new(start_child)
-}
-
 struct StartChildImpl<B, A, M, PS> {
     sup_id: ActorID,
     provided_services: PS,
@@ -76,7 +76,7 @@ struct StartChildImpl<B, A, M, PS> {
 
 impl<B, A, M, PS> StartChild for StartChildImpl<B, A, M, PS>
 where
-    PS: IntoIterator<Item = Service>,
+    PS: AsRef<[Service]>,
     B: for<'a> Actor<'a, A, M>,
     PS: Send + Sync + 'static,
     B: Send + Sync + 'static,
@@ -94,7 +94,6 @@ where
 impl<B, A, M, PS> fmt::Debug for StartChildImpl<B, A, M, PS> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         f.debug_struct("StartChild")
-            .field("input_arg", &"()")
             .field("sup_id", &self.sup_id.to_string())
             .field("behavoiur", &std::any::type_name::<B>())
             .field("args", &std::any::type_name::<A>())
@@ -106,7 +105,7 @@ impl<B, A, M, PS> fmt::Debug for StartChildImpl<B, A, M, PS> {
 
 impl<B, A, M, PS> StartChildImpl<B, A, M, PS>
 where
-    PS: IntoIterator<Item = Service>,
+    PS: AsRef<[Service]>,
     B: for<'a> Actor<'a, A, M>,
     PS: Send + Sync + 'static,
     B: Send + Sync + 'static,
@@ -133,6 +132,7 @@ where
         let child_id = system.spawn(actor_behaviour, actor_args, spawn_opts).await?;
 
         let registrations = provided_services
+            .as_ref()
             .into_iter()
             .map(|s| s.register(child_id))
             .collect::<Box<[_]>>();
@@ -170,6 +170,7 @@ where
             Ok(child_id) => {
                 system.link(sup_id, child_id).await;
                 let registrations = provided_services
+                    .as_ref()
                     .into_iter()
                     .map(|s| s.register(child_id))
                     .collect::<Box<[_]>>();
