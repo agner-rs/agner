@@ -47,6 +47,12 @@ pub struct NextEventRq<M> {
     pub reply_to: Tx<Event<M>>,
 }
 
+impl<M> From<InitAckRq> for Query<M> {
+    fn from(inner: InitAckRq) -> Self {
+        Self::InitAck(inner)
+    }
+}
+
 impl<M> From<SetLinkRq> for Query<M> {
     fn from(inner: SetLinkRq) -> Self {
         Self::SetLink(inner)

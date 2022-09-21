@@ -6,7 +6,7 @@ use agner_actors::{ActorID, Event, Exit, SpawnOpts, SysSpawnError, System};
 use tokio::sync::{mpsc, oneshot, Mutex};
 
 use crate::exited::Exited;
-use crate::query::{ExitRq, NextEventRq, Query, SetLinkRq, SetTrapExitRq};
+use crate::query::{ExitRq, InitAckRq, NextEventRq, Query, SetLinkRq, SetTrapExitRq};
 use crate::TestActorRegistry;
 
 #[derive(Debug, Clone)]
@@ -79,6 +79,12 @@ impl<M> TestActor<M> {
         M: Send + Sync + Unpin + 'static,
     {
         self.system.send(self.actor_id, message).await
+    }
+
+    pub async fn init_ack(&self, value: Option<ActorID>) {
+        let (reply_on_drop, done) = oneshot::channel();
+        assert!(self.ctl_tx.send(InitAckRq { value, reply_on_drop }.into()).is_ok());
+        let _ = done.await;
     }
 
     pub async fn exit(&self, reason: Exit) {
