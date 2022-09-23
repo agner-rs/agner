@@ -14,9 +14,10 @@ use crate::mixed::ChildSpec;
 
 #[derive(Debug)]
 pub enum Message<ID> {
-    RmChild(ID, oneshot::Sender<Result<(), SupervisorError>>),
-    AddChild(ChildSpec<ID>, oneshot::Sender<Result<ActorID, SupervisorError>>),
+    TerminateChild(ID, oneshot::Sender<Result<Exit, SupervisorError>>),
+    StartChild(ChildSpec<ID>, oneshot::Sender<Result<ActorID, SupervisorError>>),
     WhichChildren(oneshot::Sender<Vec<(ID, ActorID)>>),
+    Noop,
 }
 
 pub async fn run<ID, RS>(
@@ -40,6 +41,8 @@ where
     let mut child_ids: Vec<ID> = vec![];
     let mut child_actors: HashMap<ID, ActorID> = Default::default();
     let mut child_specs: HashMap<ID, ChildSpec<ID>> = Default::default();
+    let mut subscribers_up: HashMap<ID, oneshot::Sender<Result<ActorID, SupervisorError>>> =
+        Default::default();
 
     for child_spec in children {
         decider.add_child(child_spec.id, child_spec.child_type).map_err(Exit::custom)?;
@@ -70,7 +73,16 @@ where
             if let Some(next_event) = next_event_opt {
                 match next_event {
                     Event::Message(message) =>
-                        handle_message(context, &mut decider, &mut child_specs, message).await?,
+                        handle_message(
+                            context,
+                            &mut decider,
+                            &mut child_ids,
+                            &mut child_actors,
+                            &mut child_specs,
+                            &mut subscribers_up,
+                            message,
+                        )
+                        .await?,
                     Event::Signal(signal) => handle_signal(context, &mut decider, signal).await?,
                 }
             } else {
@@ -81,8 +93,15 @@ where
         decider_has_actions = match decider.next_action().map_err(Exit::custom)? {
             None => false,
             Some(action) => {
-                process_action(context, &mut decider, &mut child_specs, &mut child_actors, action)
-                    .await?;
+                process_action(
+                    context,
+                    &mut decider,
+                    &mut child_specs,
+                    &mut child_actors,
+                    &mut subscribers_up,
+                    action,
+                )
+                .await?;
                 true
             },
         };
@@ -109,15 +128,60 @@ where
 }
 
 async fn handle_message<ID, D>(
-    _context: &mut Context<Message<ID>>,
-    _decider: &mut D,
-    _child_specs: &mut HashMap<ID, ChildSpec<ID>>,
+    context: &mut Context<Message<ID>>,
+    decider: &mut D,
+    child_ids: &mut Vec<ID>,
+    child_actors: &mut HashMap<ID, ActorID>,
+    child_specs: &mut HashMap<ID, ChildSpec<ID>>,
+    subscribers_up: &mut HashMap<ID, oneshot::Sender<Result<ActorID, SupervisorError>>>,
     message: Message<ID>,
-) -> Result<(), Exit> {
+) -> Result<(), Exit>
+where
+    ID: ChildID,
+    D: Decider<ID, Duration, Instant>,
+{
     match message {
-        Message::WhichChildren(_) => unimplemented!(),
-        Message::RmChild(_, _) => unimplemented!(),
-        Message::AddChild(_, _) => unimplemented!(),
+        Message::Noop => Ok(()),
+        Message::WhichChildren(reply_to) => {
+            let out = child_ids
+                .iter()
+                .filter_map(|id| child_actors.get(id).map(|actor| (*id, *actor)))
+                .collect::<Vec<_>>();
+            let _ = reply_to.send(out);
+            Ok(())
+        },
+        Message::TerminateChild(id, reply_to) => {
+            if child_specs.contains_key(&id) {
+                decider.rm_child(id).map_err(Exit::custom)?;
+                if let Some(actor_id) = child_actors.get(&id).copied() {
+                    let system = context.system();
+                    context
+                        .future_to_inbox(async move {
+                            let exit = system.wait(actor_id).await;
+                            let _ = reply_to.send(Ok(exit));
+                            Message::Noop
+                        })
+                        .await;
+                } else {
+                    let _ = reply_to.send(Ok(Exit::no_actor()));
+                }
+            } else {
+                let _ = reply_to.send(Err(SupervisorError::UnknownId));
+            }
+            Ok(())
+        },
+        Message::StartChild(child_spec, reply_to) => {
+            let child_id = child_spec.id;
+            if !child_specs.contains_key(&child_id) {
+                decider.add_child(child_id, child_spec.child_type).map_err(Exit::custom)?;
+                child_ids.push(child_id);
+                child_specs.insert(child_id, child_spec);
+                subscribers_up.insert(child_id, reply_to);
+            } else {
+                let _ = reply_to.send(Err(SupervisorError::DuplicateId));
+            }
+            Ok(())
+        },
     }
 }
 
@@ -126,6 +190,7 @@ async fn process_action<ID, D>(
     decider: &mut D,
     child_specs: &mut HashMap<ID, ChildSpec<ID>>,
     child_actors: &mut HashMap<ID, ActorID>,
+    subscribers_up: &mut HashMap<ID, oneshot::Sender<Result<ActorID, SupervisorError>>>,
     action: Action<ID>,
 ) -> Result<(), Exit>
 where
@@ -154,6 +219,10 @@ where
                     .map_err(Exit::custom)?;
                 child_actors.insert(child_id, actor_id);
                 decider.child_started(child_id, actor_id).map_err(Exit::custom)?;
+
+                if let Some(reply_to) = subscribers_up.remove(&child_id) {
+                    let _ = reply_to.send(Ok(actor_id));
+                }
             } else {
                 return Err(Exit::custom(SupervisorError::UnknownId))
             }
@@ -180,11 +249,28 @@ where
     Ok(())
 }
 
-#[derive(Debug, thiserror::Error)]
+#[derive(Debug, Clone, thiserror::Error)]
 pub enum SupervisorError {
-    #[error("Decider returned unknown id")]
+    #[error("Unknown ID")]
     UnknownId,
+
+    #[error("Duplicate ID")]
+    DuplicateId,
 
     #[error("Failed to start child")]
     StartChildFailure(#[source] StartChildError),
+
+    #[error("oneshot-rx failure")]
+    OneshotRx(#[source] oneshot::error::RecvError),
+}
+
+impl From<oneshot::error::RecvError> for SupervisorError {
+    fn from(e: oneshot::error::RecvError) -> Self {
+        Self::OneshotRx(e)
+    }
+}
+impl From<StartChildError> for SupervisorError {
+    fn from(e: StartChildError) -> Self {
+        Self::StartChildFailure(e)
+    }
 }

@@ -1,7 +1,8 @@
 use std::collections::HashSet;
 use std::time::Duration;
 
-use agner_actors::{ActorID, Context, Event, Exit, Never, Signal};
+use agner_actors::{ActorID, Context, Event, Exit, Never, Signal, System};
+use agner_utils::result_err_flatten::ResultErrFlattenIn;
 use agner_utils::std_error_pp::StdErrorPP;
 
 use tokio::sync::oneshot;
@@ -10,9 +11,44 @@ use crate::common::{ProduceChild, StartChildError};
 
 const DEFAULT_SHUTDOWN_TIMEOUT: Duration = Duration::from_secs(5);
 
+#[derive(Debug, Clone, thiserror::Error)]
+pub enum SupervisorError {
+    #[error("Failed to start a child")]
+    StartChildError(#[source] StartChildError),
+
+    #[error("oneshot-rx error")]
+    OneshotRx(#[source] oneshot::error::RecvError),
+}
+
+pub async fn start_child<A>(
+    system: &System,
+    sup: ActorID,
+    args: A,
+) -> Result<ActorID, SupervisorError>
+where
+    A: Send + Sync + 'static,
+{
+    let (tx, rx) = oneshot::channel();
+    system.send(sup, Message::Start(args, tx)).await;
+    rx.await.err_flatten_in()
+}
+
+pub async fn stop_child<A>(
+    system: &System,
+    sup: ActorID,
+    child: ActorID,
+) -> Result<Exit, SupervisorError>
+where
+    A: Send + Sync + 'static,
+{
+    let (tx, rx) = oneshot::channel();
+    system.send(sup, Message::<A>::Stop(child, tx)).await;
+    rx.await.err_flatten_in()
+}
+
 pub enum Message<InArgs> {
-    Start(InArgs, oneshot::Sender<Result<ActorID, StartChildError>>),
-    Stop(ActorID, oneshot::Sender<Exit>),
+    Start(InArgs, oneshot::Sender<Result<ActorID, SupervisorError>>),
+    Stop(ActorID, oneshot::Sender<Result<Exit, SupervisorError>>),
     Noop,
 }
 
@@ -60,7 +96,7 @@ where
 
                 log::trace!("[{}] start result {:?}", context.actor_id(), result);
 
-                let _ = reply_to.send(result);
+                let _ = reply_to.send(result.map_err(Into::into));
             },
             Event::Message(Message::Stop(actor_id, reply_to)) =>
                 if children.contains(&actor_id) {
@@ -88,7 +124,7 @@ where
                         );
 
                         if let Ok(exit) = result {
-                            let _ = reply_to.send(exit);
+                            let _ = reply_to.send(Ok(exit));
                         }
                         Message::<A>::Noop
                     };
@@ -99,7 +135,7 @@ where
                         context.actor_id(),
                         actor_id
                     );
-                    let _ = reply_to.send(Exit::no_actor());
+                    let _ = reply_to.send(Ok(Exit::no_actor()));
                 },
             Event::Signal(Signal::Exit(actor_id, exit_reason)) =>
                 if actor_id == context.actor_id() {
@@ -150,7 +186,6 @@ mod tests {
     use std::convert::Infallible;
 
     use agner_actors::System;
-    use agner_utils::result_err_flatten::ResultErrFlattenIn;
 
     use crate::common::{args_factory, produce_child, InitType};
 
@@ -189,21 +224,12 @@ mod tests {
         let system = System::new(Default::default());
         let sup = system.spawn(crate::uniform::run, sup_spec, Default::default()).await.unwrap();
 
-        let (tx, rx) = oneshot::channel();
-        system.send(sup, Message::<&'static str>::Start("one", tx)).await;
-        let w1 = rx.await.err_flatten_in().unwrap();
+        let w1 = start_child(&system, sup, "one").await.unwrap();
+        let w2 = start_child(&system, sup, "two").await.unwrap();
+        let w3 = start_child(&system, sup, "three").await.unwrap();
 
-        let (tx, rx) = oneshot::channel();
-        system.send(sup, Message::<&'static str>::Start("two", tx)).await;
-        let w2 = rx.await.err_flatten_in().unwrap();
-
-        let (tx, rx) = oneshot::channel();
-        system.send(sup, Message::<&'static str>::Start("three", tx)).await;
-        let w3 = rx.await.err_flatten_in().unwrap();
-
-        let (tx, rx) = oneshot::channel();
-        system.send(sup, Message::<&'static str>::Stop(w1, tx)).await;
-        assert!(rx.await.unwrap().is_shutdown());
+        let w1_exited = stop_child::<&str>(&system, sup, w1).await.unwrap();
+        assert!(w1_exited.is_shutdown());
         assert!(system.wait(w1).await.is_shutdown());
 
         system.exit(sup, Exit::shutdown()).await;
@@ -212,5 +238,16 @@ mod tests {
         assert!(system.wait(w3).await.is_shutdown());
 
         assert!(system.all_actors().collect::<Vec<_>>().await.is_empty());
+    }
+}
+
+impl From<oneshot::error::RecvError> for SupervisorError {
+    fn from(e: oneshot::error::RecvError) -> Self {
+        Self::OneshotRx(e)
+    }
+}
+impl From<StartChildError> for SupervisorError {
+    fn from(e: StartChildError) -> Self {
+        Self::StartChildError(e)
     }
 }

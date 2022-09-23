@@ -6,11 +6,11 @@ use std::time::Duration;
 
 use agner::actors::Exit;
 use agner::sup::common::{args_factory, produce_child, InitType};
-use agner::sup::mixed::{ChildSpec, OneForOne, RestartIntensity, SupSpec};
-use agner::sup::Service;
+use agner::sup::{mixed, Service};
 use agner::test_actor::{TestActor, TestActorRegistry};
 use agner::utils::future_timeout_ext::FutureTimeoutExt;
 use agner_sup::mixed::{AllForOne, RestForOne};
+use mixed::{ChildSpec, OneForOne, RestartIntensity, SupSpec};
 
 #[macro_use]
 mod common;
@@ -86,7 +86,7 @@ agner_test!(sup_one_for_one_basic, async {
         .with_child(child_3_spec);
 
     let sup_pid = system
-        .spawn(agner::sup::mixed::supervisor::run, sup_spec, Default::default())
+        .spawn(mixed::supervisor::run, sup_spec, Default::default())
         .await
         .unwrap();
 
@@ -207,7 +207,7 @@ agner_test!(sup_all_for_one_basic, async {
         .with_child(child_3_spec);
 
     let sup_pid = system
-        .spawn(agner::sup::mixed::supervisor::run, sup_spec, Default::default())
+        .spawn(mixed::supervisor::run, sup_spec, Default::default())
         .await
         .unwrap();
 
@@ -330,7 +330,7 @@ agner_test!(sup_rest_for_one_basic, async {
         .with_child(child_3_spec);
 
     let sup_pid = system
-        .spawn(agner::sup::mixed::supervisor::run, sup_spec, Default::default())
+        .spawn(mixed::supervisor::run, sup_spec, Default::default())
         .await
         .unwrap();
 
@@ -385,4 +385,87 @@ agner_test!(sup_rest_for_one_basic, async {
         .await
         .expect("sup did not terminate")
         .is_shutdown());
+});
+
+agner_test!(sup_one_for_one_add_and_rm_children, async {
+    use crate::*;
+
+    let registry = TestActorRegistry::new();
+    let system = common::system(common::SMALL_SYSTEM_SIZE);
+
+    let child_1_svc = Service::new();
+    let child_1_spec = ChildSpec::new(
+        "one",
+        produce_child::new(
+            agner::test_actor::behaviour::run,
+            args_factory::call({
+                let registry = registry.to_owned();
+                move || {
+                    let (args, _) = TestActor::<Infallible>::prepare_args(registry.to_owned());
+                    args
+                }
+            }),
+            InitType::NoAck,
+            vec![child_1_svc.to_owned()],
+        ),
+    );
+
+    let child_2_svc = Service::new();
+    let child_2_spec = ChildSpec::new(
+        "two",
+        produce_child::new(
+            agner::test_actor::behaviour::run,
+            args_factory::call({
+                let registry = registry.to_owned();
+                move || {
+                    let (args, _) = TestActor::<Infallible>::prepare_args(registry.to_owned());
+                    args
+                }
+            }),
+            InitType::NoAck,
+            vec![child_2_svc.to_owned()],
+        ),
+    );
+
+    let child_3_svc = Service::new();
+    let child_3_spec = ChildSpec::new(
+        "three",
+        produce_child::new(
+            agner::test_actor::behaviour::run,
+            args_factory::call({
+                let registry = registry.to_owned();
+                move || {
+                    let (args, _) = TestActor::<Infallible>::prepare_args(registry.to_owned());
+                    args
+                }
+            }),
+            InitType::NoAck,
+            vec![child_3_svc.to_owned()],
+        ),
+    );
+
+    let restart_intensity = RestartIntensity::new(3, Duration::from_secs(60));
+    let restart_strategy = OneForOne::new(restart_intensity);
+    let sup_spec = SupSpec::<&str, _>::new(restart_strategy);
+
+    let sup_pid = system
+        .spawn(mixed::supervisor::run, sup_spec, Default::default())
+        .await
+        .unwrap();
+
+    let child_1_pid = mixed::start_child(&system, sup_pid, child_1_spec).await.unwrap();
+    let child_2_pid = mixed::start_child(&system, sup_pid, child_2_spec).await.unwrap();
+    let child_3_pid = mixed::start_child(&system, sup_pid, child_3_spec).await.unwrap();
+
+    assert!(system.actor_info(child_1_pid).await.is_some());
+    assert!(system.actor_info(child_2_pid).await.is_some());
+    assert!(system.actor_info(child_3_pid).await.is_some());
+
+    assert_eq!(Some(child_1_pid), child_1_svc.resolve());
+    assert_eq!(Some(child_2_pid), child_2_svc.resolve());
+    assert_eq!(Some(child_3_pid), child_3_svc.resolve());
+
+    assert!(mixed::terminate_child(&system, sup_pid, "one").await.unwrap().is_shutdown());
+    assert!(mixed::terminate_child(&system, sup_pid, "two").await.unwrap().is_shutdown());
+    assert!(mixed::terminate_child(&system, sup_pid, "three").await.unwrap().is_shutdown());
 });
