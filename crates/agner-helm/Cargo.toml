@@ -1,6 +1,6 @@
 [package]
 name = "agner-helm"
-version = "0.2.10"
+version = "0.3.0"
 edition = "2021"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
@@ -11,8 +11,8 @@ repository = "https://github.com/RGafiyatullin/agner"
 description = "An actor toolkit inspired by Erlang/OTP (control panel)"
 
 [dependencies]
-agner-utils = { path = "../agner-utils", version = "=0.2.10" }
-agner-actors = { path = "../agner-actors", version = "=0.2.10", features = ["serde"] }
+agner-utils = { path = "../agner-utils", version = "=0.3.0" }
+agner-actors = { path = "../agner-actors", version = "=0.3.0", features = ["serde"] }
 axum = "^0.5"
 futures = "^0.3"
 serde = { version = "^1", features = ["derive"] }

@@ -1,6 +1,6 @@
 [package]
 name = "agner-test-actor"
-version = "0.2.10"
+version = "0.3.0"
 edition = "2021"
 
 authors = ["Raman Hafiyatulin <r.gafiyatullin@me.com>"]
@@ -11,8 +11,8 @@ description = "An actor toolkit inspired by Erlang/OTP (test-actor)"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-agner-actors = { path = "../agner-actors", version = "=0.2.10" }
-agner-utils = { path = "../agner-utils", version = "=0.2.10" }
+agner-actors = { path = "../agner-actors", version = "=0.3.0" }
+agner-utils = { path = "../agner-utils", version = "=0.3.0" }
 async-trait = "^0.1"
 futures = "^0.3"
 log = "^0.4"

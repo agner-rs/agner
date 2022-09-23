@@ -1,6 +1,6 @@
 [package]
 name = "agner-sup"
-version = "0.2.10"
+version = "0.3.0"
 edition = "2021"
 
 authors = ["Raman Hafiyatulin <r.gafiyatullin@me.com>"]
@@ -12,8 +12,8 @@ description = "An actor toolkit inspired by Erlang/OTP (supervisors)"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-agner-utils = { path = "../agner-utils", version = "=0.2.10" }
-agner-actors = { path = "../agner-actors", version = "=0.2.10" }
+agner-utils = { path = "../agner-utils", version = "=0.3.0" }
+agner-actors = { path = "../agner-actors", version = "=0.3.0" }
 arc-swap = { version = "^1", features = ["weak"] }
 futures = "^0.3"
 log = "^0.4"
@@ -22,7 +22,7 @@ thiserror = "^1"
 tokio = {version = "^1", features = ["sync", "time"]}
 
 [dev-dependencies]
-agner-test-actor = { path = "../agner-test-actor", version = "=0.2.10" }
+agner-test-actor = { path = "../agner-test-actor", version = "=0.3.0" }
 dotenv = "^0.15"
 pretty_env_logger = "^0.4"
 tokio = {version = "^1", features = ["macros", "rt-multi-thread", "sync", "time", "net"]}

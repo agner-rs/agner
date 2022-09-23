@@ -146,6 +146,7 @@ where
 mod tests {
     use super::*;
 
+    use futures::StreamExt;
     use std::convert::Infallible;
 
     use agner_actors::System;
@@ -209,5 +210,7 @@ mod tests {
         assert!(system.wait(sup).await.is_shutdown());
         assert!(system.wait(w2).await.is_shutdown());
         assert!(system.wait(w3).await.is_shutdown());
+
+        assert!(system.all_actors().collect::<Vec<_>>().await.is_empty());
     }
 }
