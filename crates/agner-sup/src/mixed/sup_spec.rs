@@ -1,5 +1,6 @@
 use crate::mixed::child_spec::ChildSpec;
 
+#[derive(Debug)]
 pub struct SupSpec<ID, RS> {
     pub restart_strategy: RS,
     pub children: Vec<ChildSpec<ID>>,
