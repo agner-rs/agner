@@ -32,7 +32,7 @@ agner_test!(sup_one_for_one_basic, async {
         "one",
         produce_child::new(
             agner::test_actor::behaviour::run,
-            args_factory::lazy({
+            args_factory::call({
                 let registry = registry.to_owned();
                 move || {
                     let (args, _) = TestActor::<Infallible>::prepare_args(registry.to_owned());
@@ -49,7 +49,7 @@ agner_test!(sup_one_for_one_basic, async {
         "two",
         produce_child::new(
             agner::test_actor::behaviour::run,
-            args_factory::lazy({
+            args_factory::call({
                 let registry = registry.to_owned();
                 move || {
                     let (args, _) = TestActor::<Infallible>::prepare_args(registry.to_owned());
@@ -66,7 +66,7 @@ agner_test!(sup_one_for_one_basic, async {
         "three",
         produce_child::new(
             agner::test_actor::behaviour::run,
-            args_factory::lazy({
+            args_factory::call({
                 let registry = registry.to_owned();
                 move || {
                     let (args, _) = TestActor::<Infallible>::prepare_args(registry.to_owned());
@@ -153,7 +153,7 @@ agner_test!(sup_all_for_one_basic, async {
         "one",
         produce_child::new(
             agner::test_actor::behaviour::run,
-            args_factory::lazy({
+            args_factory::call({
                 let registry = registry.to_owned();
                 move || {
                     let (args, _) = TestActor::<Infallible>::prepare_args(registry.to_owned());
@@ -170,7 +170,7 @@ agner_test!(sup_all_for_one_basic, async {
         "two",
         produce_child::new(
             agner::test_actor::behaviour::run,
-            args_factory::lazy({
+            args_factory::call({
                 let registry = registry.to_owned();
                 move || {
                     let (args, _) = TestActor::<Infallible>::prepare_args(registry.to_owned());
@@ -187,7 +187,7 @@ agner_test!(sup_all_for_one_basic, async {
         "three",
         produce_child::new(
             agner::test_actor::behaviour::run,
-            args_factory::lazy({
+            args_factory::call({
                 let registry = registry.to_owned();
                 move || {
                     let (args, _) = TestActor::<Infallible>::prepare_args(registry.to_owned());
@@ -276,7 +276,7 @@ agner_test!(sup_rest_for_one_basic, async {
         "one",
         produce_child::new(
             agner::test_actor::behaviour::run,
-            args_factory::lazy({
+            args_factory::call({
                 let registry = registry.to_owned();
                 move || {
                     let (args, _) = TestActor::<Infallible>::prepare_args(registry.to_owned());
@@ -293,7 +293,7 @@ agner_test!(sup_rest_for_one_basic, async {
         "two",
         produce_child::new(
             agner::test_actor::behaviour::run,
-            args_factory::lazy({
+            args_factory::call({
                 let registry = registry.to_owned();
                 move || {
                     let (args, _) = TestActor::<Infallible>::prepare_args(registry.to_owned());
@@ -310,7 +310,7 @@ agner_test!(sup_rest_for_one_basic, async {
         "three",
         produce_child::new(
             agner::test_actor::behaviour::run,
-            args_factory::lazy({
+            args_factory::call({
                 let registry = registry.to_owned();
                 move || {
                     let (args, _) = TestActor::<Infallible>::prepare_args(registry.to_owned());

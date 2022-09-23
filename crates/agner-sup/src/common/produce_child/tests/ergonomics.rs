@@ -57,7 +57,7 @@ async fn ergonomics() {
     let conn_args = ConnArgs { conn_mgr: conn_mgr_svc };
     let mut conn_spec = produce_child::new(
         conn,
-        args_factory::call(move |tcp_stream| (conn_args.to_owned(), tcp_stream)),
+        args_factory::map(move |tcp_stream| (conn_args.to_owned(), tcp_stream)),
         InitType::NoAck,
         vec![],
     );

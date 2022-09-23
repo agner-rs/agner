@@ -18,19 +18,19 @@ where
     Box::new(af)
 }
 
-pub fn lazy<F, Out>(func: F) -> Box<dyn ArgsFactory<Input = (), Output = Out>>
+pub fn call<F, Out>(func: F) -> Box<dyn ArgsFactory<Input = (), Output = Out>>
 where
-    Lazy<F, Out>: ArgsFactory<Input = (), Output = Out>,
+    Call<F, Out>: ArgsFactory<Input = (), Output = Out>,
 {
-    let af = Lazy(func, Default::default());
+    let af = Call(func, Default::default());
     Box::new(af)
 }
 
-pub fn call<F, In, Out>(func: F) -> Box<dyn ArgsFactory<Input = In, Output = Out>>
+pub fn map<F, In, Out>(func: F) -> Box<dyn ArgsFactory<Input = In, Output = Out>>
 where
-    Call<F, In, Out>: ArgsFactory<Input = In, Output = Out>,
+    Map<F, In, Out>: ArgsFactory<Input = In, Output = Out>,
 {
-    let af = Call(func, Default::default());
+    let af = Map(func, Default::default());
     Box::new(af)
 }
 
@@ -38,10 +38,10 @@ where
 pub struct CloneValue<T>(T);
 
 #[derive(Debug)]
-pub struct Call<F, In, Out>(F, PhantomData<(In, Out)>);
+pub struct Map<F, In, Out>(F, PhantomData<(In, Out)>);
 
 #[derive(Debug)]
-pub struct Lazy<F, Out>(F, PhantomData<Out>);
+pub struct Call<F, Out>(F, PhantomData<Out>);
 
 impl<In, Out> ArgsFactory for Box<dyn ArgsFactory<Input = In, Output = Out>>
 where
@@ -68,7 +68,7 @@ where
     }
 }
 
-impl<F, Out> ArgsFactory for Lazy<F, Out>
+impl<F, Out> ArgsFactory for Call<F, Out>
 where
     F: FnMut() -> Out,
     F: Send + Sync + 'static,
@@ -82,7 +82,7 @@ where
     }
 }
 
-impl<F, In, Out> ArgsFactory for Call<F, In, Out>
+impl<F, In, Out> ArgsFactory for Map<F, In, Out>
 where
     F: FnMut(In) -> Out,
     F: Send + Sync + 'static,

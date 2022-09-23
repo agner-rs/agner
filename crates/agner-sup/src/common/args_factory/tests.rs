@@ -3,8 +3,8 @@ use crate::common::args_factory;
 #[test]
 fn ergonomics() {
     let mut af_clone = args_factory::clone(vec![1, 2, 3, 4]);
-    let mut af_lazy = args_factory::lazy(|| vec![1, 2, 3, 4]);
-    let mut af_call = args_factory::call({
+    let mut af_lazy = args_factory::call(|| vec![1, 2, 3, 4]);
+    let mut af_call = args_factory::map({
         let mut acc = vec![];
         move |v: usize| -> usize {
             acc.push(v);
