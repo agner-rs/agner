@@ -87,6 +87,12 @@ pub trait ElapsedSince: Ord + Clone {
     fn elapsed_since(&self, past: &Self) -> Self::Elapsed;
 }
 
+impl Default for RestartIntensity<Duration> {
+    fn default() -> Self {
+        Self { max_restarts: 1, within: Duration::from_secs(5) }
+    }
+}
+
 impl DurationToInstant for usize {
     type Instant = usize;
 }

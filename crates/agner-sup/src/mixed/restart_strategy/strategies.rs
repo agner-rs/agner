@@ -6,17 +6,17 @@ use crate::mixed::restart_intensity::RestartIntensity;
 use super::common_decider::{CommonDecider, RestartType};
 use super::RestartStrategy;
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Default)]
 pub struct OneForOne {
     restart_intensity: RestartIntensity<Duration>,
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Default)]
 pub struct AllForOne {
     restart_intensity: RestartIntensity<Duration>,
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Default)]
 pub struct RestForOne {
     restart_intensity: RestartIntensity<Duration>,
 }
