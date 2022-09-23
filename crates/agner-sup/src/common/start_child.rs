@@ -175,7 +175,7 @@ where
                 system.link(sup_id, child_id).await;
                 let registrations = provided_services
                     .as_ref()
-                    .into_iter()
+                    .iter()
                     .map(|s| s.register(child_id))
                     .collect::<Box<[_]>>();
                 let registrations_count = registrations.len();
