@@ -3,7 +3,7 @@ use std::future::Future;
 
 use crate::context::Context;
 use crate::exit::Exit;
-use crate::ArcError;
+use crate::{ArcError, Never};
 
 pub trait Actor<'a, A, M>: Send + Sync + 'static {
     type Out: IntoExitReason;
@@ -41,6 +41,39 @@ where
             Exit::custom(reason.into())
         } else {
             Exit::normal()
+        }
+    }
+}
+
+impl<E> IntoExitReason for Result<Never, E>
+where
+    E: Into<ArcError>,
+{
+    fn into_exit_reason(self) -> Exit {
+        if let Err(reason) = self {
+            Exit::custom(reason.into())
+        } else {
+            unreachable!()
+        }
+    }
+}
+
+impl IntoExitReason for Result<(), Exit> {
+    fn into_exit_reason(self) -> Exit {
+        if let Err(reason) = self {
+            reason
+        } else {
+            Exit::normal()
+        }
+    }
+}
+
+impl IntoExitReason for Result<Never, Exit> {
+    fn into_exit_reason(self) -> Exit {
+        if let Err(reason) = self {
+            reason
+        } else {
+            unreachable!()
         }
     }
 }

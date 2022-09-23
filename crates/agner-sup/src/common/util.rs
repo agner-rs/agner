@@ -3,11 +3,15 @@ use std::time::Duration;
 use agner_actors::{ActorID, Exit, System};
 use agner_utils::future_timeout_ext::FutureTimeoutExt;
 
+#[derive(Debug, thiserror::Error)]
+#[error("Exit failed")]
+pub struct ExitFailed;
+
 pub async fn try_exit(
     system: System,
     actor_id: ActorID,
     attempts: impl IntoIterator<Item = (Exit, Duration)>,
-) -> Result<Exit, Box<dyn std::error::Error + Send + Sync + 'static>> {
+) -> Result<Exit, ExitFailed> {
     let mut attempts = attempts.into_iter();
 
     while let Some((exit, timeout)) = attempts.next() {
@@ -16,5 +20,5 @@ pub async fn try_exit(
             return Ok(actual_exit)
         }
     }
-    Err("all attempts done".into())
+    Err(ExitFailed)
 }

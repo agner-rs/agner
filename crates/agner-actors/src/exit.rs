@@ -74,6 +74,9 @@ impl Exit {
     pub fn is_shutdown(&self) -> bool {
         matches!(self, Self::Standard(ExitStandard::Shutdown(_)))
     }
+    pub fn is_custom(&self) -> bool {
+        matches!(self, Self::Custom(_))
+    }
 
     pub fn normal() -> Self {
         ExitStandard::Normal.into()

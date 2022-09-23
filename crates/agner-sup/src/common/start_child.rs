@@ -203,7 +203,7 @@ where
                 )
                 .await
                 {
-                    log::error!("[{}|start_child_init_ack] failed to terminate intermediary [intermediary_id: {}, reason: {}]", sup_id, intermediary_id, cancel_error.as_ref().pp());
+                    log::error!("[{}|start_child_init_ack] failed to terminate intermediary [intermediary_id: {}, reason: {}]", sup_id, intermediary_id, cancel_error.pp());
                 }
 
                 Err(reason)
