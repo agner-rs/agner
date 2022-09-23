@@ -7,6 +7,7 @@ use agner_actors::{Actor, ActorID, Exit, SpawnOpts, SysSpawnError, System};
 use agner_utils::future_timeout_ext::FutureTimeoutExt;
 use agner_utils::result_err_flatten::ResultErrFlattenIn;
 use agner_utils::std_error_pp::StdErrorPP;
+use tokio::sync::oneshot;
 
 use crate::common::{util, StaticBoxedFuture};
 use crate::service::Service;
@@ -50,6 +51,9 @@ pub enum StartChildError {
 
     #[error("Timeout")]
     Timeout(#[source] Arc<tokio::time::error::Elapsed>),
+
+    #[error("oneshot-rx failure")]
+    OneshotRx(#[source] oneshot::error::RecvError),
 }
 
 pub trait StartChild: fmt::Debug + Send + Sync + 'static {
@@ -220,5 +224,10 @@ impl From<SysSpawnError> for StartChildError {
 impl From<tokio::time::error::Elapsed> for StartChildError {
     fn from(e: tokio::time::error::Elapsed) -> Self {
         Self::Timeout(Arc::new(e))
+    }
+}
+impl From<oneshot::error::RecvError> for StartChildError {
+    fn from(e: oneshot::error::RecvError) -> Self {
+        Self::OneshotRx(e)
     }
 }
