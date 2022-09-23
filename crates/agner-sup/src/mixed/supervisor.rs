@@ -1,4 +1,5 @@
 use std::collections::HashMap;
+use std::sync::Arc;
 use std::time::{Duration, Instant};
 
 use agner_actors::{ActorID, Context, Event, Exit, Never, Signal};
@@ -263,6 +264,15 @@ pub enum SupervisorError {
 
     #[error("oneshot-rx failure")]
     OneshotRx(#[source] oneshot::error::RecvError),
+
+    #[error("Timeout")]
+    Timeout(#[source] Arc<tokio::time::error::Elapsed>),
+}
+
+impl From<tokio::time::error::Elapsed> for SupervisorError {
+    fn from(e: tokio::time::error::Elapsed) -> Self {
+        Self::Timeout(Arc::new(e))
+    }
 }
 
 impl From<oneshot::error::RecvError> for SupervisorError {

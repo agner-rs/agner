@@ -1,4 +1,5 @@
 use std::collections::HashSet;
+use std::sync::Arc;
 use std::time::Duration;
 
 use agner_actors::{ActorID, Context, Event, Exit, Never, Signal, System};
@@ -18,6 +19,9 @@ pub enum SupervisorError {
 
     #[error("oneshot-rx error")]
     OneshotRx(#[source] oneshot::error::RecvError),
+
+    #[error("Timeout")]
+    Timeout(#[source] Arc<tokio::time::error::Elapsed>),
 }
 
 pub async fn start_child<A>(
@@ -250,5 +254,10 @@ impl From<oneshot::error::RecvError> for SupervisorError {
 impl From<StartChildError> for SupervisorError {
     fn from(e: StartChildError) -> Self {
         Self::StartChildError(e)
+    }
+}
+impl From<tokio::time::error::Elapsed> for SupervisorError {
+    fn from(e: tokio::time::error::Elapsed) -> Self {
+        Self::Timeout(Arc::new(e))
     }
 }
