@@ -10,6 +10,10 @@ pub struct RestartIntensity<D> {
 #[derive(Debug, Clone)]
 pub struct RestartStats<I>(VecDeque<I>);
 
+#[derive(Debug, thiserror::Error)]
+#[error("Max restart intensity reached")]
+pub struct MaxRestartIntensityReached;
+
 impl<D> RestartIntensity<D> {
     pub fn new(max_restarts: usize, within: D) -> Self {
         Self { max_restarts, within }
@@ -22,13 +26,17 @@ impl<D> RestartIntensity<D> {
         RestartStats::new()
     }
 
-    pub fn report_exit<I>(&self, stats: &mut RestartStats<I>, now: I) -> Result<(), ()>
+    pub fn report_exit<I>(
+        &self,
+        stats: &mut RestartStats<I>,
+        now: I,
+    ) -> Result<(), MaxRestartIntensityReached>
     where
         I: ElapsedSince<Elapsed = D>,
     {
         stats.truncate(&now, &self.within).push(now);
         if stats.len() > self.max_restarts {
-            Err(())
+            Err(MaxRestartIntensityReached)
         } else {
             Ok(())
         }
