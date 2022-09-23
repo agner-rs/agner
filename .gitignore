@@ -4,3 +4,4 @@
 /archive
 *.beam
 .env
+/coverage.lcov
