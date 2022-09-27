@@ -5,7 +5,7 @@ edition = "2021"
 
 authors = ["Raman Hafiyatulin <r.gafiyatullin@me.com>"]
 license = "MIT"
-repository = "https://github.com/RGafiyatullin/agner"
+repository = "https://github.com/agner-rs/agner"
 description = "A demo: naive multi-user-chat"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html

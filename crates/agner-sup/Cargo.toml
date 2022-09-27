@@ -5,7 +5,7 @@ edition = "2021"
 
 authors = ["Raman Hafiyatulin <r.gafiyatullin@me.com>"]
 license = "MIT"
-repository = "https://github.com/RGafiyatullin/agner"
+repository = "https://github.com/agner-rs/agner"
 description = "An actor toolkit inspired by Erlang/OTP (supervisors)"
 
 
