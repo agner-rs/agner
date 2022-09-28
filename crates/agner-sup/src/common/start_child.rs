@@ -47,7 +47,7 @@ pub enum StartChildError {
     SysSpawnError(#[source] Arc<SysSpawnError>),
 
     #[error("Init-ack failure")]
-    InitAckFailure,
+    InitAckFailure(#[source] Exit),
 
     #[error("Timeout")]
     Timeout(#[source] Arc<tokio::time::error::Elapsed>),
@@ -167,7 +167,8 @@ where
         let init_ack_result = init_ack_rx
             .timeout(init_timeout)
             .await
-            .map(|id_opt| id_opt.ok_or(StartChildError::InitAckFailure))
+            .map_err(|elapsed| StartChildError::Timeout(Arc::new(elapsed)))
+            .map(|id_result| id_result.map_err(StartChildError::InitAckFailure))
             .err_flatten_in();
 
         match init_ack_result {

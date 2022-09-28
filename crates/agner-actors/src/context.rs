@@ -71,10 +71,22 @@ impl<M> Context<M> {
 }
 
 impl<M> Context<M> {
+    #[deprecated(since = "0.3.2")]
     pub fn init_ack(&mut self, actor_id: Option<ActorID>) -> bool {
+        self.init_ack_ok(actor_id)
+    }
+    pub fn init_ack_ok(&mut self, actor_id: Option<ActorID>) -> bool {
         if let Some(tx) = self.init_ack_tx.take() {
             let actor_id = actor_id.unwrap_or_else(|| self.actor_id());
-            tx.ack(actor_id);
+            tx.ok(actor_id);
+            true
+        } else {
+            false
+        }
+    }
+    pub fn init_ack_err(&mut self, exit_reason: Exit) -> bool {
+        if let Some(tx) = self.init_ack_tx.take() {
+            tx.err(exit_reason);
             true
         } else {
             false

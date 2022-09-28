@@ -80,7 +80,7 @@ where
     A: Unpin + Send + Sync + 'static,
 {
     context.trap_exit(true).await;
-    context.init_ack(Default::default());
+    context.init_ack_ok(Default::default());
 
     let SupSpec { shutdown_timeout, mut produce } = sup_spec;
 

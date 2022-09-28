@@ -61,7 +61,7 @@ where
                     context.unlink(actor).await;
                 },
             Query::InitAck(InitAckRq { value, .. }) => {
-                context.init_ack(value);
+                context.init_ack_ok(value);
             },
         }
     }

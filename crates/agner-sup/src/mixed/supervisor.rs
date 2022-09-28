@@ -31,7 +31,7 @@ where
     RS::Decider: Decider<ID, Duration, Instant>,
 {
     context.trap_exit(true).await;
-    context.init_ack(Default::default());
+    context.init_ack_ok(Default::default());
 
     log::trace!(
         "[{}] initializing decider [restart-strategy: {:?}]",
