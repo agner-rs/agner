@@ -10,6 +10,14 @@ pub trait ArgsFactory: Send + Sync + 'static {
     fn make_args(&mut self, args: Self::Input) -> Self::Output;
 }
 
+pub fn unique<T>(value: T) -> Box<dyn ArgsFactory<Input = (), Output = Option<T>>>
+where
+    UniqueValue<T>: ArgsFactory<Input = (), Output = Option<T>>,
+{
+    let af = UniqueValue(Some(value));
+    Box::new(af)
+}
+
 pub fn clone<T>(value: T) -> Box<dyn ArgsFactory<Input = (), Output = T>>
 where
     CloneValue<T>: ArgsFactory<Input = (), Output = T>,
@@ -35,6 +43,9 @@ where
 }
 
 #[derive(Debug)]
+pub struct UniqueValue<T>(Option<T>);
+
+#[derive(Debug)]
 pub struct CloneValue<T>(T);
 
 #[derive(Debug)]
@@ -42,6 +53,18 @@ pub struct Map<F, In, Out>(F, PhantomData<(In, Out)>);
 
 #[derive(Debug)]
 pub struct Call<F, Out>(F, PhantomData<Out>);
+
+impl<T> ArgsFactory for UniqueValue<T>
+where
+    T: Send + Sync + 'static,
+{
+    type Input = ();
+    type Output = Option<T>;
+
+    fn make_args(&mut self, (): Self::Input) -> Self::Output {
+        self.0.take()
+    }
+}
 
 impl<In, Out> ArgsFactory for Box<dyn ArgsFactory<Input = In, Output = Out>>
 where
