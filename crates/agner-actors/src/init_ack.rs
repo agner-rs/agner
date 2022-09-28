@@ -40,7 +40,7 @@ impl Future for InitAckRx {
     fn poll(self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<Self::Output> {
         let this = self.project();
         let out = futures::ready!(this.0.poll(cx)).ok();
-        let out = out.ok_or_else(|| Exit::no_actor()).err_flatten_in();
+        let out = out.ok_or_else(Exit::no_actor).err_flatten_in();
         Poll::Ready(out)
     }
 }
