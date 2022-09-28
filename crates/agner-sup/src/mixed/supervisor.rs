@@ -1,3 +1,4 @@
+use std::collections::hash_map::Entry as HashMapEntry;
 use std::collections::HashMap;
 use std::sync::Arc;
 use std::time::{Duration, Instant};
@@ -174,14 +175,16 @@ where
         },
         Message::StartChild(child_spec, reply_to) => {
             let child_id = child_spec.id;
-            if !child_specs.contains_key(&child_id) {
+
+            if let HashMapEntry::Vacant(vacant) = child_specs.entry(child_id) {
                 decider.add_child(child_id, child_spec.child_type).map_err(Exit::custom)?;
                 child_ids.push(child_id);
-                child_specs.insert(child_id, child_spec);
+                vacant.insert(child_spec);
                 subscribers_up.insert(child_id, reply_to);
             } else {
                 let _ = reply_to.send(Err(SupervisorError::DuplicateId));
             }
+
             Ok(())
         },
     }
