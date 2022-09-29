@@ -84,7 +84,7 @@ where
 
     let SupSpec { shutdown_timeout, mut produce } = sup_spec;
 
-    let mut shutting_down = false;
+    let mut shutting_down = None;
     let mut children: HashSet<ActorID> = Default::default();
     loop {
         match context.next_event().await {
@@ -148,11 +148,19 @@ where
                         "[{}] received a shutdown signal to myself. Shutting down",
                         context.actor_id()
                     );
-                    shutting_down = true;
+                    shutting_down = Some(exit_reason.to_owned());
 
                     let system = context.system();
+                    let mut has_some_children = false;
                     for actor_id in children.iter().copied() {
+                        has_some_children = true;
+
                         system.exit(actor_id, Exit::shutdown()).await;
+                    }
+
+                    if !has_some_children {
+                        context.exit(exit_reason).await;
+                        unreachable!()
                     }
                 } else if children.remove(&actor_id) {
                     log::trace!(
@@ -161,13 +169,16 @@ where
                         actor_id,
                         exit_reason.pp()
                     );
-                    if shutting_down && children.is_empty() {
-                        log::trace!(
-                            "[{}] last child terminated. Shutting down",
-                            context.actor_id()
-                        );
-                        context.exit(Exit::shutdown()).await;
-                        unreachable!()
+                    if children.is_empty() {
+                        if let Some(exit_reason) = shutting_down {
+                            log::trace!(
+                                "[{}] last child terminated. Shutting down: {}",
+                                context.actor_id(),
+                                exit_reason.pp()
+                            );
+                            context.exit(exit_reason).await;
+                            unreachable!()
+                        }
                     }
                 } else {
                     log::trace!(
