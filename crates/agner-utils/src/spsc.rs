@@ -30,9 +30,9 @@ where
         Receive { lock: &self.0, should_block }
     }
 
-    pub async fn len(&self) -> (usize, usize) {
+    pub async fn len(&self) -> (usize, usize, usize) {
         let locked = self.0.lock().await;
-        (locked.queue.len(), locked.max_len)
+        (locked.queue.len(), locked.queue.capacity(), locked.max_len)
     }
 }
 
@@ -48,9 +48,9 @@ where
         Send { lock: &self.0, should_block, item: Some(item) }
     }
 
-    pub async fn len(&self) -> (usize, usize) {
+    pub async fn len(&self) -> (usize, usize, usize) {
         let locked = self.0.lock().await;
-        (locked.queue.len(), locked.max_len)
+        (locked.queue.len(), locked.queue.capacity(), locked.max_len)
     }
 }
 

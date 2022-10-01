@@ -28,7 +28,7 @@ where
         self.0.send(message, self.1).await
     }
 
-    pub async fn len(&self) -> (usize, usize)
+    pub async fn len(&self) -> (usize, usize, usize)
     where
         T: Unpin,
     {
@@ -44,7 +44,7 @@ where
         self.0.recv(true).await.unwrap()
     }
 
-    pub async fn len(&self) -> (usize, usize)
+    pub async fn len(&self) -> (usize, usize, usize)
     where
         T: Unpin,
     {
