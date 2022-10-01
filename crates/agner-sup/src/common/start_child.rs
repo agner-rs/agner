@@ -131,15 +131,16 @@ where
     }
 
     async fn do_start_child_no_ack(self, system: System) -> Result<ActorID, StartChildError> {
+        use futures::StreamExt;
+
         let Self { sup_id, actor_behaviour, actor_args, provided_services, .. } = self;
         let spawn_opts = SpawnOpts::new().with_link(sup_id);
         let child_id = system.spawn(actor_behaviour, actor_args, spawn_opts).await?;
 
-        let registrations = provided_services
-            .as_ref()
-            .iter()
-            .map(|s| s.register(child_id))
-            .collect::<Box<[_]>>();
+        let registrations = futures::stream::iter(provided_services.as_ref())
+            .then(|s| s.register(child_id))
+            .collect::<Vec<_>>()
+            .await;
         let registrations_count = registrations.len();
 
         system.add_data(child_id, registrations).await;
@@ -173,12 +174,13 @@ where
 
         match init_ack_result {
             Ok(child_id) => {
+                use futures::StreamExt;
+
                 system.link(sup_id, child_id).await;
-                let registrations = provided_services
-                    .as_ref()
-                    .iter()
-                    .map(|s| s.register(child_id))
-                    .collect::<Box<[_]>>();
+                let registrations = futures::stream::iter(provided_services.as_ref())
+                    .then(|s| s.register(child_id))
+                    .collect::<Vec<_>>()
+                    .await;
                 let registrations_count = registrations.len();
                 system.add_data(child_id, registrations).await;
 

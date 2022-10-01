@@ -60,7 +60,7 @@ async fn start_child_no_ack_with_regs() {
     let system = System::new(Default::default());
 
     let s1 = Service::new();
-    let s2 = Service::new_with_label("a-service");
+    let s2 = Service::new();
 
     assert!(s1.resolve().is_none());
     assert!(s2.resolve().is_none());

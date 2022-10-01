@@ -46,7 +46,7 @@ async fn ergonomics() {
         .await
         .unwrap();
 
-    let conn_mgr_svc = Service::new_with_label("conn-mgr");
+    let conn_mgr_svc = Service::new();
     let mut conn_mgr_spec = produce_child::new(
         conn_mgr,
         args_factory::clone(ConnMgrArgs { max_conns: 32 }),
