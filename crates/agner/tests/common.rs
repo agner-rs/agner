@@ -1,4 +1,5 @@
 use std::future::Future;
+use std::sync::Arc;
 use std::time::Duration;
 
 use agner_actors::{System, SystemConfig};
@@ -34,7 +35,9 @@ macro_rules! agner_test {
 
 #[allow(unused)]
 pub fn system(max_actors: usize) -> System {
-    System::new(SystemConfig { max_actors, ..Default::default() })
+    let exit_handler = Arc::new(agner::actors::exit_handlers::LogExitHandler);
+
+    System::new(SystemConfig { max_actors, exit_handler, ..Default::default() })
 }
 
 #[allow(unused)]

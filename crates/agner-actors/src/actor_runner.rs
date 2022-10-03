@@ -1,5 +1,6 @@
 use std::future::Future;
 use std::pin::Pin;
+use std::sync::Arc;
 
 use agner_utils::std_error_pp::StdErrorPP;
 use futures::stream::FuturesUnordered;
@@ -9,10 +10,10 @@ use tokio::sync::{mpsc, oneshot};
 use crate::actor::{Actor, IntoExitReason};
 use crate::actor_id::ActorID;
 use crate::context::{Context, Signal};
-use crate::exit::Exit;
+use crate::exit::{BackendFailure, Exit};
+use crate::exit_handler::ExitHandler;
 use crate::spawn_opts::SpawnOpts;
 use crate::system::SystemWeakRef;
-use crate::BackendFailure;
 
 pub(crate) mod call_msg;
 pub(crate) mod pipe;
@@ -32,6 +33,7 @@ pub(crate) struct ActorRunner<Message> {
     pub messages_rx: mpsc::UnboundedReceiver<Message>,
     pub sys_msg_rx: mpsc::UnboundedReceiver<SysMsg>,
     pub sys_msg_tx: mpsc::UnboundedSender<SysMsg>,
+    pub exit_handler: Arc<dyn ExitHandler>,
     pub spawn_opts: SpawnOpts,
 }
 
@@ -43,8 +45,15 @@ where
     where
         for<'a> Behaviour: Actor<'a, Args, Message>,
     {
-        let Self { actor_id, system_opt, messages_rx, sys_msg_rx, sys_msg_tx, mut spawn_opts } =
-            self;
+        let Self {
+            actor_id,
+            system_opt,
+            messages_rx,
+            sys_msg_rx,
+            sys_msg_tx,
+            exit_handler,
+            mut spawn_opts,
+        } = self;
 
         log::trace!(
             "[{}] init [m-inbox: {:?}, s-inbox: {:?}, msg-type: {}]",
@@ -87,6 +96,8 @@ where
                     Pin<Box<dyn Future<Output = Message> + Send + Sync + 'static>>,
                 >::new(),
 
+                exit_handler,
+
                 actor_type_info: (
                     std::any::type_name::<Behaviour>(),
                     std::any::type_name::<Args>(),
@@ -126,6 +137,7 @@ struct Backend<Message> {
     calls_r: PipeRx<CallMsg<Message>>,
     watches: Watches,
     tasks: FuturesUnordered<Pin<Box<dyn Future<Output = Message> + Send + Sync + 'static>>>,
+    exit_handler: Arc<dyn ExitHandler>,
 
     actor_type_info: (&'static str, &'static str, &'static str),
 }
@@ -165,6 +177,8 @@ where
 
         self.sys_msg_rx.close();
         self.messages_rx.close();
+
+        self.exit_handler.on_actor_exit(self.actor_id, exit_reason.to_owned());
 
         self.notify_linked_actors(exit_reason.to_owned()).await;
 

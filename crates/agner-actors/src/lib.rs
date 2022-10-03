@@ -3,6 +3,7 @@ mod actor_id;
 mod actor_runner;
 mod context;
 mod exit;
+mod exit_handler;
 mod init_ack;
 mod spawn_opts;
 mod system;
@@ -14,10 +15,15 @@ mod exports {
     pub use crate::actor_runner::ActorInfo;
     pub use crate::context::{Context, Event, Signal};
     pub use crate::exit::{BackendFailure, Exit, ExitStandard};
+    pub use crate::exit_handler::ExitHandler;
     pub use crate::init_ack::{new as new_init_ack, InitAckRx, InitAckTx};
     pub use crate::spawn_opts::SpawnOpts;
     pub use crate::system::{SysChannelError, SysSpawnError, System};
     pub use crate::system_config::SystemConfig;
+
+    pub mod exit_handlers {
+        pub use crate::exit_handler::{LogExitHandler, NoopExitHandler};
+    }
 }
 mod imports {
     use std::sync::Arc;

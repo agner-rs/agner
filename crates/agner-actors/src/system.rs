@@ -8,11 +8,12 @@ use tokio::sync::{mpsc, oneshot, RwLock};
 
 use crate::actor::Actor;
 use crate::actor_id::ActorID;
-use crate::actor_runner::sys_msg::SysMsg;
+use crate::actor_runner::sys_msg::{ActorInfo, SysMsg};
 use crate::actor_runner::ActorRunner;
+use crate::exit::Exit;
+use crate::exit_handler::ExitHandler;
 use crate::spawn_opts::SpawnOpts;
 use crate::system_config::SystemConfig;
-use crate::{ActorInfo, Exit};
 
 mod actor_entry;
 mod sys_actor_entry;
@@ -52,7 +53,9 @@ impl System {
         let actor_entries =
             (0..config.max_actors).map(|_| RwLock::new(Default::default())).collect();
 
-        let inner = Inner { config, system_id, actor_id_pool, actor_entries };
+        let exit_handler = config.exit_handler.to_owned();
+
+        let inner = Inner { config, system_id, actor_id_pool, actor_entries, exit_handler };
         Self(Arc::new(inner))
     }
 
@@ -87,13 +90,16 @@ impl System {
         &self,
         behaviour: Behaviour,
         args: Args,
-        spawn_opts: SpawnOpts,
+        mut spawn_opts: SpawnOpts,
     ) -> Result<ActorID, SysSpawnError>
     where
         Args: Send + Sync + 'static,
         Message: Unpin + Send + Sync + 'static,
         for<'a> Behaviour: Actor<'a, Args, Message>,
     {
+        let exit_handler =
+            spawn_opts.take_exit_handler().unwrap_or_else(|| self.0.exit_handler.to_owned());
+
         let system = self.to_owned();
         let actor_id_lease =
             system.0.actor_id_pool.acquire_id().ok_or(SysSpawnError::MaxActorsLimit)?;
@@ -108,6 +114,7 @@ impl System {
             messages_rx,
             sys_msg_rx,
             sys_msg_tx: sys_msg_tx.to_owned(),
+            exit_handler,
             spawn_opts,
         };
         tokio::spawn(actor.run(behaviour, args));
@@ -239,4 +246,5 @@ struct Inner {
     system_id: usize,
     actor_id_pool: ActorIDPool,
     actor_entries: Box<[RwLock<ActorEntry>]>,
+    exit_handler: Arc<dyn ExitHandler>,
 }
