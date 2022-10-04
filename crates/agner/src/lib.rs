@@ -66,7 +66,11 @@
 //!     // create a system with default configuration
 //!     let system = System::new(Default::default());
 //!
-//!     let actor_id = system.spawn(a_dummy, "the-dummy".to_owned(), Default::default()).await.expect("Failed to spawn an actor");
+//!     let actor_id = system.spawn(
+//!         a_dummy,
+//!         "the-dummy".to_owned(),
+//!         Default::default())
+//!             .await.expect("Failed to spawn an actor");
 //!
 //!     system.send(actor_id, Some("one".to_owned())).await;
 //!     system.send(actor_id, Some("two".to_owned())).await;
@@ -77,8 +81,6 @@
 //!     eprintln!("{} exited: {:?}", actor_id, exit_reason);
 //! }
 //! ```
-//!
-//! 
 //!
 
 pub mod utils {
