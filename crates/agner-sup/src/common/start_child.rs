@@ -143,7 +143,7 @@ where
             .await;
         let registrations_count = registrations.len();
 
-        system.add_data(child_id, registrations).await;
+        system.put_data(child_id, registrations).await;
 
         log::trace!(
             "[{}|start_child_no_ack] started [child_id: {}, regs.len: {}]",
@@ -182,7 +182,7 @@ where
                     .collect::<Vec<_>>()
                     .await;
                 let registrations_count = registrations.len();
-                system.add_data(child_id, registrations).await;
+                system.put_data(child_id, registrations).await;
 
                 log::trace!(
                     "[{}|start_child_init_ack] init-ack success [child_id: {}; regs.len: {}]",
