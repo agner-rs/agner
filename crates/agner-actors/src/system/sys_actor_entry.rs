@@ -33,13 +33,6 @@ impl System {
         &self.0.actor_entries[slot_idx]
     }
 
-    pub(crate) async fn actor_entry_map<F, Out>(&self, actor_id: ActorID, f: F) -> Option<Out>
-    where
-        F: FnOnce(&ActorEntry) -> Out,
-    {
-        unimplemented!()
-    }
-
     pub(crate) async fn actor_entry_read(
         &self,
         actor_id: ActorID,
