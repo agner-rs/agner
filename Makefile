@@ -5,7 +5,7 @@ fmt:
 	cargo +nightly fmt
 
 doc:
-	cargo doc
+	cargo doc --all-features
 
 build-release:
 	cargo build --release

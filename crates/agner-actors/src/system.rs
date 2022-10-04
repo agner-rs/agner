@@ -134,8 +134,8 @@ impl System {
     }
 
     /// Wait for the specified actor to terminate, and return upon its termination the
-    /// [`ExitReason`]. In case the actor with the specified `actor_id` does not exist — return
-    /// [`ExitReason::NoProcess`] right away.
+    /// [`Exit`](crate::exit::Exit). In case the actor with the specified `actor_id` does not exist
+    /// — return [`Exit::no_actor()`](`crate::exit::Exit::no_actor`) right away.
     pub fn wait(&self, actor_id: ActorID) -> impl Future<Output = Exit> {
         let sys = self.clone();
         async move {

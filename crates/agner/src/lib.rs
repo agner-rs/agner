@@ -1,3 +1,86 @@
+//! agner — an [actor](https://en.wikipedia.org/wiki/Actor_model) toolkit inspired by Erlang/OTP.
+//!
+//! Note: Right now this is a research project, i.e. it is possible that the API will undergo
+//! incompatible changes within the version 0.3.x.
+//!
+//!
+//! # [Actors](crate::actors)
+//!
+//! An actor is an activity that
+//! - runs in parallel (implemented as a [`Future`](std::future::Future));
+//! - has a handle ([`ActorID`](crate::actors::ActorID));
+//! - can receive messages;
+//! - when terminates — yields an exit reason ([`Exit`](crate::actors::Exit));
+//! - any two actors can be [linked](crate::actors::Context::link) with each other:
+//!     - if one of the linked actors exits with a reason other than
+//!       [`Exit::normal()`](crate::actors::Exit::normal()) — the other receives an exit-signal;
+//!     - if the process receiving an exit-signal does not ["trap
+//!       exits"](crate::actors::Context::trap_exit), it will also be terminated.
+//!
+//! ## Implementing an Actor
+//! The actor's behaviour is defined by:
+//! - the type of its argument;
+//! - the type of the message it accepts;
+//! - the behaviour function.
+//!
+//! In order to implement an actor one should define an async function that accepts two arguments:
+//! - a mutable reference to [`Context<Message>`](crate::actors::Context);
+//! - `Argument`;
+//! and returns a value for which the trait [`IntoExitReason`](crate::actors::IntoExitReason) is
+//! defined.
+//!
+//! Example:
+//! ```
+//! use agner::actors::{Context, Exit, Never};
+//!
+//! async fn shutdown_after_six_messages(context: &mut Context<String>, actor_name: String) {
+//!     for i in 0..6 {
+//!         let message = context.next_message().await;
+//!         eprintln!("Actor {:?} received {:?}", actor_name, message);
+//!     }
+//! }
+//! ```
+//!
+//! ## Spawning an Actor
+//!
+//! Actors cannot run on their own, they need an [actor system](crate::actors::System) to be spawned
+//! in. This is necessary to avoid having a global state imposed by mere usage of the library.
+//! A [`System`](crate::actors::System) is a scope within which the actors run.
+//!
+//! Example:
+//! ```
+//! use agner::actors::{System, Context, Exit, Never};
+//!
+//! async fn a_dummy(context: &mut Context<Option<String>>, actor_name: String) {
+//!     eprintln!("{}: hi!", actor_name);
+//!
+//!     while let Some(message) = context.next_message().await {
+//!         eprintln!("{}: received {:?}", actor_name, message);
+//!     }
+//!
+//!     eprintln!("{}: bye!", actor_name);
+//! }
+//!
+//! #[tokio::main]
+//! async fn main() {
+//!     // create a system with default configuration
+//!     let system = System::new(Default::default());
+//!
+//!     let actor_id = system.spawn(a_dummy, "the-dummy".to_owned(), Default::default()).await.expect("Failed to spawn an actor");
+//!
+//!     system.send(actor_id, Some("one".to_owned())).await;
+//!     system.send(actor_id, Some("two".to_owned())).await;
+//!     system.send(actor_id, Some("three".to_owned())).await;
+//!     system.send(actor_id, Option::<String>::None).await;
+//!
+//!     let exit_reason = system.wait(actor_id).await;
+//!     eprintln!("{} exited: {:?}", actor_id, exit_reason);
+//! }
+//! ```
+//!
+//! 
+//!
+
 pub mod utils {
     pub use agner_utils::*;
 }
