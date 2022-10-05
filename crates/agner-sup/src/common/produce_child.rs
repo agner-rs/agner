@@ -11,19 +11,21 @@ use crate::service::Service;
 #[cfg(test)]
 mod tests;
 
-pub fn new<B, AF, M>(
+pub fn new<B, AF, IT, M>(
     actor_behaviour: B,
     actor_args_factory: AF,
 
-    init_type: InitType,
+    init_type: IT,
     provided_services: impl Into<Arc<[Service]>>,
 ) -> Box<dyn ProduceChild<AF::Input>>
 where
     AF: ArgsFactory,
+    IT: Into<InitType>,
     B: for<'a> Actor<'a, AF::Output, M>,
     M: Send + Sync + Unpin + 'static,
     B: Clone,
 {
+    let init_type = init_type.into();
     let produce_child = ProduceChildImpl {
         actor_behaviour,
         actor_args_factory,

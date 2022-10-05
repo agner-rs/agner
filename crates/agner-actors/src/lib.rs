@@ -15,7 +15,7 @@ mod exports {
     pub use crate::exit::{Exit, Shutdown};
     pub use crate::exit_handler::ExitHandler;
     pub use crate::spawn_opts::SpawnOpts;
-    pub use crate::system::System;
+    pub use crate::system::{System, SystemWeakRef};
     pub use crate::system_config::SystemConfig;
 
     pub use crate::actor_runner::ActorInfo;
