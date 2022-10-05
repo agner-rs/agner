@@ -7,6 +7,9 @@ fmt:
 doc:
 	cargo doc --all-features
 
+clippy:
+	cargo clippy --all-features
+
 build-release:
 	cargo build --release
 
