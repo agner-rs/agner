@@ -1,4 +1,5 @@
-use std::any::Any;
+use std::any::{Any, TypeId};
+use std::collections::HashMap;
 use std::error::Error as StdError;
 use std::time::Instant;
 
@@ -27,7 +28,7 @@ struct Occupied {
     messages_tx: Box<dyn Any + Send + Sync + 'static>,
     sys_msg_tx: mpsc::UnboundedSender<SysMsg>,
     watches: Vec<oneshot::Sender<Exit>>,
-    data: Vec<Data>,
+    data: HashMap<TypeId, Data>,
 }
 
 type Vacant = Option<Terminated>;
@@ -90,9 +91,32 @@ impl ActorEntry {
         Self(entry)
     }
 
-    pub fn add_data<D: Any + Send + Sync + 'static>(&mut self, data: D) {
+    pub fn put_data<D: Any + Send + Sync + 'static>(&mut self, data: D) {
         if let Entry::Occupied(occupied) = &mut self.0 {
-            occupied.data.push(Box::new(data));
+            let type_id = data.type_id();
+            occupied.data.insert(type_id, Box::new(data));
+        }
+    }
+
+    pub fn get_data<D: Any>(&self) -> Option<&D> {
+        if let Entry::Occupied(occupied) = &self.0 {
+            let type_id = TypeId::of::<D>();
+            occupied.data.get(&type_id).map(|boxed| boxed.as_ref().downcast_ref()).flatten()
+        } else {
+            None
+        }
+    }
+
+    pub fn take_data<D: Any>(&mut self) -> Option<D> {
+        if let Entry::Occupied(occupied) = &mut self.0 {
+            let type_id = TypeId::of::<D>();
+            occupied
+                .data
+                .remove(&type_id)
+                .map(|boxed| boxed.downcast().map(|b| *b).ok())
+                .flatten()
+        } else {
+            None
         }
     }
 

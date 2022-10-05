@@ -222,10 +222,22 @@ impl System {
     /// Associate arbitrary data with the specified actor.
     /// Upon actor termination that data will be dropped.
     /// If no actor with the specified id exists, the data will be dropped right away.
-    pub async fn add_data<D: Any + Send + Sync + 'static>(&self, actor_id: ActorID, data: D) {
+    pub async fn put_data<D: Any + Send + Sync + 'static>(&self, actor_id: ActorID, data: D) {
         if let Some(mut actor_entry) = self.actor_entry_write(actor_id).await {
-            actor_entry.add_data(data);
+            actor_entry.put_data(data);
         }
+    }
+
+    pub async fn get_data<D: Any + Clone>(&self, actor_id: ActorID) -> Option<D> {
+        self.actor_entry_read(actor_id)
+            .await
+            .and_then(|actor_entry| actor_entry.get_data().cloned())
+    }
+
+    pub async fn take_data<D: Any>(&self, actor_id: ActorID) -> Option<D> {
+        self.actor_entry_write(actor_id)
+            .await
+            .and_then(|mut actor_entry| actor_entry.take_data())
     }
 
     pub fn all_actors(&self) -> impl Stream<Item = ActorID> + '_ {

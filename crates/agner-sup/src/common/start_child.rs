@@ -121,16 +121,20 @@ where
 
         let this = *self;
 
+        let sup_id = this.sup_id;
+
         let child_id = match this.init_type {
-            InitType::NoAck => this.do_start_child_no_ack(system).await?,
+            InitType::NoAck => this.do_start_child_no_ack(&system).await?,
             InitType::WithAck { init_timeout, stop_timeout: cancel_timeout } =>
-                this.do_start_child_init_ack(system, init_timeout, cancel_timeout).await?,
+                this.do_start_child_init_ack(&system, init_timeout, cancel_timeout).await?,
         };
+
+        system.put_data(child_id, crate::common::ParentActor(sup_id)).await;
 
         Ok(child_id)
     }
 
-    async fn do_start_child_no_ack(self, system: System) -> Result<ActorID, StartChildError> {
+    async fn do_start_child_no_ack(self, system: &System) -> Result<ActorID, StartChildError> {
         use futures::StreamExt;
 
         let Self { sup_id, actor_behaviour, actor_args, provided_services, .. } = self;
@@ -143,7 +147,7 @@ where
             .await;
         let registrations_count = registrations.len();
 
-        system.add_data(child_id, registrations).await;
+        system.put_data(child_id, registrations).await;
 
         log::trace!(
             "[{}|start_child_no_ack] started [child_id: {}, regs.len: {}]",
@@ -156,7 +160,7 @@ where
     }
     async fn do_start_child_init_ack(
         self,
-        system: System,
+        system: &System,
         init_timeout: Duration,
         cancel_timeout: Duration,
     ) -> Result<ActorID, StartChildError> {
@@ -182,7 +186,7 @@ where
                     .collect::<Vec<_>>()
                     .await;
                 let registrations_count = registrations.len();
-                system.add_data(child_id, registrations).await;
+                system.put_data(child_id, registrations).await;
 
                 log::trace!(
                     "[{}|start_child_init_ack] init-ack success [child_id: {}; regs.len: {}]",
@@ -201,7 +205,7 @@ where
                 );
 
                 if let Err(cancel_error) = util::try_exit(
-                    system,
+                    system.to_owned(),
                     intermediary_id,
                     [
                         (Exit::shutdown_with_source(Arc::new(reason.to_owned())), cancel_timeout),
