@@ -3,7 +3,7 @@ use std::marker::PhantomData;
 use std::sync::Arc;
 
 use agner_actors::{Actor, ActorID};
-use agner_service::Service;
+use agner_registered::Service;
 
 use crate::common;
 use crate::common::{ArgsFactory, InitType, StartChild};

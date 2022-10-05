@@ -5,7 +5,7 @@ use std::time::Duration;
 
 use agner_actors::system_error::SysSpawnError;
 use agner_actors::{Actor, ActorID, Exit, SpawnOpts, System};
-use agner_service::Service;
+use agner_registered::Service;
 use agner_utils::future_timeout_ext::FutureTimeoutExt;
 use agner_utils::result_err_flatten::ResultErrFlattenIn;
 use agner_utils::std_error_pp::StdErrorPP;

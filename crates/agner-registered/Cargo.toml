@@ -1,12 +1,12 @@
 [package]
-name = "agner-service"
+name = "agner-registered"
 version = "0.3.8"
 edition = "2021"
 
 authors = ["Raman Hafiyatulin <r.gafiyatullin@me.com>"]
 license = "MIT"
 repository = "https://github.com/agner-rs/agner"
-description = "An actor toolkit inspired by Erlang/OTP (service)"
+description = "An actor toolkit inspired by Erlang/OTP (registered)"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 

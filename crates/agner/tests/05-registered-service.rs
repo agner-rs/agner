@@ -3,7 +3,7 @@
 use std::time::Duration;
 
 use agner::actors::ActorID;
-use agner::service::Service;
+use agner::registered::Service;
 
 #[macro_use]
 mod common;

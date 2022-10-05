@@ -3,7 +3,7 @@ use std::sync::Arc;
 use std::time::Duration;
 
 use agner::actors::Exit;
-use agner::service::Service;
+use agner::registered::Service;
 use agner::sup::common::{args_factory, produce_child, WithAck};
 use agner::sup::mixed::{self, AllForOne, RestartIntensity};
 use agner::sup::uniform;
@@ -160,7 +160,7 @@ mod actors {
         use crate::actors::fanout;
         use agner::actors::{ActorID, Context, Exit, Shutdown, SystemWeakRef};
         use agner::init_ack::ContextInitAckExt;
-        use agner::service::Service;
+        use agner::registered::Service;
         use tokio::io::{AsyncBufReadExt, AsyncRead, AsyncWrite, AsyncWriteExt};
         use tokio::sync::oneshot;
 
@@ -245,7 +245,7 @@ mod actors {
 
         use agner::actors::{Context, Exit, Never};
         use agner::init_ack::ContextInitAckExt;
-        use agner::service::Service;
+        use agner::registered::Service;
         use agner::sup::uniform;
         use tokio::net::UnixListener;
 
@@ -281,7 +281,7 @@ mod actors {
 
         use agner::actors::{Context, Exit, SpawnOpts};
         use agner::init_ack::InitAckTx;
-        use agner::service::Service;
+        use agner::registered::Service;
         use agner::sup::mixed::{OneForOne, RestartIntensity};
         use agner::sup::{common, mixed};
         use tokio::net::UnixListener;
