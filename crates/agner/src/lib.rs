@@ -29,7 +29,7 @@
 //! In order to implement an actor one should define an async function that accepts two arguments:
 //! - a mutable reference to [`Context<Message>`](crate::actors::Context);
 //! - `Argument`;
-//! and returns a value for which the trait [`IntoExitReason`](crate::actors::IntoExitReason) is
+//! and returns a value for which the trait [`Into<Exit>`](crate::actors::Exit) is
 //! defined.
 //!
 //! Example:
@@ -93,7 +93,7 @@
 //!
 //! If the actor's behaviour function returns — the actor terminates.
 //! The return type of the behaviour function must implement the trait
-//! [`IntoExitReason`](crate::actors::IntoExitReason).
+//! [`Into<Exit>`](crate::actors::Exit).
 //!
 //! Example:
 //! ```
@@ -147,7 +147,6 @@
 //! ## Uniform Children Supervisor
 //!
 //! ## Mixed Children Supervisor
-//!
 
 pub mod utils {
     pub use agner_utils::*;
