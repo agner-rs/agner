@@ -22,7 +22,7 @@ where
     IntoExit: Into<Exit>,
 {
     fn from(option: Option<IntoExit>) -> Self {
-        option.map(Into::into).unwrap_or_else(|| Self::normal())
+        option.map(Into::into).unwrap_or_else(Self::normal)
     }
 }
 

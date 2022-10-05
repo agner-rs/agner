@@ -1,9 +1,9 @@
-use std::collections::HashSet;
+use std::any::{Any, TypeId};
+use std::collections::{HashMap, HashSet};
 use std::sync::Arc;
 
 use crate::actor_id::ActorID;
 use crate::exit_handler::ExitHandler;
-use crate::init_ack::InitAckTx;
 
 const DEFAULT_MSG_INBOX_SIZE: usize = 1024;
 const DEFAULT_SIG_INBOX_SIZE: usize = 16;
@@ -13,8 +13,8 @@ pub struct SpawnOpts {
     links: HashSet<ActorID>,
     msg_inbox_size: usize,
     sig_inbox_size: usize,
-    init_ack: Option<InitAckTx>,
     exit_handler: Option<Arc<dyn ExitHandler>>,
+    data: HashMap<TypeId, Box<dyn Any + Send + Sync + 'static>>,
 }
 
 impl Default for SpawnOpts {
@@ -23,8 +23,8 @@ impl Default for SpawnOpts {
             links: Default::default(),
             msg_inbox_size: DEFAULT_MSG_INBOX_SIZE,
             sig_inbox_size: DEFAULT_SIG_INBOX_SIZE,
-            init_ack: None,
             exit_handler: None,
+            data: Default::default(),
         }
     }
 }
@@ -62,12 +62,18 @@ impl SpawnOpts {
         self.sig_inbox_size
     }
 
-    pub fn with_init_ack(mut self, init_ack_tx: InitAckTx) -> Self {
-        let _ = self.init_ack.replace(init_ack_tx);
+    pub fn with_data<D>(mut self, data: D) -> Self
+    where
+        D: Any + Send + Sync + 'static,
+    {
+        let type_id = data.type_id();
+        let boxed = Box::new(data);
+        self.data.insert(type_id, boxed);
         self
     }
-    pub fn take_init_ack(&mut self) -> Option<InitAckTx> {
-        self.init_ack.take()
+
+    pub fn take_data(&mut self) -> HashMap<TypeId, Box<dyn Any + Send + Sync + 'static>> {
+        std::mem::take(&mut self.data)
     }
 
     pub fn with_exit_handler(mut self, exit_handler: Arc<dyn ExitHandler>) -> Self {

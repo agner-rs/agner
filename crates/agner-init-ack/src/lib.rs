@@ -4,8 +4,7 @@ use std::pin::Pin;
 use std::task::{Context, Poll};
 use tokio::sync::oneshot;
 
-use crate::actor_id::ActorID;
-use crate::exit::Exit;
+use agner_actors::{ActorID, Exit};
 
 pub fn new() -> (InitAckTx, InitAckRx) {
     let (tx, rx) = oneshot::channel();
@@ -20,17 +19,19 @@ pub struct InitAckTx(oneshot::Sender<Result<ActorID, Exit>>);
 pub struct InitAckRx(#[pin] oneshot::Receiver<Result<ActorID, Exit>>);
 
 impl InitAckTx {
-    #[deprecated(since = "0.3.2")]
-    pub fn ack(self, actor_id: ActorID) {
-        self.ok(actor_id)
-    }
-
     pub fn ok(self, actor_id: ActorID) {
         let _ = self.0.send(Ok(actor_id));
     }
 
-    pub fn err(self, reason: Exit) {
-        let _ = self.0.send(Err(reason));
+    pub fn err(self, reason: impl Into<Exit>) {
+        let _ = self.0.send(Err(reason.into()));
+    }
+
+    pub fn ack(self, result: Result<ActorID, impl Into<Exit>>) {
+        match result {
+            Ok(actor_id) => self.ok(actor_id),
+            Err(err) => self.err(err),
+        }
     }
 }
 

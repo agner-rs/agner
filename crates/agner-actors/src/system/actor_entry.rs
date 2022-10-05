@@ -101,7 +101,7 @@ impl ActorEntry {
     pub fn get_data<D: Any>(&self) -> Option<&D> {
         if let Entry::Occupied(occupied) = &self.0 {
             let type_id = TypeId::of::<D>();
-            occupied.data.get(&type_id).map(|boxed| boxed.as_ref().downcast_ref()).flatten()
+            occupied.data.get(&type_id).and_then(|boxed| boxed.as_ref().downcast_ref())
         } else {
             None
         }
@@ -113,8 +113,7 @@ impl ActorEntry {
             occupied
                 .data
                 .remove(&type_id)
-                .map(|boxed| boxed.downcast().map(|b| *b).ok())
-                .flatten()
+                .and_then(|boxed| boxed.downcast().map(|b| *b).ok())
         } else {
             None
         }

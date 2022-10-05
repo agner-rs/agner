@@ -4,7 +4,6 @@ mod actor_runner;
 mod context;
 mod exit;
 mod exit_handler;
-mod init_ack;
 mod spawn_opts;
 mod system;
 mod system_config;
@@ -15,7 +14,6 @@ mod exports {
     pub use crate::context::{Context, Event, Signal};
     pub use crate::exit::Exit;
     pub use crate::exit_handler::ExitHandler;
-    pub use crate::init_ack::{new as new_init_ack, InitAckRx, InitAckTx};
     pub use crate::spawn_opts::SpawnOpts;
     pub use crate::system::{SysChannelError, SysSpawnError, System};
     pub use crate::system_config::SystemConfig;

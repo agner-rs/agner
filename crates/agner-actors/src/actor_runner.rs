@@ -66,14 +66,9 @@ where
         let (inbox_w, inbox_r) = pipe::new::<Message>(spawn_opts.msg_inbox_size());
         let (signals_w, signals_r) = pipe::new::<Signal>(spawn_opts.sig_inbox_size());
         let (calls_w, calls_r) = pipe::new::<CallMsg<Message>>(1);
-        let mut context = Context::new(
-            actor_id,
-            system_opt.to_owned(),
-            inbox_r,
-            signals_r,
-            calls_w,
-            spawn_opts.take_init_ack(),
-        );
+        let mut context =
+            Context::new(actor_id, system_opt.to_owned(), inbox_r, signals_r, calls_w)
+                .with_data(spawn_opts.take_data());
 
         let behaviour_running = async move {
             let exit_reason = behaviour.run(&mut context, args).await.into();

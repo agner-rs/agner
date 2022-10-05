@@ -1,3 +1,6 @@
+use std::any::{Any, TypeId};
+use std::collections::HashMap;
+
 use futures::Future;
 
 use crate::actor_id::ActorID;
@@ -5,7 +8,6 @@ use crate::actor_runner::call_msg::CallMsg;
 use crate::actor_runner::pipe::{PipeRx, PipeTx};
 use crate::exit::Exit;
 use crate::imports::Never;
-use crate::init_ack::InitAckTx;
 use crate::system::{System, SystemWeakRef};
 
 /// Actor's API to itself
@@ -16,7 +18,7 @@ pub struct Context<M> {
     messages: PipeRx<M>,
     signals: PipeRx<Signal>,
     calls: PipeTx<CallMsg<M>>,
-    init_ack_tx: Option<InitAckTx>,
+    data: HashMap<TypeId, Box<dyn Any + Send + Sync + 'static>>,
 }
 
 #[derive(Debug)]
@@ -71,28 +73,57 @@ impl<M> Context<M> {
 }
 
 impl<M> Context<M> {
-    #[deprecated(since = "0.3.2")]
-    pub fn init_ack(&mut self, actor_id: Option<ActorID>) -> bool {
-        self.init_ack_ok(actor_id)
-    }
-    pub fn init_ack_ok(&mut self, actor_id: Option<ActorID>) -> bool {
-        if let Some(tx) = self.init_ack_tx.take() {
-            let actor_id = actor_id.unwrap_or_else(|| self.actor_id());
-            tx.ok(actor_id);
-            true
-        } else {
-            false
-        }
-    }
-    pub fn init_ack_err(&mut self, exit_reason: Exit) -> bool {
-        if let Some(tx) = self.init_ack_tx.take() {
-            tx.err(exit_reason);
-            true
-        } else {
-            false
-        }
-    }
+    pub fn put<D>(&mut self, data: D) -> Option<D>
+    where
+        D: Any + Send + Sync + 'static,
+    {
+        let type_id = data.type_id();
+        let boxed = Box::new(data);
+        let prev_opt = self.data.insert(type_id, boxed);
 
+        prev_opt
+            .map(|any| any.downcast().expect("The value does not match the type-id."))
+            .map(|b| *b)
+    }
+    pub fn take<D>(&mut self) -> Option<D>
+    where
+        D: Any + Send + Sync + 'static,
+    {
+        let type_id = TypeId::of::<D>();
+        let boxed_opt = self.data.remove(&type_id);
+
+        boxed_opt
+            .map(|any| any.downcast().expect("The value does not match the type-id."))
+            .map(|b| *b)
+    }
+    pub fn get<D>(&self) -> Option<&D>
+    where
+        D: Any + Send + Sync + 'static,
+    {
+        let type_id = TypeId::of::<D>();
+        let boxed_opt = self.data.get(&type_id);
+
+        boxed_opt.map(|any| any.downcast_ref().expect("The value does not match the type-id."))
+    }
+    pub fn get_mut<D>(&mut self) -> Option<&mut D>
+    where
+        D: Any + Send + Sync + 'static,
+    {
+        let type_id = TypeId::of::<D>();
+        let boxed_opt = self.data.get_mut(&type_id);
+
+        boxed_opt.map(|any| any.downcast_mut().expect("The value does not match the type-id."))
+    }
+    pub fn with_data(
+        mut self,
+        data: HashMap<TypeId, Box<dyn Any + Send + Sync + 'static>>,
+    ) -> Self {
+        self.data = data;
+        self
+    }
+}
+
+impl<M> Context<M> {
     pub async fn exit(&mut self, exit_reason: Exit) -> Never {
         self.backend_call(CallMsg::Exit(exit_reason)).await;
         std::future::pending().await
@@ -117,15 +148,6 @@ impl<M> Context<M> {
         })))
         .await;
     }
-
-    // pub async fn stream_to_inbox<S>(&mut self, stream: S)
-    // where
-    //     S: Stream,
-    //     <S as Stream>::Item: Into<M>,
-    //     S: Into<M>,
-    // {
-    //     unimplemented!()
-    // }
 }
 
 impl<M> Context<M> {
@@ -136,10 +158,9 @@ impl<M> Context<M> {
         inbox: PipeRx<M>,
         signals: PipeRx<Signal>,
         calls: PipeTx<CallMsg<M>>,
-        init_ack_tx: Option<InitAckTx>,
     ) -> Self {
         let calls = calls.blocking();
-        Self { actor_id, system, messages: inbox, signals, calls, init_ack_tx }
+        Self { actor_id, system, messages: inbox, signals, calls, data: Default::default() }
     }
 }
 
