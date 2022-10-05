@@ -1,7 +1,9 @@
+#![cfg(feature = "service")]
+
 use std::time::Duration;
 
 use agner::actors::ActorID;
-use agner::sup::Service;
+use agner::service::Service;
 
 #[macro_use]
 mod common;

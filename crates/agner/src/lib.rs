@@ -162,6 +162,11 @@ pub mod init_ack {
     pub use agner_init_ack::*;
 }
 
+#[cfg(feature = "service")]
+pub mod service {
+    pub use agner_service::*;
+}
+
 #[cfg(feature = "sup")]
 pub mod sup {
     pub use agner_sup::*;

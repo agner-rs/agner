@@ -15,7 +15,8 @@ description = "An actor toolkit inspired by Erlang/OTP (supervisors)"
 agner-utils = { path = "../agner-utils", version = "=0.3.8" }
 agner-actors = { path = "../agner-actors", version = "=0.3.8" }
 agner-init-ack = { path = "../agner-init-ack", version = "=0.3.8" }
-arc-swap = { version = "^1", features = ["weak"] }
+agner-service = { path = "../agner-service", version = "=0.3.8" }
+
 futures = "^0.3"
 log = "^0.4"
 pin-project = "^1"

@@ -12,15 +12,16 @@ description = "An actor toolkit inspired by Erlang/OTP"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [features]
-default = ["init-ack", "sup"]
+default = ["init-ack", "service", "sup"]
 # default = ["full"]
 
-full = ["init-ack", "sup", "helm", "test-actor"]
+full = ["init-ack", "service", "sup", "helm", "test-actor"]
 
 serde = ["agner-actors/serde"]
 
 # Components
 init-ack = ["dep:agner-init-ack"]
+service = ["dep:agner-service"]
 sup = ["dep:agner-sup"]
 helm = ["dep:agner-helm"]
 test-actor = ["dep:agner-test-actor"]
@@ -29,6 +30,7 @@ test-actor = ["dep:agner-test-actor"]
 agner-utils = { path = "../agner-utils", version = "=0.3.8" }
 agner-actors = { path = "../agner-actors", version = "=0.3.8" }
 agner-init-ack = { path = "../agner-init-ack", version = "=0.3.8", optional = true }
+agner-service = { path = "../agner-service", version = "=0.3.8", optional = true }
 agner-sup = { path = "../agner-sup", version = "=0.3.8", optional = true }
 agner-helm = { path = "../agner-helm", version = "0.3.8", optional = true }
 agner-test-actor = { path = "../agner-test-actor", version = "0.3.8", optional = true }

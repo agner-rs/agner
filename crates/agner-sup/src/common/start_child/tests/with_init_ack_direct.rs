@@ -2,11 +2,12 @@ use std::convert::Infallible;
 use std::time::Duration;
 
 use agner_actors::{Event, Exit, Signal, System};
+use agner_service::Service;
 use agner_test_actor::{TestActor, TestActorRegistry};
+
 use futures::future;
 
 use crate::common::start_child::{self, WithAck};
-use crate::Service;
 
 const SMALL_TIMEOUT: Duration = Duration::from_millis(100);
 const INIT_TIMEOUT: Duration = Duration::from_secs(1);

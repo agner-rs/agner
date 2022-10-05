@@ -1,12 +1,14 @@
 #![cfg(feature = "test-actor")]
 #![cfg(feature = "sup")]
+#![cfg(feature = "service")]
 
 use std::convert::Infallible;
 use std::time::Duration;
 
 use agner::actors::Exit;
+use agner::service::Service;
 use agner::sup::common::{args_factory, produce_child, InitType};
-use agner::sup::{mixed, Service};
+use agner::sup::mixed;
 use agner::test_actor::{TestActor, TestActorRegistry};
 use agner::utils::future_timeout_ext::FutureTimeoutExt;
 use agner_sup::mixed::{AllForOne, RestForOne};

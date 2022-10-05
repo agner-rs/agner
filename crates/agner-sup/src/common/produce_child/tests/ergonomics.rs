@@ -1,11 +1,12 @@
 use std::convert::Infallible;
 
 use agner_actors::{Context, System};
+use agner_service::Service;
 use agner_test_actor::{TestActor, TestActorRegistry};
+
 use futures::{future, StreamExt};
 
 use crate::common::{args_factory, produce_child, InitType, ProduceChild};
-use crate::Service;
 
 #[derive(Debug, Clone)]
 struct ConnMgrArgs {

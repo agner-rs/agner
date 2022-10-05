@@ -1,0 +1,17 @@
+[package]
+name = "agner-service"
+version = "0.3.8"
+edition = "2021"
+
+authors = ["Raman Hafiyatulin <r.gafiyatullin@me.com>"]
+license = "MIT"
+repository = "https://github.com/agner-rs/agner"
+description = "An actor toolkit inspired by Erlang/OTP (service)"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+agner-actors = { path = "../agner-actors", version = "=0.3.8" }
+
+arc-swap = { version = "^1", features = ["weak"] }
+tokio = { version = "^1", features = ["sync"] }
