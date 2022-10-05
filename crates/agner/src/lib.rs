@@ -148,7 +148,6 @@
 //!
 //! ## Mixed Children Supervisor
 //!
-//!
 
 pub mod utils {
     pub use agner_utils::*;

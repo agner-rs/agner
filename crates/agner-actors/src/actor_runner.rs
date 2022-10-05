@@ -7,7 +7,7 @@ use futures::stream::FuturesUnordered;
 use futures::StreamExt;
 use tokio::sync::{mpsc, oneshot};
 
-use crate::actor::{Actor, IntoExitReason};
+use crate::actor::Actor;
 use crate::actor_id::ActorID;
 use crate::context::{Context, Signal};
 use crate::exit::{BackendFailure, Exit};
@@ -76,7 +76,7 @@ where
         );
 
         let behaviour_running = async move {
-            let exit_reason = behaviour.run(&mut context, args).await.into_exit_reason();
+            let exit_reason = behaviour.run(&mut context, args).await.into();
             context.exit(exit_reason).await;
             unreachable!()
         };
