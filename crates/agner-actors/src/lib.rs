@@ -15,10 +15,14 @@ mod exports {
     pub use crate::exit::Exit;
     pub use crate::exit_handler::ExitHandler;
     pub use crate::spawn_opts::SpawnOpts;
-    pub use crate::system::{SysChannelError, SysSpawnError, System};
+    pub use crate::system::System;
     pub use crate::system_config::SystemConfig;
 
     pub use crate::actor_runner::ActorInfo;
+
+    pub mod system_error {
+        pub use crate::system::{SysChannelError, SysSpawnError};
+    }
 
     pub mod exit_reason {
         pub use crate::exit::{BackendFailure, WellKnown};

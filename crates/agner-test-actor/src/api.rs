@@ -2,7 +2,8 @@ use std::future::Future;
 use std::sync::Arc;
 use std::time::Duration;
 
-use agner_actors::{ActorID, Event, Exit, SpawnOpts, SysSpawnError, System};
+use agner_actors::system_error::SysSpawnError;
+use agner_actors::{ActorID, Event, Exit, SpawnOpts, System};
 use tokio::sync::{mpsc, oneshot, Mutex};
 
 use crate::exited::Exited;

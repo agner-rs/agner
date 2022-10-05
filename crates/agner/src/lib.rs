@@ -156,6 +156,11 @@ pub mod actors {
     pub use agner_actors::*;
 }
 
+#[cfg(feature = "init-ack")]
+pub mod init_ack {
+    pub use agner_init_ack::*;
+}
+
 #[cfg(feature = "sup")]
 pub mod sup {
     pub use agner_sup::*;

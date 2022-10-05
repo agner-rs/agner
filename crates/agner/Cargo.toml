@@ -12,7 +12,7 @@ description = "An actor toolkit inspired by Erlang/OTP"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [features]
-default = ["sup"]
+default = ["init-ack", "sup"]
 # default = ["full"]
 
 full = ["init-ack", "sup", "helm", "test-actor"]
