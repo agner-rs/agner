@@ -10,7 +10,7 @@ mod system;
 mod system_config;
 
 mod exports {
-    pub use crate::actor::{Actor, IntoExitReason};
+    pub use crate::actor::Actor;
     pub use crate::actor_id::ActorID;
     pub use crate::actor_runner::ActorInfo;
     pub use crate::context::{Context, Event, Signal};

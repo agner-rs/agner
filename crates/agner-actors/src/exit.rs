@@ -3,6 +3,8 @@ use std::sync::Arc;
 use crate::actor_id::ActorID;
 use crate::imports::ArcError;
 
+mod into_exit;
+
 #[derive(Debug, Clone, thiserror::Error)]
 pub enum Exit {
     #[error("Well known")]
