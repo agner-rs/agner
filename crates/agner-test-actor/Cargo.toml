@@ -12,6 +12,7 @@ description = "An actor toolkit inspired by Erlang/OTP (test-actor)"
 
 [dependencies]
 agner-actors = { path = "../agner-actors", version = "=0.3.7" }
+agner-init-ack = { path = "../agner-init-ack", version = "=0.3.7" }
 agner-utils = { path = "../agner-utils", version = "=0.3.7" }
 async-trait = "^0.1"
 futures = "^0.3"

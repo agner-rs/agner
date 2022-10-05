@@ -3,6 +3,7 @@ use std::sync::Arc;
 use std::time::Duration;
 
 use agner_actors::{ActorID, Context, Event, Exit, Never, Signal, System};
+use agner_init_ack::ContextInitAckExt;
 use agner_utils::result_err_flatten::ResultErrFlattenIn;
 use agner_utils::std_error_pp::StdErrorPP;
 

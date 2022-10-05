@@ -165,8 +165,8 @@ where
         cancel_timeout: Duration,
     ) -> Result<ActorID, StartChildError> {
         let Self { sup_id, actor_behaviour, actor_args, provided_services, .. } = self;
-        let (init_ack_tx, init_ack_rx) = agner_actors::new_init_ack();
-        let spawn_opts = SpawnOpts::new().with_init_ack(init_ack_tx);
+        let (init_ack_tx, init_ack_rx) = agner_init_ack::new_channel();
+        let spawn_opts = SpawnOpts::new().with_data(init_ack_tx);
         let intermediary_id = system.spawn(actor_behaviour, actor_args, spawn_opts).await?;
 
         let init_ack_result = init_ack_rx
