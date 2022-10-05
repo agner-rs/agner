@@ -23,8 +23,11 @@ pub struct ChildSpec<ID> {
 }
 
 impl<ID> ChildSpec<ID> {
-    pub fn new(id: ID, produce: impl Into<Box<dyn ProduceChild<()>>>) -> Self {
-        let produce = produce.into();
+    pub fn new<P>(id: ID, produce: P) -> Self
+    where
+        P: ProduceChild<()>,
+    {
+        let produce = Box::new(produce);
         Self {
             id,
             produce,

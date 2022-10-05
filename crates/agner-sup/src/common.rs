@@ -9,9 +9,15 @@ pub struct ParentActor(pub ActorID);
 
 pub mod util;
 
-pub mod start_child;
 use agner_actors::ActorID;
-pub use start_child::{InitType, StartChild, StartChildError, WithAck};
+
+mod init_type;
+pub use init_type::{InitType, WithAck};
+
+mod start_child_error;
+pub use start_child_error::StartChildError;
+
+// pub use start_child::{InitType, StartChild, StartChildError, WithAck};
 
 pub mod args_factory;
 pub use args_factory::ArgsFactory;
@@ -20,3 +26,9 @@ mod stop_child;
 
 pub mod produce_child;
 pub use produce_child::ProduceChild;
+
+// FIXME: feature
+mod with_registered_service;
+
+// FIXME: feature
+pub use with_registered_service::WithRegisteredService;

@@ -6,7 +6,7 @@ use agner_test_actor::{TestActor, TestActorRegistry};
 
 use futures::{future, StreamExt};
 
-use crate::common::{args_factory, produce_child, InitType, ProduceChild};
+use crate::common::{args_factory, produce_child, InitType, ProduceChild, WithRegisteredService};
 
 #[derive(Debug, Clone)]
 struct ConnMgrArgs {
@@ -52,27 +52,22 @@ async fn ergonomics() {
         conn_mgr,
         args_factory::clone(ConnMgrArgs { max_conns: 32 }),
         InitType::NoAck,
-        vec![conn_mgr_svc.to_owned()],
-    );
+    )
+    .with_registered_service(conn_mgr_svc.to_owned());
 
     let conn_args = ConnArgs { conn_mgr: conn_mgr_svc };
     let mut conn_spec = produce_child::new(
         conn,
         args_factory::map(move |tcp_stream| (conn_args.to_owned(), tcp_stream)),
         InitType::NoAck,
-        vec![],
     );
 
-    let _conn_mgr_id = conn_mgr_spec
-        .produce(top_sup.actor_id(), ())
-        .start_child(system.to_owned())
-        .await
-        .unwrap();
+    let _conn_mgr_id =
+        conn_mgr_spec.produce(system.to_owned(), top_sup.actor_id(), ()).await.unwrap();
 
     let conn_ids = (0..3)
         .map(TcpStream)
-        .map(|tcp_stream| conn_spec.produce(top_sup.actor_id(), tcp_stream))
-        .map(|start_child| start_child.start_child(system.to_owned()));
+        .map(|tcp_stream| conn_spec.produce(system.to_owned(), top_sup.actor_id(), tcp_stream));
     let _conn_ids = future::join_all(conn_ids)
         .await
         .into_iter()

@@ -7,6 +7,7 @@ use agner::registered::Service;
 use agner::sup::common::{args_factory, produce_child, WithAck};
 use agner::sup::mixed::{self, AllForOne, RestartIntensity};
 use agner::sup::uniform;
+use agner_sup::common::WithRegisteredService;
 use tokio::net::UnixStream;
 use tokio::signal::unix::SignalKind;
 
@@ -37,12 +38,8 @@ fn main() {
 
         let fanout_spec = {
             let args = args_factory::clone(());
-            let produce = produce_child::new(
-                actors::fanout::run,
-                args,
-                WithAck::new(),
-                vec![fanout_svc.to_owned()],
-            );
+            let produce = produce_child::new(actors::fanout::run, args, WithAck::new())
+                .with_registered_service(fanout_svc.to_owned());
             mixed::ChildSpec::new("fanout", produce)
         };
 
@@ -51,27 +48,18 @@ fn main() {
             let args = args_factory::call(move || {
                 let fanout_svc = fanout_svc.to_owned();
                 let args = args_factory::map(move |uds_stream| (fanout_svc.to_owned(), uds_stream));
-                let produce = produce_child::new(
-                    actors::connection::run::<UnixStream>,
-                    args,
-                    WithAck::new(),
-                    vec![],
-                );
+                let produce =
+                    produce_child::new(actors::connection::run::<UnixStream>, args, WithAck::new());
                 uniform::SupSpec::new(produce)
             });
-            let produce = produce_child::new(
-                uniform::run,
-                args,
-                WithAck::new(),
-                vec![uds_conn_sup_svc.to_owned()],
-            );
+            let produce = produce_child::new(uniform::run, args, WithAck::new())
+                .with_registered_service(uds_conn_sup_svc.to_owned());
             mixed::ChildSpec::new("uds-conn-sup", produce)
         };
 
         let interface_spec = {
             let args = args_factory::clone((bind_uds, uds_acceptors_count, uds_conn_sup_svc));
-            let produce =
-                produce_child::new(actors::uds_interface::run, args, WithAck::new(), vec![]);
+            let produce = produce_child::new(actors::uds_interface::run, args, WithAck::new());
             mixed::ChildSpec::new("uds-interface", produce)
         };
 
@@ -314,7 +302,6 @@ mod actors {
                     crate::actors::uds_acceptor::run,
                     args_factory,
                     common::WithAck::new(),
-                    vec![],
                 );
                 let child_spec = mixed::ChildSpec::new(acceptor_id, produce);
                 sup_spec = sup_spec.with_child(child_spec);

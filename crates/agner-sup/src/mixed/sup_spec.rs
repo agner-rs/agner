@@ -27,11 +27,11 @@ fn ergonomics() {
 
     let child_one = ChildSpec::new(
         "first",
-        produce_child::new(actor, args_factory::clone(()), InitType::NoAck, vec![]),
+        produce_child::new(actor, args_factory::clone(()), InitType::NoAck),
     );
     let child_two = ChildSpec::new(
         "second",
-        produce_child::new(actor, args_factory::clone(()), InitType::NoAck, vec![]),
+        produce_child::new(actor, args_factory::clone(()), InitType::NoAck),
     );
 
     let _sup_spec = SupSpec::new(()).with_child(child_one).with_child(child_two);

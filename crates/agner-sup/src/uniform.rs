@@ -93,8 +93,7 @@ where
             Event::Message(Message::Start(args, reply_to)) => {
                 log::trace!("[{}] starting child", context.actor_id());
 
-                let start_child = produce.produce(context.actor_id(), args);
-                let result = start_child.start_child(context.system()).await;
+                let result = produce.produce(context.system(), context.actor_id(), args).await;
 
                 if let Some(actor_id) = result.as_ref().ok().copied() {
                     children.insert(actor_id);
@@ -234,7 +233,6 @@ mod tests {
                 }
             }),
             InitType::NoAck,
-            vec![],
         );
         let sup_spec = SupSpec::new(produce_worker);
 

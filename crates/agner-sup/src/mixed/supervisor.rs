@@ -10,7 +10,7 @@ use agner_utils::std_error_pp::StdErrorPP;
 
 use tokio::sync::oneshot;
 
-use crate::common::{ProduceChild, StartChildError};
+use crate::common::StartChildError;
 use crate::mixed::child_id::ChildID;
 use crate::mixed::restart_strategy::{Action, Decider, RestartStrategy};
 use crate::mixed::sup_spec::SupSpec;
@@ -218,9 +218,9 @@ where
             log::trace!("[{}] starting child[{:?}]", context.actor_id(), child_id);
 
             if let Some(child_spec) = child_specs.get_mut(&child_id) {
-                let start_child = child_spec.produce.produce(context.actor_id(), ());
-                let actor_id = start_child
-                    .start_child(context.system())
+                let actor_id = child_spec
+                    .produce
+                    .produce(context.system(), context.actor_id(), ())
                     .await
                     .map_err(SupervisorError::StartChildFailure)
                     .map_err(Exit::custom)?;

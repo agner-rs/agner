@@ -6,6 +6,7 @@ use agner_registered::Service;
 use agner_test_actor::{TestActor, TestActorRegistry};
 
 use crate::common::start_child::{self, InitType};
+use crate::common::WithRegisteredService;
 
 const SMALL_TIMEOUT: Duration = Duration::from_millis(100);
 
@@ -29,7 +30,6 @@ async fn start_child_no_ack_no_regs() {
         agner_test_actor::behaviour::run,
         child_args,
         InitType::NoAck,
-        [],
     );
 
     let child = {
@@ -63,7 +63,6 @@ async fn start_child_no_ack_with_regs() {
     let s2 = Service::new();
 
     assert!(s1.resolve().is_none());
-    assert!(s2.resolve().is_none());
 
     let sup =
         TestActor::<Infallible>::start(registry.to_owned(), system.to_owned(), Default::default())
@@ -77,11 +76,10 @@ async fn start_child_no_ack_with_regs() {
         agner_test_actor::behaviour::run,
         child_args,
         InitType::NoAck,
-        [s1.to_owned(), s2.to_owned()],
-    );
+    )
+    .with_registered_service(s1.to_owned());
 
     assert!(s1.resolve().is_none());
-    assert!(s2.resolve().is_none());
 
     let child = {
         let child_id = start_child.start_child(system.to_owned()).await.unwrap();
