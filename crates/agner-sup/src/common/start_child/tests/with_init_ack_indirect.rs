@@ -5,7 +5,7 @@ use agner_actors::{Event, Exit, Signal, System};
 use agner_test_actor::{TestActor, TestActorRegistry};
 use futures::future;
 
-use crate::common::start_child::{self, InitType};
+use crate::common::start_child::{self, WithAck};
 use crate::Service;
 
 const SMALL_TIMEOUT: Duration = Duration::from_millis(100);
@@ -37,7 +37,10 @@ async fn start_child_with_ack_no_regs() {
         sup.actor_id(),
         agner_test_actor::behaviour::run,
         child_args,
-        InitType::WithAck { init_timeout: INIT_TIMEOUT, stop_timeout: INIT_CANCEL_TIMEOUT },
+        WithAck::new()
+            .with_init_timeout(INIT_TIMEOUT)
+            .with_stop_timeout(INIT_CANCEL_TIMEOUT)
+            .into(),
         [],
     );
 
@@ -102,7 +105,10 @@ async fn start_child_with_ack_with_regs() {
         sup.actor_id(),
         agner_test_actor::behaviour::run,
         child_args,
-        InitType::WithAck { init_timeout: INIT_TIMEOUT, stop_timeout: INIT_CANCEL_TIMEOUT },
+        WithAck::new()
+            .with_init_timeout(INIT_TIMEOUT)
+            .with_stop_timeout(INIT_CANCEL_TIMEOUT)
+            .into(),
         [s1.to_owned(), s2.to_owned()],
     );
 
@@ -169,7 +175,10 @@ async fn start_child_with_ack_timeout_shutdown() {
         sup.actor_id(),
         agner_test_actor::behaviour::run,
         child_args,
-        InitType::WithAck { init_timeout: INIT_TIMEOUT, stop_timeout: INIT_CANCEL_TIMEOUT },
+        WithAck::new()
+            .with_init_timeout(INIT_TIMEOUT)
+            .with_stop_timeout(INIT_CANCEL_TIMEOUT)
+            .into(),
         [],
     );
 

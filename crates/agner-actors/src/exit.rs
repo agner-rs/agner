@@ -37,8 +37,12 @@ pub enum WellKnown {
     NoActor,
 
     #[error("Shutdown")]
-    Shutdown(#[source] Option<ArcError>),
+    Shutdown(#[source] Shutdown),
 }
+
+#[derive(Debug, Clone, Default, thiserror::Error)]
+#[error("Shutdown")]
+pub struct Shutdown(#[source] pub Option<ArcError>);
 
 #[derive(Debug, Clone, thiserror::Error)]
 pub enum BackendFailure {
@@ -62,6 +66,11 @@ impl From<WellKnown> for Exit {
 impl From<BackendFailure> for Exit {
     fn from(e: BackendFailure) -> Self {
         Self::Backend(e)
+    }
+}
+impl From<Shutdown> for Exit {
+    fn from(shutdown: Shutdown) -> Self {
+        WellKnown::Shutdown(shutdown).into()
     }
 }
 
@@ -98,10 +107,12 @@ impl Exit {
         WellKnown::NoActor.into()
     }
     pub fn shutdown() -> Self {
-        WellKnown::Shutdown(None).into()
+        let shutdown = Shutdown::new();
+        WellKnown::Shutdown(shutdown).into()
     }
     pub fn shutdown_with_source(source: ArcError) -> Self {
-        WellKnown::Shutdown(Some(source)).into()
+        let shutdown = Shutdown::new().with_source(source);
+        WellKnown::Shutdown(shutdown).into()
     }
 
     pub fn custom<E: std::error::Error + Send + Sync + 'static>(e: E) -> Exit {
@@ -115,5 +126,14 @@ impl Exit {
         let s = message.into();
         let b: Box<dyn std::error::Error + Send + Sync + 'static> = s.into();
         Self::Custom(b.into())
+    }
+}
+
+impl Shutdown {
+    pub fn new() -> Self {
+        Default::default()
+    }
+    pub fn with_source(self, source: ArcError) -> Self {
+        Self(Some(source))
     }
 }

@@ -3,7 +3,7 @@ use std::fmt;
 use agner_utils::std_error_pp::StdErrorPP;
 
 use crate::actor_id::ActorID;
-use crate::exit::{Exit, WellKnown};
+use crate::exit::{Exit, Shutdown, WellKnown};
 
 /// `ExitHandler` is an entity that is notified when an actor exits.
 ///
@@ -25,7 +25,7 @@ pub struct NoopExitHandler;
 impl ExitHandler for LogExitHandler {
     fn on_actor_exit(&self, actor_id: ActorID, exit: Exit) {
         match exit {
-            Exit::Standard(WellKnown::Normal | WellKnown::Shutdown(None)) => (),
+            Exit::Standard(WellKnown::Normal | WellKnown::Shutdown(Shutdown(None))) => (),
             Exit::Standard(WellKnown::Linked(offender, reason)) => {
                 log::warn!("[{}] linked {} exited: {}", actor_id, offender, reason.pp());
             },

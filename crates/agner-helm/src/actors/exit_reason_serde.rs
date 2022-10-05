@@ -1,7 +1,7 @@
 use std::error::Error as StdError;
 
 use agner_actors::exit_reason::WellKnown;
-use agner_actors::{ActorID, BoxError, Exit};
+use agner_actors::{ActorID, BoxError, Exit, Shutdown};
 
 // pub struct ExitSerde<'a>(&'a Exit);
 
@@ -89,7 +89,7 @@ impl From<ExitStandardSerde> for WellKnown {
                 Self::Linked(actor_id, Box::new((*reason).into())),
             ExitStandardSerde::NoActor => Self::NoActor,
             ExitStandardSerde::Shutdown(source) =>
-                Self::Shutdown(source.map(BoxError::from).map(Into::into)),
+                Self::Shutdown(Shutdown(source.map(BoxError::from).map(Into::into))),
         }
     }
 }
@@ -102,8 +102,12 @@ impl From<WellKnown> for ExitStandardSerde {
             WellKnown::Linked(actor_id, reason) =>
                 Self::Linked(actor_id, Box::new((*reason).into())),
             WellKnown::NoActor => Self::NoActor,
-            WellKnown::Shutdown(reason) => Self::Shutdown(
-                reason.as_ref().map(AsRef::as_ref).map(GenericError::from_std_error_send_sync),
+            WellKnown::Shutdown(shutdown) => Self::Shutdown(
+                shutdown
+                    .0
+                    .as_ref()
+                    .map(AsRef::as_ref)
+                    .map(GenericError::from_std_error_send_sync),
             ),
         }
     }

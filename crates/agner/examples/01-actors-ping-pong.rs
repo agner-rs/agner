@@ -1,6 +1,6 @@
 use std::time::Instant;
 
-use agner_actors::Exit;
+use agner::actors::Exit;
 use rand::prelude::Distribution;
 
 mod common;
@@ -170,8 +170,7 @@ mod player {
     //!
     //! The winner gets back into the state `Idle`.
 
-    use agner::actors::{ActorID, Context, System};
-    use agner_actors::{Exit, Never};
+    use agner::actors::{ActorID, Context, Exit, Never, System};
     use rand::prelude::Distribution;
     use tokio::sync::oneshot;
 

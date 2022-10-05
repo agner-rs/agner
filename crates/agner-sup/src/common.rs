@@ -11,7 +11,7 @@ pub mod util;
 
 pub mod start_child;
 use agner_actors::ActorID;
-pub use start_child::{InitType, StartChild, StartChildError};
+pub use start_child::{InitType, StartChild, StartChildError, WithAck};
 
 pub mod args_factory;
 pub use args_factory::ArgsFactory;

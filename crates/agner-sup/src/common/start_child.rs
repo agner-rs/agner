@@ -13,6 +13,9 @@ use tokio::sync::oneshot;
 use crate::common::{util, StaticBoxedFuture};
 use crate::service::Service;
 
+const DEFAULT_INIT_TIMEOUT: Duration = Duration::from_secs(5);
+const DEFAULT_STOP_TIMEOUT: Duration = Duration::from_secs(5);
+
 #[cfg(test)]
 mod tests;
 
@@ -67,7 +70,13 @@ pub trait StartChild: fmt::Debug + Send + Sync + 'static {
 #[derive(Debug, Clone, Copy)]
 pub enum InitType {
     NoAck,
-    WithAck { init_timeout: Duration, stop_timeout: Duration },
+    WithAck(WithAck),
+}
+
+#[derive(Debug, Clone, Copy)]
+pub struct WithAck {
+    pub init_timeout: Duration,
+    pub stop_timeout: Duration,
 }
 
 struct StartChildImpl<B, A, M, PS> {
@@ -77,6 +86,39 @@ struct StartChildImpl<B, A, M, PS> {
     actor_args: A,
     actor_message: PhantomData<M>,
     init_type: InitType,
+}
+
+impl InitType {
+    pub fn no_ack() -> Self {
+        Self::NoAck
+    }
+    pub fn with_ack() -> Self {
+        Self::WithAck(Default::default())
+    }
+}
+
+impl WithAck {
+    pub fn new() -> Self {
+        Default::default()
+    }
+    pub fn with_init_timeout(self, init_timeout: Duration) -> Self {
+        Self { init_timeout, ..self }
+    }
+    pub fn with_stop_timeout(self, stop_timeout: Duration) -> Self {
+        Self { stop_timeout, ..self }
+    }
+}
+
+impl Default for WithAck {
+    fn default() -> Self {
+        Self { init_timeout: DEFAULT_INIT_TIMEOUT, stop_timeout: DEFAULT_STOP_TIMEOUT }
+    }
+}
+
+impl From<WithAck> for InitType {
+    fn from(with_ack: WithAck) -> Self {
+        Self::WithAck(with_ack)
+    }
 }
 
 impl<B, A, M, PS> StartChild for StartChildImpl<B, A, M, PS>
@@ -126,7 +168,7 @@ where
 
         let child_id = match this.init_type {
             InitType::NoAck => this.do_start_child_no_ack(&system).await?,
-            InitType::WithAck { init_timeout, stop_timeout: cancel_timeout } =>
+            InitType::WithAck(WithAck { init_timeout, stop_timeout: cancel_timeout }) =>
                 this.do_start_child_init_ack(&system, init_timeout, cancel_timeout).await?,
         };
 
