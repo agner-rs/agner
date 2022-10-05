@@ -25,6 +25,7 @@ use actor_id_pool::ActorIDPool;
 mod errors;
 pub use errors::{SysChannelError, SysSpawnError};
 
+/// A [`System`](crate::system::System) is a scope within which the actors run.
 #[derive(Debug, Clone)]
 pub struct System(Arc<Inner>);
 

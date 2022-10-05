@@ -5,13 +5,20 @@ use agner_utils::std_error_pp::StdErrorPP;
 use crate::actor_id::ActorID;
 use crate::exit::{Exit, WellKnown};
 
+/// `ExitHandler` is an entity that is notified when an actor exits.
+///
+/// Each actor has an `ExitHandler` associated with it.
+/// It is possible to specify an exit-handler for an actor via
+/// [`SpawnOpts::with_exit_handler`](crate::spawn_opts::SpawnOpts::with_exit_handler).
 pub trait ExitHandler: fmt::Debug + Send + Sync + 'static {
     fn on_actor_exit(&self, actor_id: ActorID, exit: Exit);
 }
 
+/// An [`ExitHandler`](crate::exit_handler::ExitHandler) that will log abnormal exits.
 #[derive(Debug, Clone, Copy)]
 pub struct LogExitHandler;
 
+/// A no-op [`ExitHandler`](crate::exit_handler::ExitHandler), i.e. it does nothing.
 #[derive(Debug, Clone, Copy)]
 pub struct NoopExitHandler;
 

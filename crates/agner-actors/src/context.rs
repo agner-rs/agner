@@ -21,12 +21,18 @@ pub struct Context<M> {
     data: HashMap<TypeId, Box<dyn Any + Send + Sync + 'static>>,
 }
 
+/// Either a Message or a [`Signal`](crate::context::Signal) received by an actor.
+///
+/// Note: only actors that ["trap exits"](crate::context::Context::trap_exit) can handle signals.
 #[derive(Debug)]
 pub enum Event<M> {
     Message(M),
     Signal(Signal),
 }
 
+/// A signal received by an actor.
+///
+/// Note: only actors that ["trap exits"](crate::context::Context::trap_exit) can handle signals.
 #[derive(Debug)]
 pub enum Signal {
     Exit(ActorID, Exit),

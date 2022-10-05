@@ -28,6 +28,7 @@ mod exports {
         pub use crate::exit::{BackendFailure, WellKnown};
     }
 
+    /// Standard [exit-handlers](crate::exit_handler::ExitHandler)
     pub mod exit_handlers {
         pub use crate::exit_handler::{LogExitHandler, NoopExitHandler};
     }
