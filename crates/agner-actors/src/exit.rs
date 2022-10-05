@@ -107,4 +107,13 @@ impl Exit {
     pub fn custom<E: std::error::Error + Send + Sync + 'static>(e: E) -> Exit {
         Self::Custom(Arc::new(e))
     }
+
+    pub fn from_message<S>(message: S) -> Exit
+    where
+        S: Into<String>,
+    {
+        let s = message.into();
+        let b: Box<dyn std::error::Error + Send + Sync + 'static> = s.into();
+        Self::Custom(b.into())
+    }
 }
