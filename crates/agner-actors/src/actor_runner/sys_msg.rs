@@ -13,6 +13,10 @@ pub enum SysMsg {
     GetInfo(oneshot::Sender<ActorInfo>),
 }
 
+/// Information about a running actor.
+///
+/// Returned as the result of introspection of an actor (See [`System::actor_info(&self,
+/// ActorID)`](crate::system::System::actor_info))
 #[derive(Debug, Clone)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct ActorInfo {

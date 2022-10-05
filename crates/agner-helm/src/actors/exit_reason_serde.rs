@@ -1,6 +1,7 @@
 use std::error::Error as StdError;
 
-use agner_actors::{ActorID, BoxError, Exit, ExitStandard};
+use agner_actors::exit_reason::WellKnown;
+use agner_actors::{ActorID, BoxError, Exit};
 
 // pub struct ExitSerde<'a>(&'a Exit);
 
@@ -79,7 +80,7 @@ impl From<Exit> for ExitSerde {
     }
 }
 
-impl From<ExitStandardSerde> for ExitStandard {
+impl From<ExitStandardSerde> for WellKnown {
     fn from(from: ExitStandardSerde) -> Self {
         match from {
             ExitStandardSerde::Normal => Self::Normal,
@@ -93,15 +94,15 @@ impl From<ExitStandardSerde> for ExitStandard {
     }
 }
 
-impl From<ExitStandard> for ExitStandardSerde {
-    fn from(exit_standard: ExitStandard) -> Self {
+impl From<WellKnown> for ExitStandardSerde {
+    fn from(exit_standard: WellKnown) -> Self {
         match exit_standard {
-            ExitStandard::Normal => Self::Normal,
-            ExitStandard::Kill => Self::Kill,
-            ExitStandard::Linked(actor_id, reason) =>
+            WellKnown::Normal => Self::Normal,
+            WellKnown::Kill => Self::Kill,
+            WellKnown::Linked(actor_id, reason) =>
                 Self::Linked(actor_id, Box::new((*reason).into())),
-            ExitStandard::NoActor => Self::NoActor,
-            ExitStandard::Shutdown(reason) => Self::Shutdown(
+            WellKnown::NoActor => Self::NoActor,
+            WellKnown::Shutdown(reason) => Self::Shutdown(
                 reason.as_ref().map(AsRef::as_ref).map(GenericError::from_std_error_send_sync),
             ),
         }

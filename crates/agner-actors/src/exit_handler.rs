@@ -3,7 +3,7 @@ use std::fmt;
 use agner_utils::std_error_pp::StdErrorPP;
 
 use crate::actor_id::ActorID;
-use crate::exit::{Exit, ExitStandard};
+use crate::exit::{Exit, WellKnown};
 
 pub trait ExitHandler: fmt::Debug + Send + Sync + 'static {
     fn on_actor_exit(&self, actor_id: ActorID, exit: Exit);
@@ -18,8 +18,8 @@ pub struct NoopExitHandler;
 impl ExitHandler for LogExitHandler {
     fn on_actor_exit(&self, actor_id: ActorID, exit: Exit) {
         match exit {
-            Exit::Standard(ExitStandard::Normal | ExitStandard::Shutdown(None)) => (),
-            Exit::Standard(ExitStandard::Linked(offender, reason)) => {
+            Exit::Standard(WellKnown::Normal | WellKnown::Shutdown(None)) => (),
+            Exit::Standard(WellKnown::Linked(offender, reason)) => {
                 log::warn!("[{}] linked {} exited: {}", actor_id, offender, reason.pp());
             },
             failure => {

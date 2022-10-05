@@ -9,7 +9,7 @@
 //!
 //! # [Actors](crate::actors)
 //!
-//! An actor is an activity that
+//! An actor is an activity with the following properties:
 //! - runs in parallel (implemented as a [`Future`](std::future::Future));
 //! - has a handle ([`ActorID`](crate::actors::ActorID));
 //! - can receive messages;
