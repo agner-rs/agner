@@ -3,6 +3,10 @@ use std::future::Future;
 use crate::context::Context;
 use crate::exit::Exit;
 
+/// A marker trait for actor behaviour function.
+///
+/// It is recommended to rely on the existing implementation of this trait for certain
+/// async-functions, rather than implementing this trait manually.
 pub trait Actor<'a, A, M>: Send + Sync + 'static {
     type Out: Into<Exit>;
     type Fut: Future<Output = Self::Out> + Send + Sync + 'a;

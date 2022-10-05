@@ -36,8 +36,13 @@ mod exports {
 mod imports {
     use std::sync::Arc;
 
+    /// A type that cannot be instantiated.
     pub type Never = futures::never::Never;
+
+    /// Boxed [standard error](std::error::Error)
     pub type BoxError = Box<dyn std::error::Error + Send + Sync + 'static>;
+
+    /// Arc-ed [standard error](std::error::Error)
     pub type ArcError = Arc<dyn std::error::Error + Send + Sync + 'static>;
 }
 

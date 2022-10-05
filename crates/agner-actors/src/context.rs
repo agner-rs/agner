@@ -76,8 +76,45 @@ impl<M> Context<M> {
     pub async fn next_signal(&mut self) -> Signal {
         self.signals.recv().await
     }
+
+    /// Exit with the provided reason
+    pub async fn exit(&mut self, exit_reason: Exit) -> Never {
+        self.backend_call(CallMsg::Exit(exit_reason.into())).await;
+        std::future::pending().await
+    }
+
+    /// Link this actor to another actor.
+    pub async fn link(&mut self, to: ActorID) {
+        self.backend_call(CallMsg::Link(to)).await;
+    }
+
+    /// Unlink this actor from another actor.
+    pub async fn unlink(&mut self, from: ActorID) {
+        self.backend_call(CallMsg::Unlink(from)).await;
+    }
+
+    /// Set whether this actor upon receiving a [`Signal`](crate::context::Signal) will be able to
+    /// handle it (`trap_exit = true`) or crash (`trap_exit = false`).
+    pub async fn trap_exit(&mut self, trap_exit: bool) {
+        self.backend_call(CallMsg::TrapExit(trap_exit)).await;
+    }
+
+    /// Process the provided future "in background" and upon its completion send the output to the
+    /// message-inbox.
+    pub async fn future_to_inbox<F>(&mut self, fut: F)
+    where
+        F: Future + Send + Sync + 'static,
+        F::Output: Into<M>,
+    {
+        self.backend_call(CallMsg::FutureToInbox(Box::pin(async move {
+            let out = fut.await;
+            out.into()
+        })))
+        .await;
+    }
 }
 
+/// "data-bag" related methods
 impl<M> Context<M> {
     pub fn put<D>(&mut self, data: D) -> Option<D>
     where
@@ -126,33 +163,6 @@ impl<M> Context<M> {
     ) -> Self {
         self.data = data;
         self
-    }
-}
-
-impl<M> Context<M> {
-    pub async fn exit(&mut self, exit_reason: Exit) -> Never {
-        self.backend_call(CallMsg::Exit(exit_reason)).await;
-        std::future::pending().await
-    }
-    pub async fn link(&mut self, to: ActorID) {
-        self.backend_call(CallMsg::Link(to)).await;
-    }
-    pub async fn unlink(&mut self, from: ActorID) {
-        self.backend_call(CallMsg::Unlink(from)).await;
-    }
-    pub async fn trap_exit(&mut self, trap_exit: bool) {
-        self.backend_call(CallMsg::TrapExit(trap_exit)).await;
-    }
-    pub async fn future_to_inbox<F>(&mut self, fut: F)
-    where
-        F: Future + Send + Sync + 'static,
-        F::Output: Into<M>,
-    {
-        self.backend_call(CallMsg::FutureToInbox(Box::pin(async move {
-            let out = fut.await;
-            out.into()
-        })))
-        .await;
     }
 }
 

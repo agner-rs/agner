@@ -195,6 +195,10 @@ impl System {
     }
 
     /// Open a channel to the specified actor.
+    ///
+    /// When sending a series of messages to an actor, it may be better from the performance point
+    /// of view to open a channel to an actor, rather than sending each message separately using
+    /// [`System::send::<Message>(&self, ActorID, Message)`](crate::system::System::send).
     pub async fn channel<M>(&self, to: ActorID) -> Result<mpsc::UnboundedSender<M>, SysChannelError>
     where
         M: Send + Sync + 'static,

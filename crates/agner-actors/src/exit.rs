@@ -5,6 +5,10 @@ use crate::imports::ArcError;
 
 mod into_exit;
 
+/// An reason an actor exited.
+///
+/// Exit reasons are supposed to be cheaply cloneable, as when an actor fails each linked actor
+/// receives a signal containing a clone of that reason.
 #[derive(Debug, Clone, thiserror::Error)]
 pub enum Exit {
     #[error("Well known")]
@@ -17,6 +21,7 @@ pub enum Exit {
     Custom(#[source] ArcError),
 }
 
+/// Standard exit reasons.
 #[derive(Debug, Clone, thiserror::Error)]
 pub enum WellKnown {
     #[error("Normal")]
