@@ -1,3 +1,5 @@
+#![cfg(feature = "registered")]
+
 use std::convert::Infallible;
 
 use agner_actors::{Context, System};

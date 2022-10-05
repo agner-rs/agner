@@ -27,8 +27,8 @@ mod stop_child;
 pub mod produce_child;
 pub use produce_child::ProduceChild;
 
-// FIXME: feature
+#[cfg(feature = "registered")]
 mod with_registered_service;
 
-// FIXME: feature
+#[cfg(feature = "registered")]
 pub use with_registered_service::WithRegisteredService;

@@ -10,12 +10,18 @@ description = "An actor toolkit inspired by Erlang/OTP (supervisors)"
 
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+[features]
+default = []
+# default = ["registered"]
+
+registered = ["dep:agner-registered"]
+
 
 [dependencies]
 agner-utils = { path = "../agner-utils", version = "=0.3.8" }
 agner-actors = { path = "../agner-actors", version = "=0.3.8" }
 agner-init-ack = { path = "../agner-init-ack", version = "=0.3.8" }
-agner-registered = { path = "../agner-registered", version = "=0.3.8" }
+agner-registered = { path = "../agner-registered", version = "=0.3.8", optional = true }
 
 futures = "^0.3"
 log = "^0.4"

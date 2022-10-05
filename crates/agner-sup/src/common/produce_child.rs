@@ -2,19 +2,24 @@ use std::fmt;
 use std::marker::PhantomData;
 
 use agner_actors::{Actor, ActorID, System};
-use agner_registered::Service;
+
 use futures::TryFutureExt;
 
-use crate::common::{ArgsFactory, InitType, StaticBoxedFuture, WithRegisteredService};
+use crate::common::{ArgsFactory, InitType, StaticBoxedFuture};
+
+#[cfg(feature = "registered")]
+use crate::common::WithRegisteredService;
+#[cfg(feature = "registered")]
+mod registered;
 
 use crate::common::StartChildError;
 
-mod registered;
 mod start_child;
 
 #[cfg(test)]
 mod tests;
 
+#[cfg(feature = "registered")]
 pub fn new<B, AF, IT, M>(
     actor_behaviour: B,
     actor_args_factory: AF,
@@ -29,16 +34,38 @@ where
     B: Clone,
 {
     let init_type = init_type.into();
-    let produce_child = ProduceChildImpl {
+    ProduceChildImpl {
         actor_behaviour,
         actor_args_factory,
         actor_message: PhantomData::<M>,
         init_type,
 
+        #[cfg(feature = "registered")]
         registered_service: None,
-    };
-    // Box::new(produce_child)
-    produce_child
+    }
+}
+
+#[cfg(not(feature = "registered"))]
+pub fn new<B, AF, IT, M>(
+    actor_behaviour: B,
+    actor_args_factory: AF,
+
+    init_type: IT,
+) -> impl ProduceChild<AF::Input>
+where
+    AF: ArgsFactory,
+    IT: Into<InitType>,
+    B: for<'a> Actor<'a, AF::Output, M>,
+    M: Send + Sync + Unpin + 'static,
+    B: Clone,
+{
+    let init_type = init_type.into();
+    ProduceChildImpl {
+        actor_behaviour,
+        actor_args_factory,
+        actor_message: PhantomData::<M>,
+        init_type,
+    }
 }
 
 pub trait ProduceChild<Args>: fmt::Debug + Send + Sync + 'static {
@@ -56,7 +83,8 @@ struct ProduceChildImpl<B, AF, M> {
     actor_message: PhantomData<M>,
     init_type: InitType,
 
-    registered_service: Option<Service>,
+    #[cfg(feature = "registered")]
+    registered_service: Option<agner_registered::Service>,
 }
 
 // impl<Args> ProduceChild<Args> for Box<dyn ProduceChild<Args>>
@@ -86,13 +114,13 @@ where
         let behaviour = self.actor_behaviour.to_owned();
         let init_type = self.init_type;
 
-        // FIXME: feature
+        #[cfg(feature = "registered")]
         let registered_service = self.registered_service.to_owned();
 
         Box::pin(
             start_child::do_start_child(system.to_owned(), sup_id, behaviour, args, init_type)
                 .and_then(move |child_id| async move {
-                    // FIXME: feature
+                    #[cfg(feature = "registered")]
                     if let Some(service) = registered_service {
                         let reg_guard = service.register(child_id).await;
                         system.put_data(child_id, reg_guard).await;
