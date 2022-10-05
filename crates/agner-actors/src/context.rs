@@ -79,7 +79,7 @@ impl<M> Context<M> {
 
     /// Exit with the provided reason
     pub async fn exit(&mut self, exit_reason: Exit) -> Never {
-        self.backend_call(CallMsg::Exit(exit_reason.into())).await;
+        self.backend_call(CallMsg::Exit(exit_reason)).await;
         std::future::pending().await
     }
 
