@@ -7,7 +7,7 @@ use std::time::Duration;
 
 use agner::actors::Exit;
 use agner::registered::Service;
-use agner::sup::common::{args_factory, produce_child, InitType};
+use agner::sup::common::{args_factory, child_factory, InitType};
 use agner::sup::mixed;
 use agner::test_actor::{TestActor, TestActorRegistry};
 use agner::utils::future_timeout_ext::FutureTimeoutExt;

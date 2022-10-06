@@ -9,13 +9,13 @@ use agner_utils::result_err_flatten::ResultErrFlattenIn;
 pub use child_id::ChildID;
 pub use child_spec::{ChildSpec, ChildType};
 pub use restart_intensity::RestartIntensity;
-pub use restart_strategy::{AllForOne, OneForOne, RestForOne};
+pub use restart_strategy::{AllForOne, OneForOne, RestForOne, RestartStrategy};
 pub use sup_spec::SupSpec;
 pub mod supervisor;
 
 pub mod plumbing {
     pub use super::restart_intensity::{DurationToInstant, ElapsedSince, RestartStats};
-    pub use super::restart_strategy::{Action, Decider, RestartStrategy};
+    pub use super::restart_strategy::{Action, Decider};
 }
 
 pub use supervisor::run;

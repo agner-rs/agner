@@ -19,7 +19,7 @@ impl<ID, RS> SupSpec<ID, RS> {
 
 #[test]
 fn ergonomics() {
-    use crate::common::{args_factory, produce_child, InitType};
+    use crate::common::{args_factory, child_factory, InitType};
     use agner_actors::Context;
     use std::convert::Infallible;
 
@@ -27,11 +27,11 @@ fn ergonomics() {
 
     let child_one = ChildSpec::new(
         "first",
-        produce_child::new(actor, args_factory::clone(()), InitType::NoAck),
+        child_factory::new(actor, args_factory::clone(()), InitType::NoAck),
     );
     let child_two = ChildSpec::new(
         "second",
-        produce_child::new(actor, args_factory::clone(()), InitType::NoAck),
+        child_factory::new(actor, args_factory::clone(()), InitType::NoAck),
     );
 
     let _sup_spec = SupSpec::new(()).with_child(child_one).with_child(child_two);

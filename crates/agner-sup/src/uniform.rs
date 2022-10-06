@@ -9,7 +9,7 @@ use agner_utils::std_error_pp::StdErrorPP;
 
 use tokio::sync::oneshot;
 
-use crate::common::{ProduceChild, StartChildError};
+use crate::common::{ChildFactory, StartChildError};
 
 const DEFAULT_SHUTDOWN_TIMEOUT: Duration = Duration::from_secs(5);
 
@@ -77,7 +77,7 @@ pub async fn run<P, A>(
     sup_spec: SupSpec<P>,
 ) -> Result<Never, Exit>
 where
-    P: ProduceChild<A>,
+    P: ChildFactory<A>,
     A: Unpin + Send + Sync + 'static,
 {
     context.trap_exit(true).await;
@@ -203,7 +203,7 @@ mod tests {
 
     use agner_actors::System;
 
-    use crate::common::{args_factory, produce_child, InitType};
+    use crate::common::{args_factory, child_factory, InitType};
 
     #[tokio::test]
     async fn ergonomics() {
@@ -223,7 +223,7 @@ mod tests {
             tokio::time::sleep(Duration::from_secs(3)).await;
             std::future::pending().await
         }
-        let produce_worker = produce_child::new(
+        let produce_worker = child_factory::new(
             worker,
             args_factory::map({
                 let mut id = 0;

@@ -1,4 +1,4 @@
-use crate::common::produce_child::ProduceChildImpl;
+use crate::common::child_factory::ProduceChildImpl;
 use crate::common::WithRegisteredService;
 
 impl<B, AF, M> WithRegisteredService for ProduceChildImpl<B, AF, M> {

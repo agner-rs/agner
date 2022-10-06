@@ -73,7 +73,7 @@ mod tournament {
     use futures::stream::FuturesUnordered;
     use futures::StreamExt;
 
-    /// A run multiple tours until there remains at most one player.
+    /// Run multiple tours until there remains at most one player.
     ///
     /// Each tour reduces the number of participants: the losers leave, the winners — remain.
     pub async fn run_tournament(system: &System, mut players: Vec<ActorID>) -> Option<ActorID> {

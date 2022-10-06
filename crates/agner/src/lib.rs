@@ -135,19 +135,70 @@
 //!
 //! # Supervision
 //!
-//! A supervisor is a special actor that is responsible for starting, stopping and monitoring its
-//! children.
+//! A supervisor in essence is a special actor that is responsible for starting, stopping, and
+//! monitoring of other actors.
 //!
-//! The supervisor does that using a declarative recipe for spawning its children: supervisor
-//! specification.
+//! ## `ChildFactory<Arg>`
 //!
-//! There are two main types of supervisors:
-//! - uniform children supervisor;
-//! - mixed children supervisor.
+//! A child is started using a special recipe —
+//! [values for which the trait `ChildFactory<Arg>` is defined](crate::sup::common::ChildFactory):
+//! such recipes produce a child actor when provided an argument of type `Arg`.
 //!
-//! ## Uniform Children Supervisor
+//! The child can fail during the attempt to start it — this is considered a *start up failure*.
 //!
-//! ## Mixed Children Supervisor
+//! The child may crash after it has successfully started — this situation is called *runtime
+//! failure*.
+//!
+//!
+//!
+//!
+//! ## `uniform` — a Supervisor for Homogenous Children
+//!
+//! [Uniform Supervisor](crate::sup::uniform::run) is a simpler of two types of supervisors: it
+//! starts children on similar nature on demand, some time after the supervisor is started.
+//!
+//! Although this type of supervisor does not restart its children upon their failure, it keeps
+//! track on them and, upon own shutdown, will terminate all its children.
+//!
+//! The behaviour of the uniform supervisor is defined by its [supervisor
+//! specification](crate::sup::uniform::SupSpec).
+//!
+//! ~~The main property of that supervision specification is a "recipe" to produce a new child —
+//! [`ChildFactory<Arg>`](crate::sup::common::ChildFactory).~~
+//!
+//! Example:
+//! ```
+//! #[derive(Debug, Clone)]
+//! struct Environment;
+//!
+//! #[derive(Debug)]
+//! struct InboundConnection;
+//!
+//! fn start_a_uniform_sup_for_inbound_connections() -> ActorID {
+//!     let produce_child =
+//! }
+//! ```
+//!
+//!
+//!
+//! ## `mixed` — a Supervisor for Heterogenous Children
+//!
+//! [Such supervisor](crate::sup::mixed::run) is a special actor that is responsible for starting,
+//! stopping and monitoring its children.
+//!
+//! The behaviour of mixed supervisor is defined by a [supervisor
+//! specification](crate::sup::mixed::SupSpec).
+//!
+//! The supervisor specification consists of the list of [child
+//! specifications](crate::sup::mixed::ChildSpec) and a [restart
+//! strategy](crate::sup::mixed::RestartStrategy).
+//!
+//! The children are started in the order specified in the supervior specification.
+//! Upon shutdown they are stopped in the reverse order.
+//!
+//! The restart strategy defines the behaviour of the supervisor when a child failure occurs.
+//!
+//! ###
 
 pub mod utils {
     pub use agner_utils::*;

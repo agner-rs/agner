@@ -8,7 +8,7 @@ use agner_test_actor::{TestActor, TestActorRegistry};
 
 use futures::{future, StreamExt};
 
-use crate::common::{args_factory, produce_child, InitType, ProduceChild, WithRegisteredService};
+use crate::common::{args_factory, child_factory, ChildFactory, InitType, WithRegisteredService};
 
 #[derive(Debug, Clone)]
 struct ConnMgrArgs {
@@ -50,7 +50,7 @@ async fn ergonomics() {
         .unwrap();
 
     let conn_mgr_svc = Service::new();
-    let mut conn_mgr_spec = produce_child::new(
+    let mut conn_mgr_spec = child_factory::new(
         conn_mgr,
         args_factory::clone(ConnMgrArgs { max_conns: 32 }),
         InitType::NoAck,
@@ -58,7 +58,7 @@ async fn ergonomics() {
     .with_registered_service(conn_mgr_svc.to_owned());
 
     let conn_args = ConnArgs { conn_mgr: conn_mgr_svc };
-    let mut conn_spec = produce_child::new(
+    let mut conn_spec = child_factory::new(
         conn,
         args_factory::map(move |tcp_stream| (conn_args.to_owned(), tcp_stream)),
         InitType::NoAck,

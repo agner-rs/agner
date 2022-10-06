@@ -17,15 +17,18 @@ pub use init_type::{InitType, WithAck};
 mod start_child_error;
 pub use start_child_error::StartChildError;
 
-// pub use start_child::{InitType, StartChild, StartChildError, WithAck};
-
 pub mod args_factory;
 pub use args_factory::ArgsFactory;
 
 mod stop_child;
 
-pub mod produce_child;
-pub use produce_child::ProduceChild;
+pub mod child_factory;
+pub use child_factory::ChildFactory;
+
+#[deprecated(since = "0.3.10")]
+pub use child_factory as produce_child;
+#[deprecated(since = "0.3.10")]
+pub use child_factory::ChildFactory as ProduceChild;
 
 #[cfg(feature = "reg")]
 mod with_registered_service;

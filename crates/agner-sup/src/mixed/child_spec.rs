@@ -2,7 +2,7 @@ use std::time::Duration;
 
 use agner_actors::Exit;
 
-use crate::common::produce_child::ProduceChild;
+use crate::common::child_factory::ChildFactory;
 
 pub const DEFAULT_SHUTDOWN_TIMEOUT: Duration = Duration::from_secs(5);
 pub const DEFAULT_KILL_TIMEOUT: Duration = Duration::from_secs(5);
@@ -17,7 +17,7 @@ pub enum ChildType {
 #[derive(Debug)]
 pub struct ChildSpec<ID> {
     pub id: ID,
-    pub produce: Box<dyn ProduceChild<()>>,
+    pub produce: Box<dyn ChildFactory<()>>,
     pub child_type: ChildType,
     pub shutdown: Vec<(Exit, Duration)>,
 }
@@ -25,7 +25,7 @@ pub struct ChildSpec<ID> {
 impl<ID> ChildSpec<ID> {
     pub fn new<P>(id: ID, produce: P) -> Self
     where
-        P: ProduceChild<()>,
+        P: ChildFactory<()>,
     {
         let produce = Box::new(produce);
         Self {

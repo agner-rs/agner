@@ -25,7 +25,7 @@ pub fn new<B, AF, IT, M>(
     actor_args_factory: AF,
 
     init_type: IT,
-) -> impl ProduceChild<AF::Input> + WithRegisteredService
+) -> impl ChildFactory<AF::Input> + WithRegisteredService
 where
     AF: ArgsFactory,
     IT: Into<InitType>,
@@ -51,7 +51,7 @@ pub fn new<B, AF, IT, M>(
     actor_args_factory: AF,
 
     init_type: IT,
-) -> impl ProduceChild<AF::Input>
+) -> impl ChildFactory<AF::Input>
 where
     AF: ArgsFactory,
     IT: Into<InitType>,
@@ -68,7 +68,7 @@ where
     }
 }
 
-pub trait ProduceChild<Args>: fmt::Debug + Send + Sync + 'static {
+pub trait ChildFactory<Args>: fmt::Debug + Send + Sync + 'static {
     fn produce(
         &mut self,
         system: System,
@@ -96,7 +96,7 @@ struct ProduceChildImpl<B, AF, M> {
 //     }
 // }
 
-impl<B, AF, M> ProduceChild<AF::Input> for ProduceChildImpl<B, AF, M>
+impl<B, AF, M> ChildFactory<AF::Input> for ProduceChildImpl<B, AF, M>
 where
     AF: ArgsFactory,
     B: for<'a> Actor<'a, AF::Output, M>,

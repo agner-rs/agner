@@ -4,7 +4,7 @@ use std::time::Duration;
 
 use agner::actors::Exit;
 use agner::reg::Service;
-use agner::sup::common::{args_factory, produce_child, WithAck, WithRegisteredService};
+use agner::sup::common::{args_factory, child_factory, WithAck, WithRegisteredService};
 use agner::sup::mixed::{self, AllForOne, RestartIntensity};
 use agner::sup::uniform;
 use tokio::net::UnixStream;
@@ -37,7 +37,7 @@ fn main() {
 
         let fanout_spec = {
             let args = args_factory::clone(());
-            let produce = produce_child::new(actors::fanout::run, args, WithAck::new())
+            let produce = child_factory::new(actors::fanout::run, args, WithAck::new())
                 .with_registered_service(fanout_svc.to_owned());
             mixed::ChildSpec::new("fanout", produce)
         };
@@ -48,17 +48,17 @@ fn main() {
                 let fanout_svc = fanout_svc.to_owned();
                 let args = args_factory::map(move |uds_stream| (fanout_svc.to_owned(), uds_stream));
                 let produce =
-                    produce_child::new(actors::connection::run::<UnixStream>, args, WithAck::new());
+                    child_factory::new(actors::connection::run::<UnixStream>, args, WithAck::new());
                 uniform::SupSpec::new(produce)
             });
-            let produce = produce_child::new(uniform::run, args, WithAck::new())
+            let produce = child_factory::new(uniform::run, args, WithAck::new())
                 .with_registered_service(uds_conn_sup_svc.to_owned());
             mixed::ChildSpec::new("uds-conn-sup", produce)
         };
 
         let interface_spec = {
             let args = args_factory::clone((bind_uds, uds_acceptors_count, uds_conn_sup_svc));
-            let produce = produce_child::new(actors::uds_interface::run, args, WithAck::new());
+            let produce = child_factory::new(actors::uds_interface::run, args, WithAck::new());
             mixed::ChildSpec::new("uds-interface", produce)
         };
 
@@ -297,7 +297,7 @@ mod actors {
             for acceptor_id in 0..acceptors_count {
                 let args_factory =
                     common::args_factory::clone((uds_listener.to_owned(), conn_sup.to_owned()));
-                let produce = common::produce_child::new(
+                let produce = common::child_factory::new(
                     crate::actors::uds_acceptor::run,
                     args_factory,
                     common::WithAck::new(),
