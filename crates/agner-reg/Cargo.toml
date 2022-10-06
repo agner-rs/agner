@@ -1,6 +1,6 @@
 [package]
 name = "agner-reg"
-version = "0.3.9"
+version = "0.3.10"
 edition = "2021"
 
 authors = ["Raman Hafiyatulin <r.gafiyatullin@me.com>"]
@@ -11,7 +11,7 @@ description = "An actor toolkit inspired by Erlang/OTP (reg)"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-agner-actors = { path = "../agner-actors", version = "=0.3.9" }
+agner-actors = { path = "../agner-actors", version = "=0.3.10" }
 
 arc-swap = { version = "^1", features = ["weak"] }
 tokio = { version = "^1", features = ["sync"] }

@@ -1,6 +1,6 @@
 [package]
 name = "agner-init-ack"
-version = "0.3.9"
+version = "0.3.10"
 edition = "2021"
 
 authors = ["Raman Hafiyatulin <r.gafiyatullin@me.com>"]
@@ -11,8 +11,8 @@ description = "An actor toolkit inspired by Erlang/OTP (init-ack)"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-agner-utils = { path = "../agner-utils", version = "=0.3.9" }
-agner-actors = { path = "../agner-actors", version = "=0.3.9" }
+agner-utils = { path = "../agner-utils", version = "=0.3.10" }
+agner-actors = { path = "../agner-actors", version = "=0.3.10" }
 
 futures = "^0.3"
 pin-project = "^1"
