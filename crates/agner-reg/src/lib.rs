@@ -22,7 +22,7 @@ impl Service {
     pub fn new() -> Self {
         Default::default()
     }
-    
+
     pub async fn register(&self, actor_id: ActorID) -> Registered {
         let arc = Arc::new(actor_id);
         let weak = Arc::downgrade(&arc);

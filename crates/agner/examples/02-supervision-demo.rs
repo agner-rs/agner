@@ -37,34 +37,29 @@ fn main() {
         let fanout_svc = Service::new();
         let uds_conn_sup_svc = Service::new();
 
-        let fanout_spec = MixedChildSpec::id("fanout")
-            .behaviour(actors::fanout::run)
-            .args_clone(())
-            .register(fanout_svc.to_owned());
-
-        let conn_sup_spec = {
-            let fanout_svc = fanout_svc.to_owned();
-
-            let uniform_child_spec = UniformChildSpec::new()
-                .behaviour(actors::connection::run::<UnixStream>)
-                .args_call1(move |uds_stream| (fanout_svc.to_owned(), uds_stream));
-            let uniform_sup_spec = uniform::SupSpec::new(uniform_child_spec);
-
-            MixedChildSpec::id("uds-conn-sup")
-                .behaviour(uniform::run)
-                .args_clone(uniform_sup_spec)
-                .init_type(WithAck::new())
-                .register(uds_conn_sup_svc.to_owned())
-        };
-
-        let interface_spec = MixedChildSpec::id("uds-interface")
-            .behaviour(actors::uds_interface::run)
-            .args_clone((bind_uds, uds_acceptors_count, uds_conn_sup_svc));
-
         let top_sup_spec = mixed::SupSpec::new(restart_strategy)
-            .with_child(fanout_spec)
-            .with_child(conn_sup_spec)
-            .with_child(interface_spec);
+            .with_child(
+                MixedChildSpec::id("fanout")
+                    .behaviour(actors::fanout::run)
+                    .args_clone(())
+                    .register(fanout_svc.to_owned()),
+            )
+            .with_child(
+                MixedChildSpec::id("uds-conn-sup")
+                    .behaviour(uniform::run)
+                    .args_clone(uniform::SupSpec::new(
+                        UniformChildSpec::new()
+                            .behaviour(actors::connection::run::<UnixStream>)
+                            .args_call1(move |uds_stream| (fanout_svc.to_owned(), uds_stream)),
+                    ))
+                    .init_type(WithAck::new())
+                    .register(uds_conn_sup_svc.to_owned()),
+            )
+            .with_child(
+                MixedChildSpec::id("uds-interface")
+                    .behaviour(actors::uds_interface::run)
+                    .args_clone((bind_uds, uds_acceptors_count, uds_conn_sup_svc.to_owned())),
+            );
 
         let top_sup = system
             .spawn(mixed::run, top_sup_spec, Default::default())
