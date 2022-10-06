@@ -4,9 +4,11 @@ use std::time::Duration;
 
 use agner::actors::Exit;
 use agner::reg::Service;
-use agner::sup::common::{args_factory, child_factory, WithAck, WithRegisteredService};
+use agner::sup::common::WithAck;
 use agner::sup::mixed::{self, AllForOne, RestartIntensity};
 use agner::sup::uniform;
+use agner_sup::mixed::MixedChildSpec;
+use agner_sup::uniform::UniformChildSpec;
 use tokio::net::UnixStream;
 use tokio::signal::unix::SignalKind;
 
@@ -35,32 +37,29 @@ fn main() {
         let fanout_svc = Service::new();
         let uds_conn_sup_svc = Service::new();
 
-        let fanout_spec = {
-            let args = args_factory::clone(());
-            let produce = child_factory::new(actors::fanout::run, args, WithAck::new())
-                .with_registered_service(fanout_svc.to_owned());
-            mixed::ChildSpec::new("fanout", produce)
-        };
+        let fanout_spec = MixedChildSpec::id("fanout")
+            .behaviour(actors::fanout::run)
+            .args_clone(())
+            .register(fanout_svc.to_owned());
 
         let conn_sup_spec = {
             let fanout_svc = fanout_svc.to_owned();
-            let args = args_factory::call(move || {
-                let fanout_svc = fanout_svc.to_owned();
-                let args = args_factory::map(move |uds_stream| (fanout_svc.to_owned(), uds_stream));
-                let produce =
-                    child_factory::new(actors::connection::run::<UnixStream>, args, WithAck::new());
-                uniform::SupSpec::new(produce)
-            });
-            let produce = child_factory::new(uniform::run, args, WithAck::new())
-                .with_registered_service(uds_conn_sup_svc.to_owned());
-            mixed::ChildSpec::new("uds-conn-sup", produce)
+
+            let uniform_child_spec = UniformChildSpec::new()
+                .behaviour(actors::connection::run::<UnixStream>)
+                .args_call1(move |uds_stream| (fanout_svc.to_owned(), uds_stream));
+            let uniform_sup_spec = uniform::SupSpec::new(uniform_child_spec);
+
+            MixedChildSpec::id("uds-conn-sup")
+                .behaviour(uniform::run)
+                .args_clone(uniform_sup_spec)
+                .init_type(WithAck::new())
+                .register(uds_conn_sup_svc.to_owned())
         };
 
-        let interface_spec = {
-            let args = args_factory::clone((bind_uds, uds_acceptors_count, uds_conn_sup_svc));
-            let produce = child_factory::new(actors::uds_interface::run, args, WithAck::new());
-            mixed::ChildSpec::new("uds-interface", produce)
-        };
+        let interface_spec = MixedChildSpec::id("uds-interface")
+            .behaviour(actors::uds_interface::run)
+            .args_clone((bind_uds, uds_acceptors_count, uds_conn_sup_svc));
 
         let top_sup_spec = mixed::SupSpec::new(restart_strategy)
             .with_child(fanout_spec)
@@ -269,8 +268,10 @@ mod actors {
         use agner::actors::{Context, Exit, SpawnOpts};
         use agner::init_ack::InitAckTx;
         use agner::reg::Service;
+        use agner::sup::mixed;
         use agner::sup::mixed::{OneForOne, RestartIntensity};
-        use agner::sup::{common, mixed};
+        use agner_sup::common::WithAck;
+        use agner_sup::mixed::MixedChildSpec;
         use tokio::net::UnixListener;
 
         #[derive(Debug)]
@@ -295,14 +296,11 @@ mod actors {
             let mut sup_spec = mixed::SupSpec::new(restart_strategy);
 
             for acceptor_id in 0..acceptors_count {
-                let args_factory =
-                    common::args_factory::clone((uds_listener.to_owned(), conn_sup.to_owned()));
-                let produce = common::child_factory::new(
-                    crate::actors::uds_acceptor::run,
-                    args_factory,
-                    common::WithAck::new(),
-                );
-                let child_spec = mixed::ChildSpec::new(acceptor_id, produce);
+                let child_spec = MixedChildSpec::id(acceptor_id)
+                    .behaviour(crate::actors::uds_acceptor::run)
+                    .args_clone((uds_listener.to_owned(), conn_sup.to_owned()))
+                    .init_type(WithAck::new());
+
                 sup_spec = sup_spec.with_child(child_spec);
             }
 

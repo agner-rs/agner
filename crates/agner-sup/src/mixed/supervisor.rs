@@ -14,12 +14,12 @@ use crate::common::StartChildError;
 use crate::mixed::child_id::ChildID;
 use crate::mixed::restart_strategy::{Action, Decider, RestartStrategy};
 use crate::mixed::sup_spec::SupSpec;
-use crate::mixed::ChildSpec;
+use crate::mixed::FlatMixedChildSpec;
 
 #[derive(Debug)]
 pub enum Message<ID> {
     TerminateChild(ID, oneshot::Sender<Result<Exit, SupervisorError>>),
-    StartChild(ChildSpec<ID>, oneshot::Sender<Result<ActorID, SupervisorError>>),
+    StartChild(Box<dyn FlatMixedChildSpec<ID>>, oneshot::Sender<Result<ActorID, SupervisorError>>),
     WhichChildren(oneshot::Sender<Vec<(ID, ActorID)>>),
     Noop,
 }
@@ -45,14 +45,16 @@ where
     let mut decider = restart_strategy.new_decider(context.actor_id());
     let mut child_ids: Vec<ID> = vec![];
     let mut child_actors: HashMap<ID, ActorID> = Default::default();
-    let mut child_specs: HashMap<ID, ChildSpec<ID>> = Default::default();
+    let mut child_specs: HashMap<ID, Box<dyn FlatMixedChildSpec<ID>>> = Default::default();
     let mut subscribers_up: HashMap<ID, oneshot::Sender<Result<ActorID, SupervisorError>>> =
         Default::default();
 
     for child_spec in children {
-        decider.add_child(child_spec.id, child_spec.child_type).map_err(Exit::custom)?;
-        child_ids.push(child_spec.id);
-        assert!(child_specs.insert(child_spec.id, child_spec).is_none());
+        decider
+            .add_child(child_spec.id(), child_spec.child_type())
+            .map_err(Exit::custom)?;
+        child_ids.push(child_spec.id());
+        assert!(child_specs.insert(child_spec.id(), child_spec).is_none());
     }
 
     let mut decider_has_actions = true;
@@ -137,7 +139,7 @@ async fn handle_message<ID, D>(
     decider: &mut D,
     child_ids: &mut Vec<ID>,
     child_actors: &mut HashMap<ID, ActorID>,
-    child_specs: &mut HashMap<ID, ChildSpec<ID>>,
+    child_specs: &mut HashMap<ID, Box<dyn FlatMixedChildSpec<ID>>>,
     subscribers_up: &mut HashMap<ID, oneshot::Sender<Result<ActorID, SupervisorError>>>,
     message: Message<ID>,
 ) -> Result<(), Exit>
@@ -176,10 +178,10 @@ where
             Ok(())
         },
         Message::StartChild(child_spec, reply_to) => {
-            let child_id = child_spec.id;
+            let child_id = child_spec.id();
 
             if let HashMapEntry::Vacant(vacant) = child_specs.entry(child_id) {
-                decider.add_child(child_id, child_spec.child_type).map_err(Exit::custom)?;
+                decider.add_child(child_id, child_spec.child_type()).map_err(Exit::custom)?;
                 child_ids.push(child_id);
                 vacant.insert(child_spec);
                 subscribers_up.insert(child_id, reply_to);
@@ -195,7 +197,7 @@ where
 async fn process_action<ID, D>(
     context: &mut Context<Message<ID>>,
     decider: &mut D,
-    child_specs: &mut HashMap<ID, ChildSpec<ID>>,
+    child_specs: &mut HashMap<ID, Box<dyn FlatMixedChildSpec<ID>>>,
     child_actors: &mut HashMap<ID, ActorID>,
     subscribers_up: &mut HashMap<ID, oneshot::Sender<Result<ActorID, SupervisorError>>>,
     action: Action<ID>,
@@ -219,8 +221,7 @@ where
 
             if let Some(child_spec) = child_specs.get_mut(&child_id) {
                 let actor_id = child_spec
-                    .produce
-                    .produce(context.system(), context.actor_id(), ())
+                    .create_child(&context.system(), context.actor_id(), ())
                     .await
                     .map_err(SupervisorError::StartChildFailure)
                     .map_err(Exit::custom)?;
@@ -244,7 +245,7 @@ where
                 crate::common::util::try_exit(
                     context.system(),
                     actor_id,
-                    child_spec.shutdown.to_owned(),
+                    child_spec.shutdown().to_owned(),
                 )
                 .await
                 .map_err(Exit::custom)?;

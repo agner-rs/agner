@@ -7,7 +7,7 @@ mod sup_spec;
 use agner_actors::{ActorID, Exit, System};
 use agner_utils::result_err_flatten::ResultErrFlattenIn;
 pub use child_id::ChildID;
-pub use child_spec::{ChildSpec, ChildType};
+pub use child_spec::{ChildType, FlatMixedChildSpec, MixedChildSpec};
 pub use restart_intensity::RestartIntensity;
 pub use restart_strategy::{AllForOne, OneForOne, RestForOne, RestartStrategy};
 pub use sup_spec::SupSpec;
@@ -23,16 +23,17 @@ use tokio::sync::oneshot;
 
 use self::supervisor::SupervisorError;
 
-pub async fn start_child<ID>(
+pub async fn start_child<ID, CS>(
     system: &System,
     sup: ActorID,
-    child_spec: ChildSpec<ID>,
+    child_spec: CS,
 ) -> Result<ActorID, SupervisorError>
 where
     ID: ChildID,
+    CS: Into<Box<dyn FlatMixedChildSpec<ID>>>,
 {
     let (tx, rx) = oneshot::channel();
-    let message = supervisor::Message::StartChild(child_spec, tx);
+    let message = supervisor::Message::StartChild(child_spec.into(), tx);
     system.send(sup, message).await;
     rx.await.err_flatten_in()
 }

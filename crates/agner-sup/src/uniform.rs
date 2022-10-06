@@ -9,7 +9,9 @@ use agner_utils::std_error_pp::StdErrorPP;
 
 use tokio::sync::oneshot;
 
-use crate::common::{ChildFactory, StartChildError};
+use crate::common::{CreateChild, GenChildSpec, StartChildError};
+
+pub type UniformChildSpec<B, A, M> = GenChildSpec<B, A, M, ()>;
 
 const DEFAULT_SHUTDOWN_TIMEOUT: Duration = Duration::from_secs(5);
 
@@ -58,32 +60,32 @@ pub enum Message<InArgs> {
 }
 
 #[derive(Debug, Clone)]
-pub struct SupSpec<P> {
+pub struct SupSpec<CS> {
     shutdown_timeout: Duration,
-    child_factory: P,
+    child_spec: CS,
 }
 
-impl<P> SupSpec<P> {
-    pub fn new(child_factory: P) -> Self {
-        Self { shutdown_timeout: DEFAULT_SHUTDOWN_TIMEOUT, child_factory }
+impl<CS> SupSpec<CS> {
+    pub fn new(child_spec: CS) -> Self {
+        Self { shutdown_timeout: DEFAULT_SHUTDOWN_TIMEOUT, child_spec }
     }
     pub fn with_shutdown_timeout(self, shutdown_timeout: Duration) -> Self {
         Self { shutdown_timeout, ..self }
     }
 }
 
-pub async fn run<P, A>(
+pub async fn run<CS, A>(
     context: &mut Context<Message<A>>,
-    sup_spec: SupSpec<P>,
+    sup_spec: SupSpec<CS>,
 ) -> Result<Never, Exit>
 where
-    P: ChildFactory<A>,
+    CS: CreateChild<Args = A>,
     A: Unpin + Send + Sync + 'static,
 {
     context.trap_exit(true).await;
     context.init_ack_ok(Default::default());
 
-    let SupSpec { shutdown_timeout, mut child_factory } = sup_spec;
+    let SupSpec { shutdown_timeout, mut child_spec } = sup_spec;
 
     let mut shutting_down = None;
     let mut children: HashSet<ActorID> = Default::default();
@@ -93,7 +95,8 @@ where
             Event::Message(Message::Start(args, reply_to)) => {
                 log::trace!("[{}] starting child", context.actor_id());
 
-                let result = child_factory.produce(context.system(), context.actor_id(), args).await;
+                let result =
+                    child_spec.create_child(&context.system(), context.actor_id(), args).await;
 
                 if let Some(actor_id) = result.as_ref().ok().copied() {
                     children.insert(actor_id);
@@ -203,7 +206,7 @@ mod tests {
 
     use agner_actors::System;
 
-    use crate::common::{args_factory, child_factory, InitType};
+    use crate::common::InitType;
 
     #[tokio::test]
     async fn ergonomics() {
@@ -223,18 +226,18 @@ mod tests {
             tokio::time::sleep(Duration::from_secs(3)).await;
             std::future::pending().await
         }
-        let produce_worker = child_factory::new(
-            worker,
-            args_factory::map({
+        let child_spec = UniformChildSpec::new()
+            .behaviour(worker)
+            .args_call1({
                 let mut id = 0;
-                move |name: &'static str| -> (usize, &'static str) {
+                move |name| {
                     id += 1;
                     (id, name)
                 }
-            }),
-            InitType::NoAck,
-        );
-        let sup_spec = SupSpec::new(produce_worker);
+            })
+            .init_type(InitType::no_ack());
+
+        let sup_spec = SupSpec::new(child_spec);
 
         let system = System::new(Default::default());
         let sup = system.spawn(crate::uniform::run, sup_spec, Default::default()).await.unwrap();
