@@ -149,7 +149,8 @@
 //! The child may crash after it has successfully started — this situation is called *runtime
 //! failure*.
 //!
-//!
+//! Instances of `ChildFactory<Arg>` are created using the [`child_factory::new`
+//! function](crate::sup::common::child_factory::new)
 //!
 //!
 //! ## `uniform` — a Supervisor for Homogenous Children
@@ -168,14 +169,31 @@
 //!
 //! Example:
 //! ```
+//! use agner::actors::System;
+//! use agner::actors::ActorID;
+//! use agner::actors::Never;
+//! use agner::actors::Context;
+//! use agner::actors::Exit;
+//! use agner::sup::common::child_factory;
+//! use agner::sup::common::args_factory;
+//! use agner::sup::common::InitType;
+//! use agner::sup::uniform;
+//!
 //! #[derive(Debug, Clone)]
 //! struct Environment;
 //!
 //! #[derive(Debug)]
 //! struct InboundConnection;
+//! 
+//! async fn connection(context: &mut Context<Never>, (env, conn): (Environment, InboundConnection)) -> Result<Never, Exit> {
+//!     Err(Exit::from_message("not actually implemented"))
+//! }
 //!
-//! fn start_a_uniform_sup_for_inbound_connections() -> ActorID {
-//!     let produce_child =
+//! async fn start_a_uniform_sup_for_inbound_connections(system: &System, env: Environment) -> ActorID {
+//!     let args_factory = args_factory::map(move |conn| (env.to_owned(), conn));
+//!     let child_factory = child_factory::new(connection, args_factory, InitType::no_ack());
+//!     let sup_spec = uniform::SupSpec::new(child_factory);
+//!     system.spawn(uniform::run, sup_spec, Default::default()).await.expect("Failed to spawn the supervisor")
 //! }
 //! ```
 //!

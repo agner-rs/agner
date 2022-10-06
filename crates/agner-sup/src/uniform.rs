@@ -60,12 +60,12 @@ pub enum Message<InArgs> {
 #[derive(Debug, Clone)]
 pub struct SupSpec<P> {
     shutdown_timeout: Duration,
-    produce: P,
+    child_factory: P,
 }
 
 impl<P> SupSpec<P> {
-    pub fn new(produce: P) -> Self {
-        Self { shutdown_timeout: DEFAULT_SHUTDOWN_TIMEOUT, produce }
+    pub fn new(child_factory: P) -> Self {
+        Self { shutdown_timeout: DEFAULT_SHUTDOWN_TIMEOUT, child_factory }
     }
     pub fn with_shutdown_timeout(self, shutdown_timeout: Duration) -> Self {
         Self { shutdown_timeout, ..self }
@@ -83,7 +83,7 @@ where
     context.trap_exit(true).await;
     context.init_ack_ok(Default::default());
 
-    let SupSpec { shutdown_timeout, mut produce } = sup_spec;
+    let SupSpec { shutdown_timeout, mut child_factory } = sup_spec;
 
     let mut shutting_down = None;
     let mut children: HashSet<ActorID> = Default::default();
@@ -93,7 +93,7 @@ where
             Event::Message(Message::Start(args, reply_to)) => {
                 log::trace!("[{}] starting child", context.actor_id());
 
-                let result = produce.produce(context.system(), context.actor_id(), args).await;
+                let result = child_factory.produce(context.system(), context.actor_id(), args).await;
 
                 if let Some(actor_id) = result.as_ref().ok().copied() {
                     children.insert(actor_id);
