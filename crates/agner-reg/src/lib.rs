@@ -22,11 +22,7 @@ impl Service {
     pub fn new() -> Self {
         Default::default()
     }
-
-    #[deprecated(since = "0.3.5")]
-    pub fn new_with_label(_label: impl Into<Box<str>>) -> Self {
-        Self::new()
-    }
+    
     pub async fn register(&self, actor_id: ActorID) -> Registered {
         let arc = Arc::new(actor_id);
         let weak = Arc::downgrade(&arc);
