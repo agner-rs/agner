@@ -1,0 +1,17 @@
+name: Rust
+
+on:
+  push:
+    branches: [ "main", "dev" ]
+  pull_request:
+    branches: [ "main", "dev" ]
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  coverage:
+    - name: rust-tarpaulin
+      uses: actions-rs/tarpaulin@v0.1.0
+
+
