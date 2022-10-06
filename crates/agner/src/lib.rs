@@ -162,9 +162,9 @@ pub mod init_ack {
     pub use agner_init_ack::*;
 }
 
-#[cfg(feature = "registered")]
-pub mod registered {
-    pub use agner_registered::*;
+#[cfg(feature = "reg")]
+pub mod reg {
+    pub use agner_reg::*;
 }
 
 #[cfg(feature = "sup")]

@@ -27,8 +27,8 @@ mod stop_child;
 pub mod produce_child;
 pub use produce_child::ProduceChild;
 
-#[cfg(feature = "registered")]
+#[cfg(feature = "reg")]
 mod with_registered_service;
 
-#[cfg(feature = "registered")]
+#[cfg(feature = "reg")]
 pub use with_registered_service::WithRegisteredService;

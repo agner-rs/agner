@@ -7,9 +7,9 @@ use futures::TryFutureExt;
 
 use crate::common::{ArgsFactory, InitType, StaticBoxedFuture};
 
-#[cfg(feature = "registered")]
+#[cfg(feature = "reg")]
 use crate::common::WithRegisteredService;
-#[cfg(feature = "registered")]
+#[cfg(feature = "reg")]
 mod registered;
 
 use crate::common::StartChildError;
@@ -19,7 +19,7 @@ mod start_child;
 #[cfg(test)]
 mod tests;
 
-#[cfg(feature = "registered")]
+#[cfg(feature = "reg")]
 pub fn new<B, AF, IT, M>(
     actor_behaviour: B,
     actor_args_factory: AF,
@@ -40,12 +40,12 @@ where
         actor_message: PhantomData::<M>,
         init_type,
 
-        #[cfg(feature = "registered")]
+        #[cfg(feature = "reg")]
         registered_service: None,
     }
 }
 
-#[cfg(not(feature = "registered"))]
+#[cfg(not(feature = "reg"))]
 pub fn new<B, AF, IT, M>(
     actor_behaviour: B,
     actor_args_factory: AF,
@@ -83,8 +83,8 @@ struct ProduceChildImpl<B, AF, M> {
     actor_message: PhantomData<M>,
     init_type: InitType,
 
-    #[cfg(feature = "registered")]
-    registered_service: Option<agner_registered::Service>,
+    #[cfg(feature = "reg")]
+    registered_service: Option<agner_reg::Service>,
 }
 
 // impl<Args> ProduceChild<Args> for Box<dyn ProduceChild<Args>>
@@ -114,13 +114,13 @@ where
         let behaviour = self.actor_behaviour.to_owned();
         let init_type = self.init_type;
 
-        #[cfg(feature = "registered")]
+        #[cfg(feature = "reg")]
         let registered_service = self.registered_service.to_owned();
 
         Box::pin(
             start_child::do_start_child(system.to_owned(), sup_id, behaviour, args, init_type)
                 .and_then(move |child_id| async move {
-                    #[cfg(feature = "registered")]
+                    #[cfg(feature = "reg")]
                     if let Some(service) = registered_service {
                         let reg_guard = service.register(child_id).await;
                         system.put_data(child_id, reg_guard).await;

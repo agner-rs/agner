@@ -12,16 +12,16 @@ description = "An actor toolkit inspired by Erlang/OTP"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [features]
-default = ["init-ack", "registered", "sup"]
+default = ["init-ack", "reg", "sup"]
 # default = ["full"]
 
-full = ["init-ack", "registered", "sup", "helm", "test-actor"]
+full = ["init-ack", "reg", "sup", "helm", "test-actor"]
 
 serde = ["agner-actors/serde"]
 
 # Components
 init-ack = ["dep:agner-init-ack"]
-registered = ["dep:agner-registered"]
+reg = ["dep:agner-reg", "agner-sup?/reg"]
 sup = ["dep:agner-sup"]
 helm = ["dep:agner-helm"]
 test-actor = ["dep:agner-test-actor"]
@@ -30,7 +30,7 @@ test-actor = ["dep:agner-test-actor"]
 agner-utils = { path = "../agner-utils", version = "=0.3.8" }
 agner-actors = { path = "../agner-actors", version = "=0.3.8" }
 agner-init-ack = { path = "../agner-init-ack", version = "=0.3.8", optional = true }
-agner-registered = { path = "../agner-registered", version = "=0.3.8", optional = true }
+agner-reg = { path = "../agner-reg", version = "=0.3.8", optional = true }
 agner-sup = { path = "../agner-sup", version = "=0.3.8", optional = true }
 agner-helm = { path = "../agner-helm", version = "0.3.8", optional = true }
 agner-test-actor = { path = "../agner-test-actor", version = "0.3.8", optional = true }
