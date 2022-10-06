@@ -56,3 +56,13 @@ fn actor_id_to_and_from_str() {
         }
     }
 }
+
+#[test]
+fn actor_id_extra_part() {
+    assert!("0.0.0.0".parse::<ActorID>().is_err());
+}
+
+#[test]
+fn actor_id_missing_part() {
+    assert!("0.0".parse::<ActorID>().is_err());
+}
