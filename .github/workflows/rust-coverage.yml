@@ -11,6 +11,9 @@ env:
 
 jobs:
   coverage:
+    runs-on: ubuntu-latest
+
+    steps:
     - name: rust-tarpaulin
       uses: actions-rs/tarpaulin@v0.1.0
 
