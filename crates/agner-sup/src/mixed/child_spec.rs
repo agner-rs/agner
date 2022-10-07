@@ -20,7 +20,7 @@ pub enum ChildType {
 }
 
 impl<ID> MixedChildSpec<ID, (), (), ()> {
-    pub fn id(id: ID) -> Self {
+    pub fn mixed(id: ID) -> Self {
         let ext = Ext { id, child_type: ChildType::Permanent, shutdown: Default::default() };
 
         Self::from_ext(ext)

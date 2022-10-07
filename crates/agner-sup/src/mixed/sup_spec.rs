@@ -32,16 +32,16 @@ async fn ergonomics() {
 
     async fn actor(_context: &mut Context<Infallible>, (): ()) {}
 
-    let child_one = MixedChildSpec::id("first")
+    let child_one = MixedChildSpec::mixed("first")
         .behaviour(actor)
         .args_clone(())
         .init_type(InitType::no_ack());
-    let child_two = MixedChildSpec::id("second")
+    let child_two = MixedChildSpec::mixed("second")
         .behaviour(actor)
         .args_clone(())
         .init_type(InitType::no_ack());
 
-    let child_three = MixedChildSpec::id("third")
+    let child_three = MixedChildSpec::mixed("third")
         .behaviour(actor)
         .args_clone(())
         .init_type(InitType::no_ack());

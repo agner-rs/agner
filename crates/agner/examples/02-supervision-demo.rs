@@ -39,13 +39,13 @@ fn main() {
 
         let top_sup_spec = mixed::SupSpec::new(restart_strategy)
             .with_child(
-                MixedChildSpec::id("fanout")
+                MixedChildSpec::mixed("fanout")
                     .behaviour(actors::fanout::run)
                     .args_clone(())
                     .register(fanout_svc.to_owned()),
             )
             .with_child(
-                MixedChildSpec::id("uds-conn-sup")
+                MixedChildSpec::mixed("uds-conn-sup")
                     .behaviour(uniform::run)
                     .args_clone(uniform::SupSpec::new(
                         UniformChildSpec::uniform()
@@ -56,7 +56,7 @@ fn main() {
                     .register(uds_conn_sup_svc.to_owned()),
             )
             .with_child(
-                MixedChildSpec::id("uds-interface")
+                MixedChildSpec::mixed("uds-interface")
                     .behaviour(actors::uds_interface::run)
                     .args_clone((bind_uds, uds_acceptors_count, uds_conn_sup_svc.to_owned())),
             );
@@ -291,7 +291,7 @@ mod actors {
             let mut sup_spec = mixed::SupSpec::new(restart_strategy);
 
             for acceptor_id in 0..acceptors_count {
-                let child_spec = MixedChildSpec::id(acceptor_id)
+                let child_spec = MixedChildSpec::mixed(acceptor_id)
                     .behaviour(crate::actors::uds_acceptor::run)
                     .args_clone((uds_listener.to_owned(), conn_sup.to_owned()))
                     .init_type(WithAck::new());
