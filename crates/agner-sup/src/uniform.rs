@@ -1,6 +1,5 @@
 use std::collections::HashSet;
 use std::sync::Arc;
-use std::time::Duration;
 
 use agner_actors::{ActorID, Context, Event, Exit, Never, Signal, System};
 use agner_init_ack::ContextInitAckExt;
@@ -9,11 +8,10 @@ use agner_utils::std_error_pp::StdErrorPP;
 
 use tokio::sync::oneshot;
 
-use crate::common::{CreateChild, GenChildSpec, StartChildError};
+use crate::common::{CreateChild, StartChildError};
 
-pub type UniformChildSpec<B, A, M> = GenChildSpec<B, A, M, ()>;
-
-const DEFAULT_SHUTDOWN_TIMEOUT: Duration = Duration::from_secs(5);
+mod child_spec;
+pub use child_spec::UniformChildSpec;
 
 #[derive(Debug, Clone, thiserror::Error)]
 pub enum SupervisorError {
@@ -60,32 +58,29 @@ pub enum Message<InArgs> {
 }
 
 #[derive(Debug, Clone)]
-pub struct SupSpec<CS> {
-    shutdown_timeout: Duration,
-    child_spec: CS,
-}
+pub struct SupSpec<CS>(CS);
 
 impl<CS> SupSpec<CS> {
     pub fn new(child_spec: CS) -> Self {
-        Self { shutdown_timeout: DEFAULT_SHUTDOWN_TIMEOUT, child_spec }
-    }
-    pub fn with_shutdown_timeout(self, shutdown_timeout: Duration) -> Self {
-        Self { shutdown_timeout, ..self }
+        Self(child_spec)
     }
 }
 
-pub async fn run<CS, A>(
-    context: &mut Context<Message<A>>,
-    sup_spec: SupSpec<CS>,
+pub async fn run<SupArg, B, A, M>(
+    context: &mut Context<Message<SupArg>>,
+    sup_spec: SupSpec<UniformChildSpec<B, A, M>>,
 ) -> Result<Never, Exit>
 where
-    CS: CreateChild<Args = A>,
-    A: Unpin + Send + 'static,
+    UniformChildSpec<B, A, M>: CreateChild<Args = SupArg>,
+    SupArg: Unpin + Send + 'static,
+    B: Send + Sync + 'static,
+    A: Send + Sync + 'static,
+    M: Send + Sync + 'static,
 {
     context.trap_exit(true).await;
     context.init_ack_ok(Default::default());
 
-    let SupSpec { shutdown_timeout, mut child_spec } = sup_spec;
+    let SupSpec(mut child_spec) = sup_spec;
 
     let mut shutting_down = None;
     let mut children: HashSet<ActorID> = Default::default();
@@ -112,29 +107,26 @@ where
 
                     let system = context.system();
                     let sup_id = context.actor_id();
-                    let job = async move {
-                        log::trace!("[{}] stop-job enter [child: {}]", sup_id, actor_id);
-                        let result = crate::common::stop_child(
-                            system,
-                            actor_id,
-                            [
-                                (Exit::shutdown(), shutdown_timeout),
-                                (Exit::kill(), shutdown_timeout),
-                            ],
-                        )
-                        .await;
+                    let job = {
+                        let shutdown_sequence = child_spec.shutdown_sequence().to_owned();
+                        async move {
+                            log::trace!("[{}] stop-job enter [child: {}]", sup_id, actor_id);
+                            let result =
+                                crate::common::stop_child(system, actor_id, shutdown_sequence)
+                                    .await;
 
-                        log::trace!(
-                            "[{}] stop-job done [child: {}; result: {:?}]",
-                            sup_id,
-                            actor_id,
-                            result
-                        );
+                            log::trace!(
+                                "[{}] stop-job done [child: {}; result: {:?}]",
+                                sup_id,
+                                actor_id,
+                                result
+                            );
 
-                        if let Ok(exit) = result {
-                            let _ = reply_to.send(Ok(exit));
+                            if let Ok(exit) = result {
+                                let _ = reply_to.send(Ok(exit));
+                            }
+                            Message::<SupArg>::Noop
                         }
-                        Message::<A>::Noop
                     };
                     context.future_to_inbox(job).await;
                 } else {
@@ -203,6 +195,7 @@ mod tests {
 
     use futures::StreamExt;
     use std::convert::Infallible;
+    use std::time::Duration;
 
     use agner_actors::System;
 
@@ -226,7 +219,7 @@ mod tests {
             tokio::time::sleep(Duration::from_secs(3)).await;
             std::future::pending().await
         }
-        let child_spec = UniformChildSpec::new()
+        let child_spec = UniformChildSpec::uniform()
             .behaviour(worker)
             .args_call1({
                 let mut id = 0;

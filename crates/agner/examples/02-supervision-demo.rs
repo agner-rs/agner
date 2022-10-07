@@ -48,7 +48,7 @@ fn main() {
                 MixedChildSpec::id("uds-conn-sup")
                     .behaviour(uniform::run)
                     .args_clone(uniform::SupSpec::new(
-                        UniformChildSpec::new()
+                        UniformChildSpec::uniform()
                             .behaviour(actors::connection::run::<UnixStream>)
                             .args_call1(move |uds_stream| (fanout_svc.to_owned(), uds_stream)),
                     ))

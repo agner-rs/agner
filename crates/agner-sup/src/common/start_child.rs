@@ -8,7 +8,7 @@ use agner_utils::future_timeout_ext::FutureTimeoutExt;
 use agner_utils::result_err_flatten::ResultErrFlattenIn;
 use agner_utils::std_error_pp::StdErrorPP;
 
-use crate::common::{stop_child, InitType, WithAck};
+use crate::common::{stop_child, InitType, ShutdownSequence, WithAck};
 
 #[derive(Debug, Clone, thiserror::Error)]
 pub enum StartChildError {
@@ -111,13 +111,12 @@ where
             if let Err(cancel_error) = stop_child::stop_child(
                 system.to_owned(),
                 intermediary_id,
-                [
-                    (
+                ShutdownSequence::empty()
+                    .add(
                         Exit::shutdown_with_source(Arc::new(reason.to_owned())),
                         with_ack.stop_timeout,
-                    ),
-                    (Exit::kill(), with_ack.stop_timeout),
-                ],
+                    )
+                    .add(Exit::kill(), with_ack.stop_timeout),
             )
             .await
             {

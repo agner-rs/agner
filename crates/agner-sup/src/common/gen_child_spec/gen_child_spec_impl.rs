@@ -1,5 +1,4 @@
 use std::fmt;
-use std::marker::PhantomData;
 
 use agner_actors::{Actor, ActorID, System};
 

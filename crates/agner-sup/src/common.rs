@@ -13,7 +13,7 @@ mod start_child;
 pub use start_child::{start_child, StartChildError};
 
 mod stop_child;
-pub use stop_child::{stop_child, StopChildError};
+pub use stop_child::{stop_child, ShutdownSequence, StopChildError};
 
 mod init_type;
 pub use init_type::{InitType, WithAck};

@@ -1,9 +1,7 @@
 use std::fmt;
-use std::time::Duration;
-
-use agner_actors::Exit;
 
 use crate::common::gen_child_spec::CreateChild;
+use crate::common::ShutdownSequence;
 use crate::mixed::child_spec::MixedChildSpec;
 use crate::mixed::ChildID;
 
@@ -14,7 +12,7 @@ pub trait FlatMixedChildSpec<ID>:
 {
     fn id(&self) -> ID;
     fn child_type(&self) -> ChildType;
-    fn shutdown(&self) -> &[(Exit, Duration)];
+    fn shutdown(&self) -> &ShutdownSequence;
 }
 
 impl<ID, B, A, M> FlatMixedChildSpec<ID> for MixedChildSpec<ID, B, A, M>
@@ -32,8 +30,8 @@ where
     fn child_type(&self) -> ChildType {
         self.ext().child_type
     }
-    fn shutdown(&self) -> &[(Exit, Duration)] {
-        self.ext().shutdown.as_ref()
+    fn shutdown(&self) -> &ShutdownSequence {
+        &self.ext().shutdown
     }
 }
 

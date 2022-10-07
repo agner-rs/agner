@@ -1,14 +1,7 @@
-use std::time::Duration;
-
-use agner_actors::Exit;
-
-use crate::common::GenChildSpec;
+use crate::common::{GenChildSpec, ShutdownSequence};
 
 mod flat_mixed_child_spec;
 pub use flat_mixed_child_spec::FlatMixedChildSpec;
-
-pub const DEFAULT_SHUTDOWN_TIMEOUT: Duration = Duration::from_secs(5);
-pub const DEFAULT_KILL_TIMEOUT: Duration = Duration::from_secs(5);
 
 pub type MixedChildSpec<ID, B, A, M> = GenChildSpec<B, A, M, Ext<ID>>;
 
@@ -16,7 +9,7 @@ pub type MixedChildSpec<ID, B, A, M> = GenChildSpec<B, A, M, Ext<ID>>;
 pub struct Ext<ID> {
     id: ID,
     child_type: ChildType,
-    shutdown: Vec<(Exit, Duration)>,
+    shutdown: ShutdownSequence,
 }
 
 #[derive(Debug, Clone, Copy)]
@@ -28,14 +21,7 @@ pub enum ChildType {
 
 impl<ID> MixedChildSpec<ID, (), (), ()> {
     pub fn id(id: ID) -> Self {
-        let ext = Ext {
-            id,
-            child_type: ChildType::Permanent,
-            shutdown: vec![
-                (Exit::shutdown(), DEFAULT_SHUTDOWN_TIMEOUT),
-                (Exit::kill(), DEFAULT_KILL_TIMEOUT),
-            ],
-        };
+        let ext = Ext { id, child_type: ChildType::Permanent, shutdown: Default::default() };
 
         Self::from_ext(ext)
     }
@@ -45,7 +31,7 @@ impl<ID, B, A, M> MixedChildSpec<ID, B, A, M> {
         self.ext_mut().child_type = child_type;
         self
     }
-    pub fn shutdown(mut self, shutdown: Vec<(Exit, Duration)>) -> Self {
+    pub fn shutdown(mut self, shutdown: ShutdownSequence) -> Self {
         self.ext_mut().shutdown = shutdown;
         self
     }
