@@ -7,5 +7,21 @@ mod traits;
 #[cfg(test)]
 mod tests;
 
-pub use gen_child_spec_impl::GenChildSpec;
+use std::marker::PhantomData;
+
+use agner_reg::Service;
 pub use traits::{CreateArgs, CreateChild};
+
+use crate::common::init_type::InitType;
+
+pub struct GenChildSpec<B, A, M, X> {
+    behaviour: B,
+    create_args: A,
+    message: PhantomData<M>,
+    init_type: InitType,
+
+    #[cfg(feature = "reg")]
+    service: Option<Service>,
+
+    ext: X,
+}

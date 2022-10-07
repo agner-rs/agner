@@ -11,20 +11,9 @@ use crate::common::gen_child_spec::args_call::{args_call0, args_call1, ArgsCallF
 use crate::common::gen_child_spec::args_clone::{args_clone, ArgsClone};
 use crate::common::gen_child_spec::args_unique::{args_unique, ArgsUnique};
 use crate::common::gen_child_spec::traits::{CreateArgs, CreateChild};
+use crate::common::gen_child_spec::GenChildSpec;
 use crate::common::start_child::start_child;
 use crate::common::InitType;
-
-pub struct GenChildSpec<B, A, M, X> {
-    behaviour: B,
-    create_args: A,
-    message: PhantomData<M>,
-    init_type: InitType,
-
-    #[cfg(feature = "reg")]
-    service: Option<Service>,
-
-    ext: X,
-}
 
 impl GenChildSpec<(), (), (), ()> {
     pub fn new() -> Self {
