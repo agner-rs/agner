@@ -13,6 +13,7 @@ pub struct StopChildError;
 #[derive(Debug, Clone)]
 pub struct ShutdownSequence(Vec<(Exit, Duration)>);
 
+/// Stop the child in accordance with the supervision design principles.
 pub async fn stop_child(
     system: System,
     actor_id: ActorID,

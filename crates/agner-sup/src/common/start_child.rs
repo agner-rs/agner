@@ -25,6 +25,7 @@ pub enum StartChildError {
     OneshotRx(#[source] oneshot::error::RecvError),
 }
 
+/// Start a child in accordance with the supervision design principles.
 pub async fn start_child<B, A, M>(
     system: System,
     sup_id: ActorID,
