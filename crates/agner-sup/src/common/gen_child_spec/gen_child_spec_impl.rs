@@ -10,8 +10,8 @@ use futures::TryFutureExt;
 use crate::common::gen_child_spec::args_call::{args_call0, args_call1, ArgsCallFn0, ArgsCallFn1};
 use crate::common::gen_child_spec::args_clone::{args_clone, ArgsClone};
 use crate::common::gen_child_spec::args_unique::{args_unique, ArgsUnique};
-use crate::common::gen_child_spec::start_child::do_start_child;
 use crate::common::gen_child_spec::traits::{CreateArgs, CreateChild};
+use crate::common::start_child::start_child;
 use crate::common::InitType;
 
 pub struct GenChildSpec<B, A, M, X> {
@@ -216,7 +216,7 @@ where
         #[cfg(feature = "reg")]
         let registered_service = self.service.to_owned();
 
-        let start_child_fut = do_start_child(system.to_owned(), sup_id, behaviour, args, init_type)
+        let start_child_fut = start_child(system.to_owned(), sup_id, behaviour, args, init_type)
             .and_then(move |child_id| async move {
                 #[cfg(feature = "reg")]
                 if let Some(service) = registered_service {

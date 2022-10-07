@@ -114,7 +114,7 @@ where
                     let sup_id = context.actor_id();
                     let job = async move {
                         log::trace!("[{}] stop-job enter [child: {}]", sup_id, actor_id);
-                        let result = crate::common::util::try_exit(
+                        let result = crate::common::stop_child(
                             system,
                             actor_id,
                             [

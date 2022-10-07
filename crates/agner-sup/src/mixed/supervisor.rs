@@ -242,7 +242,7 @@ where
                 child_actors.remove(&child_id).zip(child_specs.get(&child_id))
             {
                 log::trace!("[{}] stopping child[{:?}]", context.actor_id(), actor_id);
-                crate::common::util::try_exit(
+                crate::common::stop_child(
                     context.system(),
                     actor_id,
                     child_spec.shutdown().to_owned(),

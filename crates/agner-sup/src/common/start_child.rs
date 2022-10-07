@@ -1,13 +1,31 @@
 use std::sync::Arc;
 
+use tokio::sync::oneshot;
+
+use agner_actors::system_error::SysSpawnError;
 use agner_actors::{Actor, ActorID, Exit, SpawnOpts, System};
 use agner_utils::future_timeout_ext::FutureTimeoutExt;
 use agner_utils::result_err_flatten::ResultErrFlattenIn;
 use agner_utils::std_error_pp::StdErrorPP;
 
-use crate::common::{util, InitType, StartChildError, WithAck};
+use crate::common::{stop_child, InitType, WithAck};
 
-pub async fn do_start_child<B, A, M>(
+#[derive(Debug, Clone, thiserror::Error)]
+pub enum StartChildError {
+    #[error("System failed to spawn child")]
+    SysSpawnError(#[source] Arc<SysSpawnError>),
+
+    #[error("Init-ack failure")]
+    InitAckFailure(#[source] Exit),
+
+    #[error("Timeout")]
+    Timeout(#[source] Arc<tokio::time::error::Elapsed>),
+
+    #[error("oneshot-rx failure")]
+    OneshotRx(#[source] oneshot::error::RecvError),
+}
+
+pub async fn start_child<B, A, M>(
     system: System,
     sup_id: ActorID,
     behaviour: B,
@@ -90,7 +108,7 @@ where
         Err(reason) => {
             log::warn!("[{}|start_child_init_ack] canceling init [error: {}]", sup_id, reason.pp());
 
-            if let Err(cancel_error) = util::try_exit(
+            if let Err(cancel_error) = stop_child::stop_child(
                 system.to_owned(),
                 intermediary_id,
                 [
@@ -108,5 +126,21 @@ where
 
             Err(reason)
         },
+    }
+}
+
+impl From<SysSpawnError> for StartChildError {
+    fn from(e: SysSpawnError) -> Self {
+        Self::SysSpawnError(Arc::new(e))
+    }
+}
+impl From<tokio::time::error::Elapsed> for StartChildError {
+    fn from(e: tokio::time::error::Elapsed) -> Self {
+        Self::Timeout(Arc::new(e))
+    }
+}
+impl From<oneshot::error::RecvError> for StartChildError {
+    fn from(e: oneshot::error::RecvError) -> Self {
+        Self::OneshotRx(e)
     }
 }
