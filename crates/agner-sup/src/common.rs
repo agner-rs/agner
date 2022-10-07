@@ -1,3 +1,6 @@
+//! The utility functions common to both [Uniform](crate::uniform) and [Mixed](crate::mixed)
+//! supervisors.
+
 use std::future::Future;
 use std::pin::Pin;
 

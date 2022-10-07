@@ -24,6 +24,7 @@ pub enum Message<ID> {
     Noop,
 }
 
+/// The behaviour function of the [Mixed Supervisor](crate::mixed).
 pub async fn run<ID, RS>(
     context: &mut Context<Message<ID>>,
     sup_spec: SupSpec<ID, RS>,

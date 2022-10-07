@@ -1,4 +1,5 @@
-//! agner — an [actor](https://en.wikipedia.org/wiki/Actor_model) toolkit inspired by Erlang/OTP.
+//! agner — ~~processes~~ actors.
+//! =====
 //!
 //! Note: Right now this is a research project, i.e. it is possible that the API will undergo
 //! incompatible changes within the version 0.3.x.
@@ -9,7 +10,7 @@
 //!
 //! # [Actors](crate::actors)
 //!
-//! An actor is an activity with the following properties:
+//! An [actor](https://en.wikipedia.org/wiki/Actor_model) is an activity with the following properties:
 //! - runs in parallel (implemented as a [`Future`](std::future::Future));
 //! - has a handle ([`ActorID`](crate::actors::ActorID));
 //! - can receive messages;
@@ -134,36 +135,57 @@
 //!
 //!
 //! # Supervision
+//!
+//! > As this whole project is based on the Erlang/OTP, it should not be a surprise that there
+//! > are some (quite a lot of) similarities to the OTP Design Principles, namely:
+//! > - [Supervision Trees](https://www.erlang.org/doc/design_principles/des_princ.html#supervision-trees);
+//! > - [Special Processes / Starting the Process](https://www.erlang.org/doc/design_principles/spec_proc.html#starting-the-process);
+//! > - [Supervisor Behaviour](https://www.erlang.org/doc/design_principles/sup_princ.html).
+//!
+//! ## Design Principles
+//!
+//! ### Starting and Stopping
+//!
+//! TBD:
+//! - [`sup::common::start_child`](crate::sup::common::start_child)
+//! - [`sup::common::stop_child`](crate::sup::common::stop_child))
+//! - [`init_ack`](crate::init_ack)
+//!
+//! ### Uniform Supervisor
+//!
+//! TBD:
+//! - [uniform supervisor](crate::sup::uniform)
+//!
+//! ### Mixed Supervisor
+//!
+//! TBD:
+//! - [mixed supervisor](crate::sup::mixed)
+//!
+//! # Introspection
+//!
+//! TBD:
+//! - [helm](crate::helm)
+//!
+//! # Testing
+//!
+//! TBD:
+//! - [test-actor](crate::test_actor)
 
-pub mod utils {
-    pub use agner_utils::*;
-}
+pub use agner_utils as utils;
 
-pub mod actors {
-    pub use agner_actors::*;
-}
+pub use agner_actors as actors;
 
 #[cfg(feature = "init-ack")]
-pub mod init_ack {
-    pub use agner_init_ack::*;
-}
+pub use agner_init_ack as init_ack;
 
 #[cfg(feature = "reg")]
-pub mod reg {
-    pub use agner_reg::*;
-}
+pub use agner_reg as reg;
 
 #[cfg(feature = "sup")]
-pub mod sup {
-    pub use agner_sup::*;
-}
+pub use agner_sup as sup;
 
 #[cfg(feature = "helm")]
-pub mod helm {
-    pub use agner_helm::*;
-}
+pub use agner_helm as helm;
 
 #[cfg(feature = "test-actor")]
-pub mod test_actor {
-    pub use agner_test_actor::*;
-}
+pub use agner_test_actor as test_actor;

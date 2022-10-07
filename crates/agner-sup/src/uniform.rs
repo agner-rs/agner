@@ -1,3 +1,6 @@
+//! Uniform Supervisor
+//! =======
+
 use std::collections::HashSet;
 use std::sync::Arc;
 
@@ -66,6 +69,7 @@ impl<CS> SupSpec<CS> {
     }
 }
 
+/// The behaviour function of the [Uniform Supervisor](crate::uniform).
 pub async fn run<SupArg, B, A, M>(
     context: &mut Context<Message<SupArg>>,
     sup_spec: SupSpec<UniformChildSpec<B, A, M>>,

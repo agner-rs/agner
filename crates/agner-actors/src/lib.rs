@@ -1,3 +1,6 @@
+//! Core Support for Actors
+//! =====
+
 mod actor;
 mod actor_id;
 mod actor_runner;

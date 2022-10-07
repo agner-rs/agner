@@ -14,7 +14,8 @@ pub use traits::{CreateArgs, CreateChild};
 
 use crate::common::init_type::InitType;
 
-/// A base for both [uniform](crate::uniform::UniformChildSpec) and [mixed](crate::mixed::MixedChildSpec) child specifications.
+/// A base for both [uniform](crate::uniform::UniformChildSpec) and
+/// [mixed](crate::mixed::MixedChildSpec) child specifications.
 pub struct GenChildSpec<B, A, M, X> {
     behaviour: B,
     create_args: A,

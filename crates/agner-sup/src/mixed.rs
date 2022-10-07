@@ -1,8 +1,12 @@
+//! Mixed Supervisor
+//! =====
+
 mod child_id;
 mod child_spec;
 mod restart_intensity;
 mod restart_strategy;
 mod sup_spec;
+mod supervisor;
 
 use agner_actors::{ActorID, Exit, System};
 use agner_utils::result_err_flatten::ResultErrFlattenIn;
@@ -11,7 +15,6 @@ pub use child_spec::{ChildType, FlatMixedChildSpec, MixedChildSpec};
 pub use restart_intensity::RestartIntensity;
 pub use restart_strategy::{AllForOne, OneForOne, RestForOne, RestartStrategy};
 pub use sup_spec::SupSpec;
-pub mod supervisor;
 
 pub mod plumbing {
     pub use super::restart_intensity::{DurationToInstant, ElapsedSince, RestartStats};
