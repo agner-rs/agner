@@ -9,6 +9,7 @@ mod tests;
 
 use std::marker::PhantomData;
 
+#[cfg(feature = "reg")]
 use agner_reg::Service;
 pub use traits::{CreateArgs, CreateChild};
 
