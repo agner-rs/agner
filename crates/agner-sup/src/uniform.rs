@@ -33,7 +33,7 @@ pub async fn start_child<A>(
     args: A,
 ) -> Result<ActorID, SupervisorError>
 where
-    A: Send + Sync + 'static,
+    A: Send + 'static,
 {
     let (tx, rx) = oneshot::channel();
     system.send(sup, Message::Start(args, tx)).await;
@@ -46,7 +46,7 @@ pub async fn stop_child<A>(
     child: ActorID,
 ) -> Result<Exit, SupervisorError>
 where
-    A: Send + Sync + 'static,
+    A: Send + 'static,
 {
     let (tx, rx) = oneshot::channel();
     system.send(sup, Message::<A>::Stop(child, tx)).await;
@@ -80,7 +80,7 @@ pub async fn run<CS, A>(
 ) -> Result<Never, Exit>
 where
     CS: CreateChild<Args = A>,
-    A: Unpin + Send + Sync + 'static,
+    A: Unpin + Send + 'static,
 {
     context.trap_exit(true).await;
     context.init_ack_ok(Default::default());

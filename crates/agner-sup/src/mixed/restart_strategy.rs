@@ -11,13 +11,13 @@ mod tests;
 
 use crate::mixed::child_spec::ChildType;
 
-pub trait RestartStrategy<ID>: Clone + fmt::Debug + Send + Sync + 'static {
+pub trait RestartStrategy<ID>: Clone + fmt::Debug + Send + 'static {
     type Decider;
 
     fn new_decider(&self, sup_id: ActorID) -> Self::Decider;
 }
 
-pub trait Decider<ID, D, I>: fmt::Debug + Send + Sync + 'static {
+pub trait Decider<ID, D, I>: fmt::Debug + Send + 'static {
     type Error: StdError + Send + Sync + 'static;
 
     fn add_child(&mut self, id: ID, child_type: ChildType) -> Result<(), Self::Error>;

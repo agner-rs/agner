@@ -94,8 +94,8 @@ impl System {
         mut spawn_opts: SpawnOpts,
     ) -> Result<ActorID, SysSpawnError>
     where
-        Args: Send + Sync + 'static,
-        Message: Unpin + Send + Sync + 'static,
+        Args: Send + 'static,
+        Message: Unpin + Send + 'static,
         for<'a> Behaviour: Actor<'a, Args, Message>,
     {
         let exit_handler =
@@ -177,7 +177,7 @@ impl System {
     /// Send a single message to the specified actor.
     pub async fn send<M>(&self, to: ActorID, message: M)
     where
-        M: Send + Sync + 'static,
+        M: Send + 'static,
     {
         log::trace!(
             "[sys:{}] trying to send message [to: {}, msg-type: {}]",
@@ -201,7 +201,7 @@ impl System {
     /// [`System::send::<Message>(&self, ActorID, Message)`](crate::system::System::send).
     pub async fn channel<M>(&self, to: ActorID) -> Result<mpsc::UnboundedSender<M>, SysChannelError>
     where
-        M: Send + Sync + 'static,
+        M: Send + 'static,
     {
         self.actor_entry_read(to)
             .await

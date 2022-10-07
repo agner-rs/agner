@@ -16,9 +16,9 @@ pub async fn do_start_child<B, A, M>(
 ) -> Result<ActorID, StartChildError>
 where
     B: for<'a> Actor<'a, A, M>,
-    B: Send + Sync + 'static,
-    A: Send + Sync + 'static,
-    M: Send + Sync + Unpin + 'static,
+    B: Send + 'static,
+    A: Send + 'static,
+    M: Send + Unpin + 'static,
 {
     log::trace!("[{}|start_child] starting child", sup_id);
 
@@ -41,9 +41,9 @@ async fn do_start_child_no_ack<B, A, M>(
 ) -> Result<ActorID, StartChildError>
 where
     B: for<'a> Actor<'a, A, M>,
-    B: Send + Sync + 'static,
-    A: Send + Sync + 'static,
-    M: Send + Sync + Unpin + 'static,
+    B: Send + 'static,
+    A: Send + 'static,
+    M: Send + Unpin + 'static,
 {
     let spawn_opts = SpawnOpts::new().with_link(sup_id);
     let child_id = system.spawn(behaviour, args, spawn_opts).await?;
@@ -60,9 +60,9 @@ async fn do_start_child_init_ack<B, A, M>(
 ) -> Result<ActorID, StartChildError>
 where
     B: for<'a> Actor<'a, A, M>,
-    B: Send + Sync + 'static,
-    A: Send + Sync + 'static,
-    M: Send + Sync + Unpin + 'static,
+    B: Send + 'static,
+    A: Send + 'static,
+    M: Send + Unpin + 'static,
 {
     let (init_ack_tx, init_ack_rx) = agner_init_ack::new_channel();
     let spawn_opts = SpawnOpts::new().with_data(init_ack_tx);

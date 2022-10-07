@@ -62,7 +62,7 @@ impl ActorEntry {
 
     pub fn messages_tx<M>(&self) -> Option<&mpsc::UnboundedSender<M>>
     where
-        M: Send + Sync + 'static,
+        M: Send + 'static,
     {
         self.occupied().and_then(|oe| oe.messages_tx.downcast_ref())
     }
@@ -78,7 +78,7 @@ impl ActorEntry {
         sys_msg_tx: mpsc::UnboundedSender<SysMsg>,
     ) -> Self
     where
-        Message: Send + Sync + 'static,
+        Message: Send + 'static,
     {
         let occupied = Occupied {
             actor_id_lease,

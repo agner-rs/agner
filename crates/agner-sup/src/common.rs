@@ -1,7 +1,7 @@
 use std::future::Future;
 use std::pin::Pin;
 
-pub type BoxedFuture<'a, T> = Pin<Box<dyn Future<Output = T> + Send + Sync + 'a>>;
+pub type BoxedFuture<'a, T> = Pin<Box<dyn Future<Output = T> + Send + 'a>>;
 pub type StaticBoxedFuture<T> = BoxedFuture<'static, T>;
 
 #[derive(Debug, Clone, Copy)]

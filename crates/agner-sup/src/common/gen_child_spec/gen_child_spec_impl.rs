@@ -195,8 +195,8 @@ where
     B: for<'a> Actor<'a, A::Output, M>,
     A: CreateArgs,
     B: Clone,
-    M: Unpin + Send + Sync + 'static,
-    A::Output: Send + Sync + 'static,
+    M: Unpin + Send + 'static,
+    A::Output: Send + 'static,
 {
     type Args = A::Input;
 

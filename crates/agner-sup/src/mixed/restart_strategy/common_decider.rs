@@ -88,8 +88,8 @@ where
 impl<ID, D, I> Decider<ID, D, I> for CommonDecider<ID, D, I>
 where
     ID: ChildID,
-    I: ElapsedSince<Elapsed = D> + fmt::Debug + Send + Sync + 'static,
-    D: DurationToInstant<Instant = I> + fmt::Debug + Send + Sync + 'static,
+    I: ElapsedSince<Elapsed = D> + fmt::Debug + Send + 'static,
+    D: DurationToInstant<Instant = I> + fmt::Debug + Send + 'static,
 {
     type Error = DeciderError;
 
