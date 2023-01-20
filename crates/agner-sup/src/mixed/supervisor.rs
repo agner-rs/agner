@@ -37,11 +37,7 @@ where
     context.trap_exit(true).await;
     context.init_ack_ok(Default::default());
 
-    log::trace!(
-        "[{}] initializing decider [restart-strategy: {:?}]",
-        context.actor_id(),
-        sup_spec.restart_strategy
-    );
+    tracing::trace!("initializing decider [restart-strategy: {:?}]", sup_spec.restart_strategy);
     let SupSpec { restart_strategy, children } = sup_spec;
     let mut decider = restart_strategy.new_decider(context.actor_id());
     let mut child_ids: Vec<ID> = vec![];
@@ -63,9 +59,8 @@ where
         let mut first_context_poll = true;
 
         loop {
-            log::trace!(
-                "[{}] before invoking next_event [decider-has-actions: {}, first-context-poll: {}]",
-                context.actor_id(),
+            tracing::trace!(
+                "before invoking next_event [decider-has-actions: {}, first-context-poll: {}]",
                 decider_has_actions,
                 first_context_poll
             );
@@ -209,7 +204,7 @@ where
 {
     match action {
         Action::Shutdown(reason) => {
-            log::trace!(
+            tracing::trace!(
                 "[{}] decider requested shutdown [exit: {}]",
                 context.actor_id(),
                 reason.pp()
@@ -218,7 +213,7 @@ where
             unreachable!()
         },
         Action::Start(child_id) => {
-            log::trace!("[{}] starting child[{:?}]", context.actor_id(), child_id);
+            tracing::trace!("starting child[{:?}]", child_id);
 
             if let Some(child_spec) = child_specs.get_mut(&child_id) {
                 let actor_id = child_spec
@@ -237,12 +232,12 @@ where
             }
         },
         Action::Stop(child_id) => {
-            log::trace!("[{}] stopping child[{:?}]", context.actor_id(), child_id);
+            tracing::trace!("[{}] stopping child[{:?}]", context.actor_id(), child_id);
 
             if let Some((actor_id, child_spec)) =
                 child_actors.remove(&child_id).zip(child_specs.get(&child_id))
             {
-                log::trace!("[{}] stopping child[{:?}]", context.actor_id(), actor_id);
+                tracing::trace!("[{}] stopping child[{:?}]", context.actor_id(), actor_id);
                 crate::common::stop_child(
                     context.system(),
                     actor_id,

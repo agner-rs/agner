@@ -6,6 +6,7 @@ use agner_utils::std_error_pp::StdErrorPP;
 use futures::stream::FuturesUnordered;
 use futures::StreamExt;
 use tokio::sync::{mpsc, oneshot};
+use tracing::Instrument;
 
 use crate::actor::Actor;
 use crate::actor_id::ActorID;
@@ -16,6 +17,7 @@ use crate::spawn_opts::SpawnOpts;
 use crate::system::SystemWeakRef;
 
 pub(crate) mod call_msg;
+mod impl_debug;
 pub(crate) mod pipe;
 pub(crate) mod sys_msg;
 mod watches;
@@ -41,6 +43,11 @@ impl<Message> ActorRunner<Message>
 where
     Message: Unpin,
 {
+    #[tracing::instrument(skip_all, fields(
+        actor_id = display(self.actor_id),
+        behaviour = std::any::type_name::<Behaviour>(),
+        msg_type = std::any::type_name::<Message>(),
+    ))]
     pub async fn run<Behaviour, Args>(self, behaviour: Behaviour, args: Args)
     where
         for<'a> Behaviour: Actor<'a, Args, Message>,
@@ -55,9 +62,8 @@ where
             mut spawn_opts,
         } = self;
 
-        log::trace!(
-            "[{}] init [m-inbox: {:?}, s-inbox: {:?}, msg-type: {}]",
-            actor_id,
+        tracing::trace!(
+            "init [m-inbox: {:?}, s-inbox: {:?}, msg-type: {}]",
             spawn_opts.msg_inbox_size(),
             spawn_opts.sig_inbox_size(),
             std::any::type_name::<Message>()
@@ -71,8 +77,15 @@ where
                 .with_data(spawn_opts.take_data());
 
         let behaviour_running = async move {
-            let exit_reason = behaviour.run(&mut context, args).await.into();
-            context.exit(exit_reason).await;
+            let exit_reason = behaviour
+                .run(&mut context, args)
+                .instrument(tracing::span!(tracing::Level::TRACE, "<behaviour as Actor>::run"))
+                .await
+                .into();
+            context
+                .exit(exit_reason.clone())
+                .instrument(tracing::span!(tracing::Level::TRACE, "Context::exit"))
+                .await;
             unreachable!()
         };
 
@@ -106,16 +119,17 @@ where
 
         let actor_backend_running = actor_backend.run_actor_backend();
 
-        log::trace!("[{}] running", self.actor_id);
+        tracing::trace!("running...");
         let exit_reason = tokio::select! {
             biased;
 
             exit_reason = actor_backend_running => exit_reason,
             _ = behaviour_running => unreachable!("Future<Output = Infallible> as returned"),
         };
+        tracing::trace!("exited: {}", exit_reason.pp());
 
         if let Some(system) = system_opt.rc_upgrade() {
-            log::trace!("[{}] cleaning up actor-entry...", self.actor_id);
+            tracing::trace!("cleaning up actor-entry...");
             system.actor_entry_terminate(actor_id, exit_reason).await;
         }
     }
@@ -141,8 +155,9 @@ impl<Message> Backend<Message>
 where
     Message: Unpin,
 {
+    #[tracing::instrument(skip_all)]
     async fn run_actor_backend(mut self) -> Exit {
-        log::trace!("[{}] running actor-backend", self.actor_id);
+        tracing::trace!("running actor-backend");
 
         let exit_reason = loop {
             let task_next = async {
@@ -168,7 +183,7 @@ where
                 break exit_reason
             }
         };
-        log::trace!("[{}] exiting: {}", self.actor_id, exit_reason.pp());
+        tracing::trace!("exiting: {}", exit_reason.pp());
 
         self.sys_msg_rx.close();
         self.messages_rx.close();
@@ -181,14 +196,15 @@ where
             self.handle_sys_msg_on_shutdown(sys_msg, exit_reason.to_owned()).await
         }
 
-        log::trace!("[{}] exited", self.actor_id);
+        tracing::trace!("exited");
 
         exit_reason
     }
 
+    #[tracing::instrument(skip_all)]
     async fn handle_sys_msg(&mut self, sys_msg_recv: Option<SysMsg>) -> Result<(), Exit> {
         let sys_msg = sys_msg_recv.ok_or(BackendFailure::RxClosed("sys-msg"))?;
-        log::trace!("[{}] received sys-msg: {:?}", self.actor_id, sys_msg);
+        tracing::trace!("[received sys-msg: {:?}", sys_msg);
 
         match sys_msg {
             SysMsg::SigExit(terminated, exit_reason) =>
@@ -199,8 +215,9 @@ where
         }
     }
 
+    #[tracing::instrument(skip_all)]
     async fn handle_sys_msg_on_shutdown(&mut self, sys_msg: SysMsg, exit_reason: Exit) {
-        log::trace!("[{}] received sys-msg when shutting down: {:?}", self.actor_id, sys_msg);
+        tracing::trace!("received sys-msg when shutting down: {:?}", sys_msg);
         match sys_msg {
             SysMsg::Link(linked) =>
                 if exit_reason.is_normal() {
@@ -217,6 +234,7 @@ where
         }
     }
 
+    #[tracing::instrument(skip_all)]
     async fn handle_call_msg(&mut self, call_msg: CallMsg<Message>) -> Result<(), Exit> {
         match call_msg {
             CallMsg::Exit(exit_reason) => Err(exit_reason),
@@ -235,6 +253,7 @@ where
         Ok(())
     }
 
+    #[tracing::instrument(skip_all)]
     async fn handle_message_recv(&mut self, message_recv: Option<Message>) -> Result<(), Exit> {
         let message = message_recv.ok_or(BackendFailure::RxClosed("messages"))?;
         self.inbox_w
@@ -244,6 +263,7 @@ where
         Ok(())
     }
 
+    #[tracing::instrument(skip_all)]
     async fn handle_sys_msg_get_info(
         &self,
         report_to: oneshot::Sender<ActorInfo>,

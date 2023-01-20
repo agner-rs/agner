@@ -27,10 +27,10 @@ impl ExitHandler for LogExitHandler {
         match exit {
             Exit::Standard(WellKnown::Normal | WellKnown::Shutdown(Shutdown(None))) => (),
             Exit::Standard(WellKnown::Linked(offender, reason)) => {
-                log::warn!("[{}] linked {} exited: {}", actor_id, offender, reason.pp());
+                tracing::warn!("[{}] linked {} exited: {}", actor_id, offender, reason.pp());
             },
             failure => {
-                log::error!("[{}] {}", actor_id, failure.pp())
+                tracing::error!("[{}] {}", actor_id, failure.pp())
             },
         }
     }

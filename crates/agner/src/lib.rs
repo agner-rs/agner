@@ -189,3 +189,9 @@ pub use agner_helm as helm;
 
 #[cfg(feature = "test-actor")]
 pub use agner_test_actor as test_actor;
+
+#[cfg(feature = "log")]
+pub use agner_tracing::log;
+
+#[cfg(feature = "log")]
+pub use agner_log as log;

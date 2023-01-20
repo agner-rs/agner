@@ -45,9 +45,6 @@ pub fn run<F>(multi_thread: bool, f: F) -> F::Output
 where
     F: Future,
 {
-    let _ = dotenv::dotenv();
-    let _ = pretty_env_logger::try_init_timed();
-
     if multi_thread {
         tokio::runtime::Builder::new_multi_thread()
     } else {

@@ -38,7 +38,7 @@ fn links_test() {
                 },
 
                 Event::Signal(Signal::Exit(terminated, reason)) => {
-                    log::info!("[{}] {} has exited: {}", context.actor_id(), terminated, reason)
+                    tracing::info!("[{}] {} has exited: {}", context.actor_id(), terminated, reason)
                 },
             }
         }
@@ -101,7 +101,7 @@ fn links_test() {
 
         assert!(call(a[0], Request::Exit(Exit::shutdown())).await.is_ok());
 
-        log::info!("---");
+        tracing::info!("---");
         tokio::time::sleep(Duration::from_millis(500)).await;
 
         for &(idx, expected_ok) in &[
@@ -119,7 +119,7 @@ fn links_test() {
             assert_eq!(call(a[idx], Request::Ping).await.is_ok(), expected_ok, "[{}]", idx);
         }
 
-        log::info!("---");
+        tracing::info!("---");
         tokio::time::sleep(Duration::from_millis(100)).await;
 
         for actor in a.iter().copied() {
@@ -127,10 +127,10 @@ fn links_test() {
             let actor_waited = system.wait(actor);
 
             let _ = exit_requested.await;
-            log::info!("{} exited {}", actor, actor_waited.await);
+            tracing::info!("{} exited {}", actor, actor_waited.await);
         }
 
-        log::info!("---");
+        tracing::info!("---");
         tokio::time::sleep(Duration::from_millis(100)).await;
     })
 }

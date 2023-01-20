@@ -38,21 +38,21 @@ where
     while let Some(query) = ctl_rx.recv().await {
         match query {
             Query::Exit(ExitRq { reason, .. }) => {
-                log::trace!("[{}] exitting: {}", context.actor_id(), reason);
+                tracing::trace!("[{}] exitting: {}", context.actor_id(), reason);
                 context.exit(reason).await;
             },
             Query::SetTrapExit(SetTrapExitRq { set_to, .. }) => {
-                log::trace!("[{}] setting trap_exit={}", context.actor_id(), set_to);
+                tracing::trace!("[{}] setting trap_exit={}", context.actor_id(), set_to);
                 context.trap_exit(set_to).await;
             },
             Query::NextEvent(NextEventRq { timeout, reply_to }) => {
-                log::trace!(
+                tracing::trace!(
                     "[{}] fetching next-event (timeout: {:?})",
                     context.actor_id(),
                     timeout
                 );
                 if let Ok(event) = context.next_event().timeout(timeout).await {
-                    log::trace!("[{}] received next-event", context.actor_id());
+                    tracing::trace!("[{}] received next-event", context.actor_id());
                     let _ = reply_to.send(event);
                 }
             },

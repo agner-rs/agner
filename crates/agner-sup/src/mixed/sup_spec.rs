@@ -1,9 +1,9 @@
-use crate::mixed::child_spec::FlatMixedChildSpec;
+use crate::mixed::child_spec::BoxedMixedChildSpec;
 
 #[derive(Debug)]
 pub struct SupSpec<ID, RS> {
     pub restart_strategy: RS,
-    pub children: Vec<Box<dyn FlatMixedChildSpec<ID>>>,
+    pub children: Vec<BoxedMixedChildSpec<ID>>,
 }
 
 impl<ID, RS> SupSpec<ID, RS> {
@@ -13,7 +13,7 @@ impl<ID, RS> SupSpec<ID, RS> {
 
     pub fn with_child<CS>(mut self, child_spec: CS) -> Self
     where
-        CS: Into<Box<dyn FlatMixedChildSpec<ID>>>,
+        CS: Into<BoxedMixedChildSpec<ID>>,
     {
         self.children.push(child_spec.into());
         self

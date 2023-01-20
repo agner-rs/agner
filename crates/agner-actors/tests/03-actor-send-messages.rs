@@ -146,7 +146,7 @@ async fn actor_ring(ring_size: usize) {
             .expect("Failed to start another actor");
         prev = Some(actor);
     }
-    log::info!("spawn-time: {:?}", t0.elapsed());
+    tracing::info!("spawn-time: {:?}", t0.elapsed());
 
     if let Some(last) = prev {
         for i in 1usize..10 {
@@ -154,7 +154,7 @@ async fn actor_ring(ring_size: usize) {
             let t0 = Instant::now();
             system.send(last, (i, tx)).await;
             rx.await.expect("oneshot rx error");
-            log::info!("ring-size: {} [{}] RTT: {:?}", ring_size, i, t0.elapsed());
+            tracing::info!("ring-size: {} [{}] RTT: {:?}", ring_size, i, t0.elapsed());
         }
     }
 }

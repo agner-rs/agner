@@ -2,9 +2,6 @@ use super::*;
 
 #[test]
 fn one_for_one_basic_test() {
-    let _ = dotenv::dotenv();
-    let _ = pretty_env_logger::try_init_timed();
-
     let sup = next_id();
 
     let mut decider = TestDecider::new(sup, RestartType::One, RestartIntensity::new(3, 60));
@@ -91,9 +88,6 @@ fn one_for_one_basic_test() {
 
 #[test]
 fn all_for_one_basic_test() {
-    let _ = dotenv::dotenv();
-    let _ = pretty_env_logger::try_init_timed();
-
     let sup = next_id();
 
     let mut decider = TestDecider::new(sup, RestartType::All, RestartIntensity::new(3, 60));
@@ -238,9 +232,6 @@ fn all_for_one_basic_test() {
 
 #[test]
 fn rest_for_one_basic_test() {
-    let _ = dotenv::dotenv();
-    let _ = pretty_env_logger::try_init_timed();
-
     let sup = next_id();
 
     let mut decider = TestDecider::new(sup, RestartType::Rest, RestartIntensity::new(3, 60));

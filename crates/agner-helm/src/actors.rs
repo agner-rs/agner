@@ -36,7 +36,7 @@ async fn actors_actor_info(
             if let Some(parent_actor_id) = parent_actor_opt {
                 fields.insert(
                     "parent_actor".to_owned(),
-                    serde_json::to_value(&parent_actor_id).expect("Failed to serialize"),
+                    serde_json::to_value(parent_actor_id).expect("Failed to serialize"),
                 );
             }
         }

@@ -99,13 +99,7 @@ where
             return Err(DeciderError::DuplicateId)
         }
 
-        log::trace!(
-            "[{}|sup:{:?}] adding child {:?}/{:?}",
-            self.sup,
-            self.restart_type,
-            id,
-            ch_type
-        );
+        tracing::trace!("[sup:{:?}] adding child {:?}/{:?}", self.restart_type, id, ch_type);
 
         let info = ChInfo { id, ch_type };
         let state = ChState::ToStart;
@@ -123,7 +117,7 @@ where
 
         let idx = self.idx(id)?;
 
-        log::trace!("[{}|sup:{:?}] Removing child {:?}", self.sup, self.restart_type, id);
+        tracing::trace!("[sup:{:?}] Removing child {:?}", self.restart_type, id);
 
         let info = self.ch_infos.remove(idx);
         let state = self.ch_states.remove(idx);
@@ -194,13 +188,7 @@ where
             return Err(DeciderError::UnexpectedChildState)
         }
 
-        log::trace!(
-            "[{}|sup:{:?}] child started {:?} -> {}",
-            self.sup,
-            self.restart_type,
-            id,
-            actor_id
-        );
+        tracing::trace!("[sup:{:?}] child started {:?} -> {}", self.restart_type, id, actor_id);
         self.ch_states[idx] = ChState::Running(actor_id);
 
         Ok(())
@@ -212,9 +200,8 @@ where
         at: I,
     ) -> Result<(), Self::Error> {
         if actor_id == self.sup {
-            log::trace!(
-                "[{}|sup:{:?}] sup received exit signal: [at: {:?}, exit: {}]",
-                self.sup,
+            tracing::trace!(
+                "[sup:{:?}] sup received exit signal: [at: {:?}, exit: {}]",
                 self.restart_type,
                 at,
                 exit.pp()
@@ -235,9 +222,8 @@ where
 
             let result = self.restart_intensity.report_exit(&mut self.restart_stats, at.to_owned());
 
-            log::trace!(
-                "[{}|sup:{:?}] child {:?} exited [at: {:?}; will-restart: {}; exit: {}]",
-                self.sup,
+            tracing::trace!(
+                "[sup:{:?}] child {:?} exited [at: {:?}; will-restart: {}; exit: {}]",
                 self.restart_type,
                 self.ch_infos[idx].id,
                 at,
@@ -264,9 +250,8 @@ where
                         .collect(),
                 };
 
-                log::trace!(
-                    "[{}|sup:{:?}] stopping children before restart: {:?}",
-                    self.sup,
+                tracing::trace!(
+                    "[sup:{:?}] stopping children before restart: {:?}",
                     self.restart_type,
                     ids_to_restart
                 );
@@ -298,18 +283,16 @@ where
                 Ok(())
             }
         } else if self.expected_exits.remove(&actor_id) {
-            log::trace!(
-                "[{}|sup:{:?}] received an expected exit [actor: {}, exit: {}]",
-                self.sup,
+            tracing::trace!(
+                "[sup:{:?}] received an expected exit [actor: {}, exit: {}]",
                 self.restart_type,
                 actor_id,
                 exit.pp()
             );
             Ok(())
         } else {
-            log::trace!(
-                "[{}|sup:{:?}] unknown linked actor exited. Shutting down [actor: {}, exit: {}]",
-                self.sup,
+            tracing::trace!(
+                "[sup:{:?}] unknown linked actor exited. Shutting down [actor: {}, exit: {}]",
                 self.restart_type,
                 actor_id,
                 exit.pp()

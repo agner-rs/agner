@@ -63,7 +63,7 @@ impl System {
             .map(|mut ae| ae.terminate(actor_id, exit_reason))
             .transpose()
         {
-            log::error!("Failed to terminate ActorEntry: {}", reason.as_ref().pp());
+            tracing::error!("Failed to terminate ActorEntry: {}", reason.as_ref().pp());
         }
     }
 }

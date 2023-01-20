@@ -92,7 +92,7 @@ where
         match context.next_event().await {
             Event::Message(Message::Noop) => (),
             Event::Message(Message::Start(args, reply_to)) => {
-                log::trace!("[{}] starting child", context.actor_id());
+                tracing::trace!("starting child");
 
                 let result =
                     child_spec.create_child(&context.system(), context.actor_id(), args).await;
@@ -101,27 +101,25 @@ where
                     children.insert(actor_id);
                 }
 
-                log::trace!("[{}] start result {:?}", context.actor_id(), result);
+                tracing::trace!("start result {:?}", result);
 
                 let _ = reply_to.send(result.map_err(Into::into));
             },
             Event::Message(Message::Stop(actor_id, reply_to)) =>
                 if children.contains(&actor_id) {
-                    log::trace!("[{}] stopping child {}", context.actor_id(), actor_id);
+                    tracing::trace!("stopping child {}", actor_id);
 
                     let system = context.system();
-                    let sup_id = context.actor_id();
                     let job = {
                         let shutdown_sequence = child_spec.shutdown_sequence().to_owned();
                         async move {
-                            log::trace!("[{}] stop-job enter [child: {}]", sup_id, actor_id);
+                            tracing::trace!("stop-job enter [child: {}]", actor_id);
                             let result =
                                 crate::common::stop_child(system, actor_id, shutdown_sequence)
                                     .await;
 
-                            log::trace!(
-                                "[{}] stop-job done [child: {}; result: {:?}]",
-                                sup_id,
+                            tracing::trace!(
+                                "stop-job done [child: {}; result: {:?}]",
                                 actor_id,
                                 result
                             );
@@ -134,19 +132,15 @@ where
                     };
                     context.future_to_inbox(job).await;
                 } else {
-                    log::trace!(
-                        "[{}] received a request to stop an unknown actor ({}). Ignoring.",
-                        context.actor_id(),
+                    tracing::trace!(
+                        "received a request to stop an unknown actor ({}). Ignoring.",
                         actor_id
                     );
                     let _ = reply_to.send(Ok(Exit::no_actor()));
                 },
             Event::Signal(Signal::Exit(actor_id, exit_reason)) =>
                 if actor_id == context.actor_id() {
-                    log::trace!(
-                        "[{}] received a shutdown signal to myself. Shutting down",
-                        context.actor_id()
-                    );
+                    tracing::trace!("received a shutdown signal to myself. Shutting down",);
                     shutting_down = Some(exit_reason.to_owned());
 
                     let system = context.system();
@@ -162,17 +156,11 @@ where
                         unreachable!()
                     }
                 } else if children.remove(&actor_id) {
-                    log::trace!(
-                        "[{}] child {} terminated [exit: {}]",
-                        context.actor_id(),
-                        actor_id,
-                        exit_reason.pp()
-                    );
+                    tracing::trace!("child {} terminated [exit: {}]", actor_id, exit_reason.pp());
                     if children.is_empty() {
                         if let Some(exit_reason) = shutting_down {
-                            log::trace!(
-                                "[{}] last child terminated. Shutting down: {}",
-                                context.actor_id(),
+                            tracing::trace!(
+                                "last child terminated. Shutting down: {}",
                                 exit_reason.pp()
                             );
                             context.exit(exit_reason).await;
@@ -180,9 +168,8 @@ where
                         }
                     }
                 } else {
-                    log::trace!(
-                        "[{}] unknown linked process ({}) termianted. Shutting down [exit: {}]",
-                        context.actor_id(),
+                    tracing::trace!(
+                        "unknown linked process ({}) termianted. Shutting down [exit: {}]",
                         actor_id,
                         exit_reason.pp()
                     );
@@ -207,19 +194,11 @@ mod tests {
 
     #[tokio::test]
     async fn ergonomics() {
-        let _ = dotenv::dotenv();
-        let _ = pretty_env_logger::try_init_timed();
-
         async fn worker(
-            context: &mut Context<Infallible>,
+            _context: &mut Context<Infallible>,
             (worker_id, worker_name): (usize, &'static str),
         ) -> Result<Never, Exit> {
-            log::info!(
-                "[{}] worker [id: {:?}, name: {:?}]",
-                context.actor_id(),
-                worker_id,
-                worker_name
-            );
+            tracing::info!("worker [id: {:?}, name: {:?}]", worker_id, worker_name);
             tokio::time::sleep(Duration::from_secs(3)).await;
             std::future::pending().await
         }

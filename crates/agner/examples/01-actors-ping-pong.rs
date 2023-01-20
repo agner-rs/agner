@@ -33,7 +33,7 @@ fn main() {
                 .spawn(player::player, (name.to_owned(), return_rate), Default::default())
                 .await
                 .expect("Failed to start an actor");
-            log::info!(
+            tracing::info!(
                 "Adding player {} [return-rate: {}, actor-id: {}]",
                 name,
                 return_rate,
@@ -49,11 +49,11 @@ fn main() {
 
         if let Some(winner) = winner_opt {
             let winner_name = player::api::get_player_name(&system, winner).await;
-            log::info!("Congratulations to the winner — {}", winner_name);
+            tracing::info!("Congratulations to the winner — {}", winner_name);
             system.exit(winner, Exit::shutdown()).await;
             system.wait(winner).await;
         } else {
-            log::info!("No winner today :(");
+            tracing::info!("No winner today :(");
         }
 
         eprintln!("TOKIO INIT TIME: {:?}", tokio_init_time);
@@ -93,7 +93,7 @@ mod tournament {
     // If the are odd number of players — the last one gets into the next tour automatically.
     // The matches between the pairs are held simultaneously.
     async fn run_tour(system: &System, tour_id: usize, players: &mut Vec<ActorID>) {
-        log::info!("Starting tour #{} [number of participants: {}]", tour_id, players.len());
+        tracing::info!("Starting tour #{} [number of participants: {}]", tour_id, players.len());
 
         let mut matches = vec![];
 
@@ -108,7 +108,7 @@ mod tournament {
         }
 
         if let Some(odd_one) = opponent.take() {
-            log::warn!("{} found no pair. Passes to the next tour", odd_one);
+            tracing::warn!("{} found no pair. Passes to the next tour", odd_one);
             players.push(odd_one);
         }
 
@@ -120,7 +120,7 @@ mod tournament {
             players.push(match_winner);
         }
 
-        log::info!("End of tour #{} [number of winners: {}]", tour_id, players.len());
+        tracing::info!("End of tour #{} [number of winners: {}]", tour_id, players.len());
     }
 
     /// Runs a single match between `server` and `receiver`.
@@ -135,7 +135,7 @@ mod tournament {
         let server_name = player::api::get_player_name(system, server).await;
         let receiver_name = player::api::get_player_name(system, receiver).await;
 
-        log::debug!("match {}.{}: {} vs {}", tour_id, match_id, server_name, receiver_name);
+        tracing::debug!("match {}.{}: {} vs {}", tour_id, match_id, server_name, receiver_name);
         player::api::serve(system, server, receiver).await;
 
         let winner = tokio::select! {
@@ -144,7 +144,7 @@ mod tournament {
         };
 
         let winner_name = player::api::get_player_name(system, winner).await;
-        log::debug!("match {}.{}, winner — {}", tour_id, match_id, winner_name);
+        tracing::debug!("match {}.{}, winner — {}", tour_id, match_id, winner_name);
         winner
     }
 }

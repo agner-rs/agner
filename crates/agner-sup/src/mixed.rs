@@ -11,7 +11,7 @@ mod supervisor;
 use agner_actors::{ActorID, Exit, System};
 use agner_utils::result_err_flatten::ResultErrFlattenIn;
 pub use child_id::ChildID;
-pub use child_spec::{ChildType, FlatMixedChildSpec, MixedChildSpec};
+pub use child_spec::{BoxedMixedChildSpec, ChildType, FlatMixedChildSpec, MixedChildSpec};
 pub use restart_intensity::RestartIntensity;
 pub use restart_strategy::{AllForOne, OneForOne, RestForOne, RestartStrategy};
 pub use sup_spec::SupSpec;
@@ -33,7 +33,7 @@ pub async fn start_child<ID, CS>(
 ) -> Result<ActorID, SupervisorError>
 where
     ID: ChildID,
-    CS: Into<Box<dyn FlatMixedChildSpec<ID>>>,
+    CS: Into<BoxedMixedChildSpec<ID>>,
 {
     let (tx, rx) = oneshot::channel();
     let message = supervisor::Message::StartChild(child_spec.into(), tx);

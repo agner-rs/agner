@@ -20,7 +20,7 @@ async fn hit_system_limit(max_actors: usize) {
     async fn actor_behaviour(context: &mut Context<Infallible>, _arg: usize) {
         loop {
             let event = context.next_event().await;
-            log::info!("event received: {:?}", event);
+            tracing::info!("event received: {:?}", event);
         }
     }
 

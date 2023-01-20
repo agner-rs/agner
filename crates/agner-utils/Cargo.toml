@@ -1,6 +1,6 @@
 [package]
 name = "agner-utils"
-version = "0.3.11"
+version = "0.3.12"
 edition = "2021"
 
 authors = ["Raman Hafiyatulin <r.gafiyatullin@me.com>"]
@@ -11,9 +11,9 @@ description = "An actor toolkit inspired by Erlang/OTP (utils)"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-futures = { version = "^0.3", features = ["bilock", "unstable"]}
-pin-project = { version = "^1" }
-tokio = {version = "^1", features = ["time"]}
+futures = { workspace = true, features = ["bilock", "unstable"]}
+pin-project = { workspace = true }
+tokio = { workspace = true, features = ["time"]}
 
 [dev-dependencies]
-tokio = {version = "^1", features = ["macros", "rt-multi-thread", "time"]}
+tokio = { workspace = true, features = ["macros", "rt-multi-thread", "time"]}

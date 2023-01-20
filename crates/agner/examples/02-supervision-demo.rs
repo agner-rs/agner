@@ -101,7 +101,7 @@ mod actors {
 
         pub async fn run(context: &mut Context<Message>, _args: ()) -> Never {
             context.init_ack_ok(Default::default());
-            log::info!("[{}] Fanout started", context.actor_id());
+            tracing::info!("Fanout started");
 
             let mut connections = HashSet::new();
             loop {
@@ -169,7 +169,7 @@ mod actors {
                 .await;
             context.init_ack_ok(Default::default());
 
-            log::info!("[{}] Connection started", context.actor_id());
+            tracing::info!("Connection started");
 
             let reader_routine_running = {
                 let connection = context.actor_id();
@@ -241,7 +241,7 @@ mod actors {
         ) -> Result<Never, Exit> {
             context.init_ack_ok(Default::default());
 
-            log::info!("[{}] UDS-acceptor started", context.actor_id());
+            tracing::info!("UDS-acceptor started");
 
             loop {
                 let (uds_stream, _) = uds_listener.accept().await.map_err(Exit::custom)?;
@@ -282,7 +282,7 @@ mod actors {
 
             let mut sup_spawn_opts = SpawnOpts::default().with_data(unlink_on_drop);
             if let Some(init_ack_tx) = context.take::<InitAckTx>() {
-                log::info!("init-ack-tx: {:?}", init_ack_tx);
+                tracing::info!("init-ack-tx: {:?}", init_ack_tx);
                 sup_spawn_opts = sup_spawn_opts.with_data(init_ack_tx);
             }
 
@@ -305,9 +305,8 @@ mod actors {
                 .await
                 .map_err(Exit::custom)?;
 
-            log::info!(
-                "[{}] interface [bind-path: {:?}; acceptors_sup: {}]",
-                context.actor_id(),
+            tracing::info!(
+                "interface [bind-path: {:?}; acceptors_sup: {}]",
                 bind_path,
                 acceptors_sup
             );

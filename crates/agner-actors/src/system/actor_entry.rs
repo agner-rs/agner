@@ -127,20 +127,20 @@ impl ActorEntry {
         ) {
             let maybe_replace = watches.iter_mut().enumerate().find(|(_idx, tx)| tx.is_closed());
             if let Some((idx, to_replace)) = maybe_replace {
-                log::trace!("[{}] adding 'wait' [replace #{}]", actor_id, idx);
+                tracing::trace!("[{}] adding 'wait' [replace #{}]", actor_id, idx);
                 *to_replace = watch;
             } else {
-                log::trace!("[{}] adding 'wait' [append #{}]", actor_id, watches.len());
+                tracing::trace!("[{}] adding 'wait' [append #{}]", actor_id, watches.len());
                 watches.push(watch);
             }
         }
         match &mut self.0 {
             Entry::Vacant(None) => {
-                log::error!("How did the control flow get here?");
+                tracing::error!("How did the control flow get here?");
                 panic!("There is no way the control gets here before the entry is initialized");
             },
             Entry::Vacant(Some(Terminated { actor_id, exit, .. })) => {
-                log::trace!(
+                tracing::trace!(
                     "[{}|TERMINATED] replying immediately upon attempt to install a watch",
                     actor_id
                 );
@@ -172,7 +172,7 @@ impl ActorEntry {
 
         if let Entry::Occupied(Occupied { actor_id_lease, mut watches, .. }) = to_terminate {
             watches.drain(..).enumerate().for_each(|(idx, tx)| {
-                log::trace!("[{}] notifying waiting chan #{}", *actor_id_lease, idx);
+                tracing::trace!("[{}] notifying waiting chan #{}", *actor_id_lease, idx);
                 let _ = tx.send(exit_reason.to_owned());
             });
         }

@@ -1,6 +1,6 @@
 [package]
 name = "agner"
-version = "0.3.11"
+version = "0.3.12"
 edition = "2021"
 
 authors = ["Raman Hafiyatulin <r.gafiyatullin@me.com>"]
@@ -27,24 +27,22 @@ helm = ["dep:agner-helm"]
 test-actor = ["dep:agner-test-actor"]
 
 [dependencies]
-agner-utils = { path = "../agner-utils", version = "=0.3.11" }
-agner-actors = { path = "../agner-actors", version = "=0.3.11" }
-agner-init-ack = { path = "../agner-init-ack", version = "=0.3.11", optional = true }
-agner-reg = { path = "../agner-reg", version = "=0.3.11", optional = true }
-agner-sup = { path = "../agner-sup", version = "=0.3.11", optional = true }
-agner-helm = { path = "../agner-helm", version = "0.3.11", optional = true }
-agner-test-actor = { path = "../agner-test-actor", version = "0.3.11", optional = true }
+agner-utils = { workspace = true }
+agner-actors = { workspace = true }
+agner-init-ack = { workspace = true, optional = true }
+agner-reg = { workspace = true, optional = true }
+agner-sup = { workspace = true, optional = true }
+agner-helm = { workspace = true, optional = true }
+agner-test-actor = { workspace = true, optional = true }
 
 [dev-dependencies]
-dotenv = "^0.15"
-futures = "^0.3"
-log = "^0.4"
-pretty_env_logger = "^0.4"
-rand = "^0.8"
-tempfile = "^3"
-thiserror = "^1"
-tokio = {version = "^1", features = ["full"]}
-names = { version = "0.14.0", default-features = false }
+futures = {workspace = true}
+tracing = {workspace = true}
+names = {workspace = true}
+rand = {workspace = true}
+tempfile = {workspace = true}
+thiserror = {workspace = true}
+tokio = {workspace = true, features = ["full"]}
 
 
 [package.metadata.docs.rs]

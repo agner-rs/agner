@@ -26,6 +26,11 @@ pub enum StartChildError {
 }
 
 /// Start a child in accordance with the supervision design principles.
+#[tracing::instrument(skip_all, fields(
+    sup = display(sup_id),
+    behaviour = std::any::type_name::<B>(),
+    init_type = debug(init_type),
+))]
 pub async fn start_child<B, A, M>(
     system: System,
     sup_id: ActorID,
@@ -39,7 +44,7 @@ where
     A: Send + 'static,
     M: Send + Unpin + 'static,
 {
-    log::trace!("[{}|start_child] starting child", sup_id);
+    tracing::trace!("[start_child] starting child");
 
     let child_id = match init_type {
         InitType::NoAck => do_start_child_no_ack(&system, sup_id, behaviour, args).await?,
@@ -66,7 +71,7 @@ where
 {
     let spawn_opts = SpawnOpts::new().with_link(sup_id);
     let child_id = system.spawn(behaviour, args, spawn_opts).await?;
-    log::trace!("[{}|start_child_no_ack] started [child_id: {}]", sup_id, child_id,);
+    tracing::trace!("[start_child_no_ack] started [child_id: {}]", child_id);
 
     Ok(child_id)
 }
@@ -98,16 +103,12 @@ where
         Ok(child_id) => {
             system.link(sup_id, child_id).await;
 
-            log::trace!(
-                "[{}|start_child_init_ack] init-ack success [child_id: {}]",
-                sup_id,
-                child_id,
-            );
+            tracing::trace!("[start_child_init_ack] init-ack success [child_id: {}]", child_id,);
 
             Ok(child_id)
         },
         Err(reason) => {
-            log::warn!("[{}|start_child_init_ack] canceling init [error: {}]", sup_id, reason.pp());
+            tracing::warn!("[start_child_init_ack] canceling init [error: {}]", reason.pp());
 
             if let Err(cancel_error) = stop_child::stop_child(
                 system.to_owned(),
@@ -121,7 +122,7 @@ where
             )
             .await
             {
-                log::error!("[{}|start_child_init_ack] failed to terminate intermediary [intermediary_id: {}, reason: {}]", sup_id, intermediary_id, cancel_error.pp());
+                tracing::error!("[start_child_init_ack] failed to terminate intermediary [intermediary_id: {}, reason: {}]", intermediary_id, cancel_error.pp());
             }
 
             Err(reason)

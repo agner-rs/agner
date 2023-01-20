@@ -5,6 +5,8 @@ pub use flat_mixed_child_spec::FlatMixedChildSpec;
 
 pub type MixedChildSpec<ID, B, A, M> = GenChildSpec<B, A, M, Ext<ID>>;
 
+pub type BoxedMixedChildSpec<ID> = Box<dyn FlatMixedChildSpec<ID>>;
+
 #[derive(Debug, Clone)]
 pub struct Ext<ID> {
     id: ID,
