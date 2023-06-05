@@ -101,8 +101,8 @@ impl Inner {
         }
     }
     fn take_nonempty_slot_inner(&self) -> Result<Option<usize>, ()> {
-        let head = self.head.load(AtomicOrdering::Relaxed);
-        let tail = self.tail.load(AtomicOrdering::Relaxed);
+        let head = self.head.load(AtomicOrdering::SeqCst);
+        let tail = self.tail.load(AtomicOrdering::SeqCst);
 
         let last = self.slots.len() - 1;
         let head_next = if head < last { head + 1 } else { 0 };
@@ -127,8 +127,8 @@ impl Inner {
     }
 
     fn take_empty_slot_inner(&self) -> Result<Option<usize>, ()> {
-        let head = self.head.load(AtomicOrdering::Relaxed);
-        let tail = self.tail.load(AtomicOrdering::Relaxed);
+        let head = self.head.load(AtomicOrdering::SeqCst);
+        let tail = self.tail.load(AtomicOrdering::SeqCst);
 
         let last = self.slots.len() - 1;
         let tail_next = if tail < last { tail + 1 } else { 0 };
@@ -151,7 +151,7 @@ impl Inner {
         let slot = &self.slots[slot_idx];
 
         loop {
-            let value_before = slot.load(AtomicOrdering::Relaxed);
+            let value_before = slot.load(AtomicOrdering::SeqCst);
             if value_before != MARKER_ACQUIRED {
                 continue
             }
