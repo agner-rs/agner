@@ -4,14 +4,14 @@ members = [
 ]
 
 [workspace.dependencies]
-agner = {path = "crates/agner", version = "=0.3.12"}
-agner-actors = {path = "crates/agner-actors", version = "=0.3.12"}
-agner-helm = {path = "crates/agner-helm", version = "=0.3.12"}
-agner-init-ack = {path = "crates/agner-init-ack", version = "=0.3.12"}
-agner-reg = {path = "crates/agner-reg", version = "=0.3.12"}
-agner-sup = {path = "crates/agner-sup", version = "=0.3.12"}
-agner-test-actor = {path = "crates/agner-test-actor", version = "=0.3.12"}
-agner-utils = {path = "crates/agner-utils", version = "=0.3.12"}
+agner = {path = "crates/agner", version = "=0.3.13"}
+agner-actors = {path = "crates/agner-actors", version = "=0.3.13"}
+agner-helm = {path = "crates/agner-helm", version = "=0.3.13"}
+agner-init-ack = {path = "crates/agner-init-ack", version = "=0.3.13"}
+agner-reg = {path = "crates/agner-reg", version = "=0.3.13"}
+agner-sup = {path = "crates/agner-sup", version = "=0.3.13"}
+agner-test-actor = {path = "crates/agner-test-actor", version = "=0.3.13"}
+agner-utils = {path = "crates/agner-utils", version = "=0.3.13"}
 
 arc-swap = "^1"
 axum = "^0.6"
