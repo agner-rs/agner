@@ -22,3 +22,5 @@ test-release:
 test-debug:
 	cargo nextest run
 
+clean:
+	cargo clean
