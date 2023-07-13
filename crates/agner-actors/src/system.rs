@@ -27,6 +27,8 @@ use actor_id_pool::ActorIDPool;
 mod errors;
 pub use errors::{SysChannelError, SysSpawnError};
 
+pub type ActorChannel<M> = mpsc::UnboundedSender<M>;
+
 /// A [`System`](crate::system::System) is a scope within which the actors run.
 #[derive(Debug, Clone)]
 pub struct System(Arc<Inner>);
@@ -235,7 +237,7 @@ impl System {
         sys_id = self.0.system_id,
         to = display(to)
     ))]
-    pub async fn channel<M>(&self, to: ActorID) -> Result<mpsc::UnboundedSender<M>, SysChannelError>
+    pub async fn channel<M>(&self, to: ActorID) -> Result<ActorChannel<M>, SysChannelError>
     where
         M: Send + 'static,
     {

@@ -1,6 +1,6 @@
 [package]
 name = "agner-sup"
-version = "0.3.13"
+version = "0.3.14"
 edition = "2021"
 
 authors = ["Raman Hafiyatulin <r.gafiyatullin@me.com>"]
