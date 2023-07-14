@@ -1,6 +1,6 @@
 [package]
 name = "agner-test-actor"
-version = "0.3.14"
+version = "0.3.15"
 edition = "2021"
 
 authors = ["Raman Hafiyatulin <r.gafiyatullin@me.com>"]
