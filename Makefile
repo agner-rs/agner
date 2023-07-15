@@ -17,10 +17,10 @@ build-debug:
 	cargo build
 
 test-release:
-	cargo nextest run --release
+	cargo nextest run --release --no-fail-fast
 
 test-debug:
-	cargo nextest run
+	cargo nextest run --no-fail-fast
 
 clean:
 	cargo clean
