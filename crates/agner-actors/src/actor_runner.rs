@@ -124,7 +124,7 @@ where
             biased;
 
             exit_reason = actor_backend_running => exit_reason,
-            _ = behaviour_running => unreachable!("Future<Output = Infallible> as returned"),
+            _ = behaviour_running => unreachable!("Future<Output = Infallible> has returned"),
         };
         tracing::trace!("exited: {}", exit_reason.pp());
 
