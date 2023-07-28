@@ -6,3 +6,4 @@
 *.beam
 .env
 /coverage.lcov
+/publish-order.txt
