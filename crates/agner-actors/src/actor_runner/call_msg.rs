@@ -10,7 +10,7 @@ pub enum CallMsg<M> {
     Link(ActorID),
     Unlink(ActorID),
     TrapExit(bool),
-    FutureToInbox(Pin<Box<dyn Future<Output = M> + Send + Sync + 'static>>),
+    SpawnJob(Pin<Box<dyn Future<Output = Option<M>> + Send + Sync + 'static>>),
 }
 
 impl<M> fmt::Debug for CallMsg<M> {
@@ -20,7 +20,7 @@ impl<M> fmt::Debug for CallMsg<M> {
             Self::Link(actor_id) => f.debug_tuple("Link").field(actor_id).finish(),
             Self::Unlink(actor_id) => f.debug_tuple("Unlink").field(actor_id).finish(),
             Self::TrapExit(trap_exit) => f.debug_tuple("TrapExit").field(trap_exit).finish(),
-            Self::FutureToInbox { .. } => f.debug_tuple("FutureToInbox").finish(),
+            Self::SpawnJob { .. } => f.debug_tuple("SpawnJob").finish(),
         }
     }
 }

@@ -99,6 +99,17 @@ impl<M> Context<M> {
         self.backend_call(CallMsg::TrapExit(trap_exit)).await;
     }
 
+    pub async fn spawn_job<F>(&mut self, fut: F)
+    where
+        F: Future + Send + Sync + 'static,
+    {
+        self.backend_call(CallMsg::SpawnJob(Box::pin(async move {
+            let _ = fut.await;
+            None
+        })))
+        .await
+    }
+
     /// Process the provided future "in background" and upon its completion send the output to the
     /// message-inbox.
     pub async fn future_to_inbox<F>(&mut self, fut: F)
@@ -106,9 +117,9 @@ impl<M> Context<M> {
         F: Future + Send + Sync + 'static,
         F::Output: Into<M>,
     {
-        self.backend_call(CallMsg::FutureToInbox(Box::pin(async move {
-            let out = fut.await;
-            out.into()
+        self.backend_call(CallMsg::SpawnJob(Box::pin(async move {
+            let message = fut.await.into();
+            Some(message)
         })))
         .await;
     }

@@ -89,29 +89,28 @@ where
             unreachable!()
         };
 
-        let mut actor_backend =
-            Backend {
-                actor_id,
-                system_opt: system_opt.to_owned(),
-                sys_msg_rx,
-                sys_msg_tx,
-                messages_rx,
-                inbox_w,
-                signals_w,
-                calls_r,
-                watches: Default::default(),
-                tasks: FuturesUnordered::<
-                    Pin<Box<dyn Future<Output = Message> + Send + Sync + 'static>>,
-                >::new(),
+        let mut actor_backend = Backend {
+            actor_id,
+            system_opt: system_opt.to_owned(),
+            sys_msg_rx,
+            sys_msg_tx,
+            messages_rx,
+            inbox_w,
+            signals_w,
+            calls_r,
+            watches: Default::default(),
+            tasks: FuturesUnordered::<
+                Pin<Box<dyn Future<Output = Option<Message>> + Send + Sync + 'static>>,
+            >::new(),
 
-                exit_handler,
+            exit_handler,
 
-                actor_type_info: (
-                    std::any::type_name::<Behaviour>(),
-                    std::any::type_name::<Args>(),
-                    std::any::type_name::<Message>(),
-                ),
-            };
+            actor_type_info: (
+                std::any::type_name::<Behaviour>(),
+                std::any::type_name::<Args>(),
+                std::any::type_name::<Message>(),
+            ),
+        };
 
         for link_to in spawn_opts.links() {
             actor_backend.do_link(link_to).await;
@@ -145,7 +144,7 @@ struct Backend<Message> {
     signals_w: PipeTx<Signal>,
     calls_r: PipeRx<CallMsg<Message>>,
     watches: Watches,
-    tasks: FuturesUnordered<Pin<Box<dyn Future<Output = Message> + Send + Sync + 'static>>>,
+    tasks: FuturesUnordered<Pin<Box<dyn Future<Output = Option<Message>> + Send + Sync + 'static>>>,
     exit_handler: Arc<dyn ExitHandler>,
 
     actor_type_info: (&'static str, &'static str, &'static str),
@@ -178,7 +177,11 @@ where
                 message_recv = self.messages_rx.recv() =>
                     self.handle_message_recv(message_recv).await,
                 task_ready = task_next =>
-                    self.handle_message_recv(task_ready).await,
+                    if let Some(message) = task_ready.flatten() {
+                        self.handle_message_recv(Some(message)).await
+                    } else {
+                        Ok(())
+                    },
             } {
                 break exit_reason
             }
@@ -241,13 +244,13 @@ where
             CallMsg::Link(link_to) => self.handle_call_link(link_to).await,
             CallMsg::Unlink(unlink_from) => self.handle_call_unlink(unlink_from).await,
             CallMsg::TrapExit(trap_exit) => self.handle_set_trap_exit(trap_exit),
-            CallMsg::FutureToInbox(fut) => self.handle_future_to_inbox(fut),
+            CallMsg::SpawnJob(fut) => self.handle_spawn_job(fut),
         }
     }
 
-    fn handle_future_to_inbox(
+    fn handle_spawn_job(
         &mut self,
-        fut: Pin<Box<dyn Future<Output = Message> + Send + Sync + 'static>>,
+        fut: Pin<Box<dyn Future<Output = Option<Message>> + Send + Sync + 'static>>,
     ) -> Result<(), Exit> {
         self.tasks.push(fut);
         Ok(())

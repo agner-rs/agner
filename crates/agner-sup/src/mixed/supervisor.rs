@@ -21,7 +21,6 @@ pub enum Message<ID> {
     TerminateChild(ID, oneshot::Sender<Result<Exit, SupervisorError>>),
     StartChild(Box<dyn FlatMixedChildSpec<ID>>, oneshot::Sender<Result<ActorID, SupervisorError>>),
     WhichChildren(oneshot::Sender<Vec<(ID, ActorID)>>),
-    Noop,
 }
 
 /// The behaviour function of the [Mixed Supervisor](crate::mixed).
@@ -144,7 +143,6 @@ where
     D: Decider<ID, Duration, Instant>,
 {
     match message {
-        Message::Noop => Ok(()),
         Message::WhichChildren(reply_to) => {
             let out = child_ids
                 .iter()
@@ -159,10 +157,9 @@ where
                 if let Some(actor_id) = child_actors.get(&id).copied() {
                     let system = context.system();
                     context
-                        .future_to_inbox(async move {
+                        .spawn_job(async move {
                             let exit = system.wait(actor_id).await;
                             let _ = reply_to.send(Ok(exit));
-                            Message::Noop
                         })
                         .await;
                 } else {

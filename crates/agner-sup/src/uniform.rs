@@ -57,7 +57,6 @@ where
 pub enum Message<InArgs> {
     Start(InArgs, oneshot::Sender<Result<ActorID, SupervisorError>>),
     Stop(ActorID, oneshot::Sender<Result<Exit, SupervisorError>>),
-    Noop,
 }
 
 #[derive(Debug, Clone)]
@@ -90,7 +89,6 @@ where
     let mut children: HashSet<ActorID> = Default::default();
     loop {
         match context.next_event().await {
-            Event::Message(Message::Noop) => (),
             Event::Message(Message::Start(args, reply_to)) => {
                 tracing::trace!("starting child");
 
@@ -123,14 +121,13 @@ where
                                 actor_id,
                                 result
                             );
-
+                            
                             if let Ok(exit) = result {
                                 let _ = reply_to.send(Ok(exit));
                             }
-                            Message::<SupArg>::Noop
                         }
                     };
-                    context.future_to_inbox(job).await;
+                    context.spawn_job(job).await;
                 } else {
                     tracing::trace!(
                         "received a request to stop an unknown actor ({}). Ignoring.",
@@ -140,7 +137,8 @@ where
                 },
             Event::Signal(Signal::Exit(actor_id, exit_reason)) =>
                 if actor_id == context.actor_id() {
-                    tracing::trace!("received a shutdown signal to myself. Shutting down",);
+                    tracing::trace!("received a shutdown signal to myself. Shutting down");
+                    
                     shutting_down = Some(exit_reason.to_owned());
 
                     let system = context.system();
