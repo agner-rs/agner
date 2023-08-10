@@ -15,7 +15,7 @@ pub struct RestartStats<I>(VecDeque<I>);
 pub struct MaxRestartIntensityReached;
 
 impl<D> RestartIntensity<D> {
-    pub fn new(max_restarts: usize, within: D) -> Self {
+    pub const fn new(max_restarts: usize, within: D) -> Self {
         Self { max_restarts, within }
     }
 
