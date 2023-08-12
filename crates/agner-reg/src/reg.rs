@@ -33,13 +33,14 @@ impl RegRx {
         *self.0.borrow()
     }
 
-    pub async fn wait(&mut self) -> Option<ActorID> {
+    pub async fn wait(&self) -> Option<ActorID> {
+        let mut rx = self.0.clone();
         loop {
-            if let Some(actor_id) = *self.0.borrow() {
+            if let Some(actor_id) = *rx.borrow() {
                 break Some(actor_id)
             }
 
-            if self.0.changed().await.is_err() {
+            if rx.changed().await.is_err() {
                 break None
             }
         }

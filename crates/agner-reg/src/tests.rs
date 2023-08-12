@@ -5,7 +5,7 @@ async fn happy_case() {
     let id_1: ActorID = "1.0.0".parse().unwrap();
     let id_2: ActorID = "1.1.1".parse().unwrap();
 
-    let (tx, mut rx) = super::new();
+    let (tx, rx) = super::new();
 
     assert!(rx.resolve().is_none());
     {
