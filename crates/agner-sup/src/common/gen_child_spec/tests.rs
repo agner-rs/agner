@@ -1,9 +1,6 @@
 use agner_actors::{ActorID, Context, Exit, Never, System};
 use agner_init_ack::ContextInitAckExt;
 
-#[cfg(feature = "reg")]
-use agner_reg::Service;
-
 use crate::common::gen_child_spec::traits::CreateChild;
 use crate::common::gen_child_spec::GenChildSpec;
 use crate::common::init_type::WithAck;
@@ -24,7 +21,7 @@ async fn t01() {
     let sup_id: ActorID = system.spawn(sup, (), Default::default()).await.unwrap();
 
     #[cfg(feature = "reg")]
-    let service = Service::new();
+    let (reg_tx, _reg_rx) = agner_reg::new();
 
     let gen_child_spec = GenChildSpec::new()
         .behaviour(actor)
@@ -32,7 +29,7 @@ async fn t01() {
         .init_type(WithAck::default());
 
     #[cfg(feature = "reg")]
-    let gen_child_spec = gen_child_spec.register(service);
+    let gen_child_spec = gen_child_spec.register(reg_tx);
 
     let mut gen_child_spec = gen_child_spec.to_owned();
 

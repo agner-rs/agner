@@ -121,7 +121,7 @@ where
                                 actor_id,
                                 result
                             );
-                            
+
                             if let Ok(exit) = result {
                                 let _ = reply_to.send(Ok(exit));
                             }
@@ -138,7 +138,7 @@ where
             Event::Signal(Signal::Exit(actor_id, exit_reason)) =>
                 if actor_id == context.actor_id() {
                     tracing::trace!("received a shutdown signal to myself. Shutting down");
-                    
+
                     shutting_down = Some(exit_reason.to_owned());
 
                     let system = context.system();

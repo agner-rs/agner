@@ -3,7 +3,7 @@ use std::sync::Arc;
 use std::time::Duration;
 
 use agner::actors::Exit;
-use agner::reg::Service;
+use agner::reg;
 use agner::sup::common::WithAck;
 use agner::sup::mixed::{self, AllForOne, RestartIntensity};
 use agner::sup::uniform;
@@ -34,15 +34,15 @@ fn main() {
         let restart_intensity = RestartIntensity::new(0, Duration::ZERO);
         let restart_strategy = AllForOne::new(restart_intensity);
 
-        let fanout_svc = Service::new();
-        let uds_conn_sup_svc = Service::new();
+        let (fanout_reg_tx, fanout_reg_rx) = reg::new();
+        let (uds_conn_sup_reg_tx, uds_conn_sup_reg_rx) = reg::new();
 
         let top_sup_spec = mixed::SupSpec::new(restart_strategy)
             .with_child(
                 MixedChildSpec::mixed("fanout")
                     .behaviour(actors::fanout::run)
                     .args_clone(())
-                    .register(fanout_svc.to_owned()),
+                    .register(fanout_reg_tx),
             )
             .with_child(
                 MixedChildSpec::mixed("uds-conn-sup")
@@ -50,15 +50,15 @@ fn main() {
                     .args_clone(uniform::SupSpec::new(
                         UniformChildSpec::uniform()
                             .behaviour(actors::connection::run::<UnixStream>)
-                            .args_call1(move |uds_stream| (fanout_svc.to_owned(), uds_stream)),
+                            .args_call1(move |uds_stream| (fanout_reg_rx.clone(), uds_stream)),
                     ))
                     .init_type(WithAck::new())
-                    .register(uds_conn_sup_svc.to_owned()),
+                    .register(uds_conn_sup_reg_tx),
             )
             .with_child(
                 MixedChildSpec::mixed("uds-interface")
                     .behaviour(actors::uds_interface::run)
-                    .args_clone((bind_uds, uds_acceptors_count, uds_conn_sup_svc.to_owned())),
+                    .args_clone((bind_uds, uds_acceptors_count, uds_conn_sup_reg_rx.to_owned())),
             );
 
         let top_sup = system
@@ -141,7 +141,7 @@ mod actors {
         use crate::actors::fanout;
         use agner::actors::{ActorID, Context, Exit, Shutdown, SystemWeakRef};
         use agner::init_ack::ContextInitAckExt;
-        use agner::reg::Service;
+        use agner::reg;
         use tokio::io::{AsyncBufReadExt, AsyncRead, AsyncWrite, AsyncWriteExt};
         use tokio::sync::oneshot;
 
@@ -154,7 +154,7 @@ mod actors {
 
         pub async fn run<IO>(
             context: &mut Context<Message>,
-            (fanout, io): (Service, IO),
+            (fanout, io): (reg::RegRx, IO),
         ) -> Result<Shutdown, Exit>
         where
             IO: AsyncRead + AsyncWrite + Send + Sync + 'static,
@@ -226,7 +226,7 @@ mod actors {
 
         use agner::actors::{Context, Exit, Never};
         use agner::init_ack::ContextInitAckExt;
-        use agner::reg::Service;
+        use agner::reg;
         use agner::sup::uniform;
         use tokio::net::UnixListener;
 
@@ -237,7 +237,7 @@ mod actors {
 
         pub async fn run(
             context: &mut Context<Message>,
-            (uds_listener, conn_sup): (Arc<UnixListener>, Service),
+            (uds_listener, conn_sup): (Arc<UnixListener>, reg::RegRx),
         ) -> Result<Never, Exit> {
             context.init_ack_ok(Default::default());
 
@@ -262,7 +262,7 @@ mod actors {
 
         use agner::actors::{Context, Exit, SpawnOpts};
         use agner::init_ack::InitAckTx;
-        use agner::reg::Service;
+        use agner::reg;
         use agner::sup::mixed;
         use agner::sup::mixed::{OneForOne, RestartIntensity};
         use agner_sup::common::WithAck;
@@ -274,7 +274,7 @@ mod actors {
 
         pub async fn run(
             context: &mut Context<Message>,
-            (bind_path, acceptors_count, conn_sup): (Arc<Path>, usize, Service),
+            (bind_path, acceptors_count, conn_sup): (Arc<Path>, usize, reg::RegRx),
         ) -> Result<(), Exit> {
             let uds_listener = UnixListener::bind(bind_path.as_ref()).map_err(Exit::custom)?;
             let unlink_on_drop = UnlinkOnDrop(bind_path.to_owned());

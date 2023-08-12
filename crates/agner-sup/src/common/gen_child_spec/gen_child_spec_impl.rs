@@ -3,7 +3,7 @@ use std::fmt;
 use agner_actors::{Actor, ActorID, System};
 
 #[cfg(feature = "reg")]
-use agner_reg::Service;
+use agner_reg::RegTx;
 use futures::TryFutureExt;
 
 use crate::common::gen_child_spec::args_call::{args_call0, args_call1, ArgsCallFn0, ArgsCallFn1};
@@ -29,7 +29,7 @@ impl Default for GenChildSpec<(), (), (), ()> {
             init_type: InitType::NoAck,
 
             #[cfg(feature = "reg")]
-            service: None,
+            reg_tx: None,
 
             ext: (),
         }
@@ -45,7 +45,7 @@ impl<X> GenChildSpec<(), (), (), X> {
             init_type: InitType::NoAck,
 
             #[cfg(feature = "reg")]
-            service: None,
+            reg_tx: None,
 
             ext,
         }
@@ -70,7 +70,7 @@ impl<A, M, X> GenChildSpec<(), A, M, X> {
             init_type: self.init_type,
 
             #[cfg(feature = "reg")]
-            service: self.service,
+            reg_tx: self.reg_tx,
 
             ext: self.ext,
         }
@@ -91,7 +91,7 @@ impl<B, OldA, OldM, X> GenChildSpec<B, OldA, OldM, X> {
             init_type: self.init_type,
 
             #[cfg(feature = "reg")]
-            service: self.service,
+            reg_tx: self.reg_tx,
 
             ext: self.ext,
         }
@@ -110,7 +110,7 @@ impl<B, OldA, OldM, X> GenChildSpec<B, OldA, OldM, X> {
             init_type: self.init_type,
 
             #[cfg(feature = "reg")]
-            service: self.service,
+            reg_tx: self.reg_tx,
 
             ext: self.ext,
         }
@@ -129,7 +129,7 @@ impl<B, OldA, OldM, X> GenChildSpec<B, OldA, OldM, X> {
             init_type: self.init_type,
 
             #[cfg(feature = "reg")]
-            service: self.service,
+            reg_tx: self.reg_tx,
 
             ext: self.ext,
         }
@@ -151,7 +151,7 @@ impl<B, OldA, OldM, X> GenChildSpec<B, OldA, OldM, X> {
             init_type: self.init_type,
 
             #[cfg(feature = "reg")]
-            service: self.service,
+            reg_tx: self.reg_tx,
 
             ext: self.ext,
         }
@@ -172,9 +172,9 @@ impl<B, A, M, X> GenChildSpec<B, A, M, X> {
 #[cfg(feature = "reg")]
 impl<B, A, M, X> GenChildSpec<B, A, M, X> {
     /// [Register the actor](agner_reg::Service) when it starts
-    pub fn register(self, service: Service) -> Self {
-        let service = Some(service);
-        Self { service, ..self }
+    pub fn register(self, reg_tx: RegTx) -> Self {
+        let reg_tx = Some(reg_tx);
+        Self { reg_tx, ..self }
     }
 }
 
@@ -202,13 +202,13 @@ where
         let init_type = self.init_type;
 
         #[cfg(feature = "reg")]
-        let registered_service = self.service.to_owned();
+        let registered_service = self.reg_tx.to_owned();
 
         let start_child_fut = start_child(system.to_owned(), sup_id, behaviour, args, init_type)
             .and_then(move |child_id| async move {
                 #[cfg(feature = "reg")]
                 if let Some(service) = registered_service {
-                    let reg_guard = service.register(child_id).await;
+                    let reg_guard = service.register(child_id);
                     system.put_data(child_id, reg_guard).await;
                 }
 
@@ -246,7 +246,7 @@ where
             init_type: self.init_type,
 
             #[cfg(feature = "reg")]
-            service: self.service.clone(),
+            reg_tx: self.reg_tx.clone(),
 
             ext: self.ext.clone(),
         }
