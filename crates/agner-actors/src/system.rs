@@ -3,7 +3,9 @@ use std::future::Future;
 use std::sync::atomic::AtomicUsize;
 use std::sync::{Arc, Weak};
 
+#[cfg(feature = "tracing-instrument")]
 use agner_utils::std_error_pp::StdErrorPP;
+
 use futures::{stream, Stream, StreamExt};
 use tokio::sync::{mpsc, oneshot, RwLock};
 use tracing::Instrument;
@@ -91,10 +93,10 @@ impl System {
     ///     let bob = system.spawn(actor_behaviour, "Bob", Default::default()).await.expect("Failed to spawn an actor");
     /// };
     /// ```
-    #[tracing::instrument(skip_all, fields(
+    #[cfg_attr(feature = "tracing-instrument", tracing::instrument(skip_all, fields(
         sys_id = self.0.system_id,
         behaviour = std::any::type_name::<Behaviour>(),
-    ))]
+    )))]
     pub async fn spawn<Behaviour, Args, Message>(
         &self,
         behaviour: Behaviour,
@@ -138,11 +140,11 @@ impl System {
     }
 
     /// Send SigExit to the specified actor.
-    #[tracing::instrument(skip_all, fields(
+    #[cfg_attr(feature = "tracing-instrument", tracing::instrument(skip_all, fields(
         sys_id = self.0.system_id,
         actor_id = display(actor_id),
         exit_reason = display(exit_reason.pp())
-    ))]
+    )))]
     pub async fn exit(&self, actor_id: ActorID, exit_reason: Exit) {
         self.send_sys_msg(actor_id, SysMsg::SigExit(actor_id, exit_reason)).await;
     }
@@ -176,10 +178,10 @@ impl System {
     /// - the process entry corresponding to the `to` existed;
     /// - the underlying mpsc-channel accepted the message (i.e. was not closed before this message
     ///   is sent).
-    #[tracing::instrument(skip_all, fields(
+    #[cfg_attr(feature = "tracing-instrument", tracing::instrument(skip_all, fields(
         sys_id = self.0.system_id,
         to = display(to)
-    ))]
+    )))]
     pub(crate) async fn send_sys_msg(&self, to: ActorID, sys_msg: SysMsg) -> bool {
         tracing::trace!(
             "[sys:{}] trying to send sys-msg [to: {}, sys-msg: {:?}]",
@@ -203,11 +205,11 @@ impl System {
     }
 
     /// Send a single message to the specified actor.
-    #[tracing::instrument(skip_all, fields(
+    #[cfg_attr(feature = "tracing-instrument", tracing::instrument(skip_all, fields(
         sys_id = self.0.system_id,
         to = display(to),
         msg_type = std::any::type_name::<M>()
-    ))]
+    )))]
     pub async fn send<M>(&self, to: ActorID, message: M)
     where
         M: Send + 'static,
@@ -233,10 +235,10 @@ impl System {
     /// When sending a series of messages to an actor, it may be better from the performance point
     /// of view to open a channel to an actor, rather than sending each message separately using
     /// [`System::send::<Message>(&self, ActorID, Message)`](crate::system::System::send).
-    #[tracing::instrument(skip_all, fields(
+    #[cfg_attr(feature = "tracing-instrument", tracing::instrument(skip_all, fields(
         sys_id = self.0.system_id,
         to = display(to)
-    ))]
+    )))]
     pub async fn channel<M>(&self, to: ActorID) -> Result<ActorChannel<M>, SysChannelError>
     where
         M: Send + 'static,
@@ -250,11 +252,11 @@ impl System {
     }
 
     /// Link two actors
-    #[tracing::instrument(skip_all, fields(
+    #[cfg_attr(feature = "tracing-instrument", tracing::instrument(skip_all, fields(
         sys_id = self.0.system_id,
         left = display(left),
         right = display(right)
-    ))]
+    )))]
     pub async fn link(&self, left: ActorID, right: ActorID) {
         let left_accepted_sys_msg = self.send_sys_msg(left, SysMsg::Link(right)).await;
         let right_accepted_sys_msg = self.send_sys_msg(right, SysMsg::Link(left)).await;
@@ -270,33 +272,33 @@ impl System {
     /// Associate arbitrary data with the specified actor.
     /// Upon actor termination that data will be dropped.
     /// If no actor with the specified id exists, the data will be dropped right away.
-    #[tracing::instrument(skip_all, fields(
+    #[cfg_attr(feature = "tracing-instrument", tracing::instrument(skip_all, fields(
         sys_id = self.0.system_id,
         actor_id = display(actor_id),
         data_type = std::any::type_name::<D>()
-    ))]
+    )))]
     pub async fn put_data<D: Any + Send + Sync + 'static>(&self, actor_id: ActorID, data: D) {
         if let Some(mut actor_entry) = self.actor_entry_write(actor_id).await {
             actor_entry.put_data(data);
         }
     }
 
-    #[tracing::instrument(skip_all, fields(
+    #[cfg_attr(feature = "tracing-instrument", tracing::instrument(skip_all, fields(
         sys_id = self.0.system_id,
         actor_id = display(actor_id),
         data_type = std::any::type_name::<D>()
-    ))]
+    )))]
     pub async fn get_data<D: Any + Clone>(&self, actor_id: ActorID) -> Option<D> {
         self.actor_entry_read(actor_id)
             .await
             .and_then(|actor_entry| actor_entry.get_data().cloned())
     }
 
-    #[tracing::instrument(skip_all, fields(
+    #[cfg_attr(feature = "tracing-instrument", tracing::instrument(skip_all, fields(
         sys_id = self.0.system_id,
         actor_id = display(actor_id),
         data_type = std::any::type_name::<D>()
-    ))]
+    )))]
     pub async fn take_data<D: Any>(&self, actor_id: ActorID) -> Option<D> {
         self.actor_entry_write(actor_id)
             .await
@@ -308,10 +310,10 @@ impl System {
             .filter_map(|slot| async move { slot.read().await.running_actor_id() })
     }
 
-    #[tracing::instrument(skip_all, fields(
+    #[cfg_attr(feature = "tracing-instrument", tracing::instrument(skip_all, fields(
         sys_id = self.0.system_id,
         actor_id = display(actor_id)
-    ))]
+    )))]
     pub async fn actor_info(&self, actor_id: ActorID) -> Option<ActorInfo> {
         let (tx, rx) = oneshot::channel();
         self.send_sys_msg(actor_id, SysMsg::GetInfo(tx)).await;

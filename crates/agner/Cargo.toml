@@ -12,12 +12,13 @@ description = "An actor toolkit inspired by Erlang/OTP"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [features]
-default = ["init-ack", "reg", "sup"]
+default = ["init-ack", "reg", "sup", "tracing-instrument"]
 # default = ["full"]
 
-full = ["init-ack", "reg", "sup", "helm", "test-actor"]
+full = ["init-ack", "reg", "sup", "helm", "test-actor", "tracing-instrument"]
 
 serde = ["agner-actors/serde"]
+tracing-instrument = ["agner-actors/tracing-instrument", "agner-sup/tracing-instrument"]
 
 # Components
 init-ack = ["dep:agner-init-ack"]

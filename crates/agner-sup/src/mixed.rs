@@ -15,6 +15,7 @@ pub use child_spec::{BoxedMixedChildSpec, ChildType, FlatMixedChildSpec, MixedCh
 pub use restart_intensity::RestartIntensity;
 pub use restart_strategy::{AllForOne, OneForOne, RestForOne, RestartStrategy};
 pub use sup_spec::SupSpec;
+pub use supervisor::Message;
 
 pub mod plumbing {
     pub use super::restart_intensity::{DurationToInstant, ElapsedSince, RestartStats};

@@ -15,6 +15,7 @@ default = []
 # default = ["reg"]
 
 reg = ["dep:agner-reg"]
+tracing-instrument = []
 
 
 [dependencies]

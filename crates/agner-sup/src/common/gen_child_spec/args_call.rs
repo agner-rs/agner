@@ -45,27 +45,21 @@ where
     }
 }
 
-impl<F, Out> fmt::Debug for ArgsCallFn0<F, Out>
-where
-    F: fmt::Debug,
-{
+impl<F, Out> fmt::Debug for ArgsCallFn0<F, Out> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         f.debug_struct("ArgsCallFn0")
             .field("out", &std::any::type_name::<Out>())
-            .field("func", &self.0)
+            .field("func", &std::any::type_name::<F>())
             .finish()
     }
 }
 
-impl<F, In, Out> fmt::Debug for ArgsCallFn1<F, In, Out>
-where
-    F: fmt::Debug,
-{
+impl<F, In, Out> fmt::Debug for ArgsCallFn1<F, In, Out> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         f.debug_struct("ArgsCallFn1")
             .field("in", &std::any::type_name::<In>())
             .field("out", &std::any::type_name::<Out>())
-            .field("func", &self.0)
+            .field("func", &std::any::type_name::<F>())
             .finish()
     }
 }

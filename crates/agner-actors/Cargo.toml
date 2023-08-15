@@ -11,6 +11,7 @@ description = "An actor toolkit inspired by Erlang/OTP (actors)"
 [features]
 default = []
 serde = ["dep:serde"]
+tracing-instrument = []
 
 [dependencies]
 agner-utils = { workspace = true }

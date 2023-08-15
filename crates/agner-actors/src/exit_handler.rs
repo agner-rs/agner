@@ -18,6 +18,10 @@ pub trait ExitHandler: fmt::Debug + Send + Sync + 'static {
 #[derive(Debug, Clone, Copy)]
 pub struct LogExitHandler;
 
+/// An [`ExitHandler`](crate::exit_handler::ExitHandler) that will print abnormal exits into stderr.
+#[derive(Debug, Clone, Copy)]
+pub struct StderrExitHandler;
+
 /// A no-op [`ExitHandler`](crate::exit_handler::ExitHandler), i.e. it does nothing.
 #[derive(Debug, Clone, Copy)]
 pub struct NoopExitHandler;
@@ -30,7 +34,21 @@ impl ExitHandler for LogExitHandler {
                 tracing::warn!("[{}] linked {} exited: {}", actor_id, offender, reason.pp());
             },
             failure => {
-                tracing::error!("[{}] {}", actor_id, failure.pp())
+                tracing::error!("[{}] {}", actor_id, failure.pp());
+            },
+        }
+    }
+}
+
+impl ExitHandler for StderrExitHandler {
+    fn on_actor_exit(&self, actor_id: ActorID, exit: Exit) {
+        match exit {
+            Exit::Standard(WellKnown::Normal | WellKnown::Shutdown(Shutdown(None))) => (),
+            Exit::Standard(WellKnown::Linked(offender, reason)) => {
+                eprintln!("[{}] linked {} exited: {}", actor_id, offender, reason.pp());
+            },
+            failure => {
+                eprintln!("[{}] {}", actor_id, failure.pp());
             },
         }
     }

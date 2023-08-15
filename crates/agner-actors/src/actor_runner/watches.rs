@@ -11,10 +11,10 @@ pub(crate) struct Watches {
 }
 
 impl<M> Backend<M> {
-    #[tracing::instrument(skip_all, fields(
+    #[cfg_attr(feature = "tracing-instrument", tracing::instrument(skip_all, fields(
         actor_id = display(self.actor_id),
         exit_reason = display(exit_reason.pp())
-    ))]
+    )))]
     pub(super) async fn notify_linked_actors(&mut self, exit_reason: Exit) {
         for linked in std::mem::take(&mut self.watches.links).drain() {
             if exit_reason.is_normal() {
@@ -27,10 +27,10 @@ impl<M> Backend<M> {
         }
     }
 
-    #[tracing::instrument(skip_all, fields(
+    #[cfg_attr(feature = "tracing-instrument", tracing::instrument(skip_all, fields(
         actor_id = display(self.actor_id),
         link_to = display(link_to))
-    )]
+    ))]
     pub(super) async fn do_link(&mut self, link_to: ActorID) {
         if self.watches.links.insert(link_to) {
             tracing::trace!("linking to {}", link_to);
@@ -41,10 +41,10 @@ impl<M> Backend<M> {
         }
     }
 
-    #[tracing::instrument(skip_all, fields(
+    #[cfg_attr(feature = "tracing-instrument", tracing::instrument(skip_all, fields(
         actor_id = display(self.actor_id),
         unlink_from = display(unlink_from)
-    ))]
+    )))]
     pub(super) async fn do_unlink(&mut self, unlink_from: ActorID) {
         if self.watches.links.remove(&unlink_from) {
             tracing::trace!("[{}] unlinking from {}", self.actor_id, unlink_from);
@@ -53,9 +53,9 @@ impl<M> Backend<M> {
         }
     }
 
-    #[tracing::instrument(skip(self), fields(
+    #[cfg_attr(feature = "tracing-instrument", tracing::instrument(skip(self), fields(
         actor_id = display(self.actor_id)
-    ))]
+    )))]
     pub(super) fn handle_set_trap_exit(&mut self, trap_exit: bool) -> Result<(), Exit> {
         if self.watches.trap_exit != trap_exit {
             tracing::trace!("trap_exit = {}", trap_exit);
@@ -64,29 +64,29 @@ impl<M> Backend<M> {
         Ok(())
     }
 
-    #[tracing::instrument(skip_all, fields(
+    #[cfg_attr(feature = "tracing-instrument", tracing::instrument(skip_all, fields(
         actor_id = display(self.actor_id),
         link_to = display(link_to)
-    ))]
+    )))]
     pub(super) async fn handle_call_link(&mut self, link_to: ActorID) -> Result<(), Exit> {
         self.do_link(link_to).await;
         Ok(())
     }
 
-    #[tracing::instrument(skip_all, fields(
+    #[cfg_attr(feature = "tracing-instrument", tracing::instrument(skip_all, fields(
         actor_id = display(self.actor_id),
         unlink_from = display(unlink_from)
-    ))]
+    )))]
     pub(super) async fn handle_call_unlink(&mut self, unlink_from: ActorID) -> Result<(), Exit> {
         self.do_unlink(unlink_from).await;
         Ok(())
     }
 
-    #[tracing::instrument(skip_all, fields(
+    #[cfg_attr(feature = "tracing-instrument", tracing::instrument(skip_all, fields(
         actor_id = display(self.actor_id),
         receiver_id = display(receiver_id),
         exit_reason = display(exit_reason.pp())
-    ))]
+    )))]
     pub(super) async fn handle_sys_msg_sig_exit(
         &mut self,
         receiver_id: ActorID,
@@ -120,19 +120,19 @@ impl<M> Backend<M> {
         }
     }
 
-    #[tracing::instrument(skip_all, fields(
+    #[cfg_attr(feature = "tracing-instrument", tracing::instrument(skip_all, fields(
         actor_id = display(self.actor_id),
         link_to = display(link_to)
-    ))]
+    )))]
     pub(super) async fn handle_sys_msg_link(&mut self, link_to: ActorID) -> Result<(), Exit> {
         self.watches.links.insert(link_to);
         Ok(())
     }
 
-    #[tracing::instrument(skip_all, fields(
+    #[cfg_attr(feature = "tracing-instrument", tracing::instrument(skip_all, fields(
         actor_id = display(self.actor_id),
         unlink_from = display(unlink_from)
-    ))]
+    )))]
     pub(super) async fn handle_sys_msg_unlink(&mut self, unlink_from: ActorID) -> Result<(), Exit> {
         self.watches.links.remove(&unlink_from);
         Ok(())

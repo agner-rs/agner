@@ -43,11 +43,11 @@ impl<Message> ActorRunner<Message>
 where
     Message: Unpin,
 {
-    #[tracing::instrument(skip_all, fields(
+    #[cfg_attr(feature = "tracing-instrument", tracing::instrument(skip_all, fields(
         actor_id = display(self.actor_id),
         behaviour = std::any::type_name::<Behaviour>(),
         msg_type = std::any::type_name::<Message>(),
-    ))]
+    )))]
     pub async fn run<Behaviour, Args>(self, behaviour: Behaviour, args: Args)
     where
         for<'a> Behaviour: Actor<'a, Args, Message>,
@@ -154,7 +154,7 @@ impl<Message> Backend<Message>
 where
     Message: Unpin,
 {
-    #[tracing::instrument(skip_all)]
+    #[cfg_attr(feature = "tracing-instrument", tracing::instrument(skip_all))]
     async fn run_actor_backend(mut self) -> Exit {
         tracing::trace!("running actor-backend");
 
@@ -204,7 +204,7 @@ where
         exit_reason
     }
 
-    #[tracing::instrument(skip_all)]
+    #[cfg_attr(feature = "tracing-instrument", tracing::instrument(skip_all))]
     async fn handle_sys_msg(&mut self, sys_msg_recv: Option<SysMsg>) -> Result<(), Exit> {
         let sys_msg = sys_msg_recv.ok_or(BackendFailure::RxClosed("sys-msg"))?;
         tracing::trace!("[received sys-msg: {:?}", sys_msg);
@@ -218,7 +218,7 @@ where
         }
     }
 
-    #[tracing::instrument(skip_all)]
+    #[cfg_attr(feature = "tracing-instrument", tracing::instrument(skip_all))]
     async fn handle_sys_msg_on_shutdown(&mut self, sys_msg: SysMsg, exit_reason: Exit) {
         tracing::trace!("received sys-msg when shutting down: {:?}", sys_msg);
         match sys_msg {
@@ -237,7 +237,7 @@ where
         }
     }
 
-    #[tracing::instrument(skip_all)]
+    #[cfg_attr(feature = "tracing-instrument", tracing::instrument(skip_all))]
     async fn handle_call_msg(&mut self, call_msg: CallMsg<Message>) -> Result<(), Exit> {
         match call_msg {
             CallMsg::Exit(exit_reason) => Err(exit_reason),
@@ -256,7 +256,7 @@ where
         Ok(())
     }
 
-    #[tracing::instrument(skip_all)]
+    #[cfg_attr(feature = "tracing-instrument", tracing::instrument(skip_all))]
     async fn handle_message_recv(&mut self, message_recv: Option<Message>) -> Result<(), Exit> {
         let message = message_recv.ok_or(BackendFailure::RxClosed("messages"))?;
         self.inbox_w
@@ -266,7 +266,7 @@ where
         Ok(())
     }
 
-    #[tracing::instrument(skip_all)]
+    #[cfg_attr(feature = "tracing-instrument", tracing::instrument(skip_all))]
     async fn handle_sys_msg_get_info(
         &self,
         report_to: oneshot::Sender<ActorInfo>,

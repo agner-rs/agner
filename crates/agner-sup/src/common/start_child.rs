@@ -26,11 +26,11 @@ pub enum StartChildError {
 }
 
 /// Start a child in accordance with the supervision design principles.
-#[tracing::instrument(skip_all, fields(
+#[cfg_attr(feature = "tracing-instrument", tracing::instrument(skip_all, fields(
     sup = display(sup_id),
     behaviour = std::any::type_name::<B>(),
     init_type = debug(init_type),
-))]
+)))]
 pub async fn start_child<B, A, M>(
     system: System,
     sup_id: ActorID,
